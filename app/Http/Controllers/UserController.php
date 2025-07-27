@@ -2,49 +2,57 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
-use \App\Models\User as Model;
 
 class UserController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Tampilkan daftar user (kecuali wali).
      */
     public function index()
     {
-        $models = Model::where('akses','<>', 'wali')->latest()->paginate(50);
-        $data['models'] = $models;
-        return view('operator.user_index', $data);
+        $models = User::where('akses', '<>', 'wali')->latest()->paginate(50);
+        return view('operator.user_index', compact('models'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Tampilkan form tambah user.
      */
     public function create()
     {
-        // 
+        return view('operator.user_form', [
+            'model'  => new User(),
+            'method' => 'POST',
+            'route'  => 'user.store',
+            'button' => 'SIMPAN',
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Simpan data user baru.
      */
     public function store(Request $request)
     {
-        //
+        $requestData = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'nohp'     => 'required|string|unique:users,nohp',
+            'akses'    => 'required|in:operator,admin',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $requestData['password'] = bcrypt($request->password);
+        $requestData['email_verified_at'] = now();
+
+        User::create($requestData);
+
+        flash('Data berhasil disimpan')->success();
+        return redirect()->route('user.index');
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Tampilkan detail user (jika diperlukan).
      */
     public function show($id)
     {
@@ -52,10 +60,7 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Tampilkan form edit user.
      */
     public function edit($id)
     {
@@ -63,11 +68,7 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Update data user.
      */
     public function update(Request $request, $id)
     {
@@ -75,10 +76,7 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Hapus user.
      */
     public function destroy($id)
     {
