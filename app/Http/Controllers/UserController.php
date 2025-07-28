@@ -6,22 +6,30 @@ use App\Models\User;
 use Illuminate\Http\Request;
 
 /**
- * Controller untuk manajemen data pengguna (admin & operator).
- * 
+ * Controller untuk manajemen data pengguna (Admin & Operator).
  * Dibuat oleh Umar Ulkhak
  */
 class UserController extends Controller
 {
+    // Konstanta view path untuk keperluan reusabilitas
+    private string $viewPath = 'operator.';
+    private string $routePrefix = 'user';
+
+    // View names
+    private string $viewIndex  = 'user_index';
+    private string $viewForm   = 'user_form';
+    private string $viewShow   = 'user_show'; // Disiapkan untuk kebutuhan mendatang
+
     /**
-     * Menampilkan daftar user (kecuali yang memiliki akses 'wali').
+     * Menampilkan daftar user, kecuali yang memiliki akses 'wali'.
      */
     public function index()
     {
         $models = User::where('akses', '<>', 'wali')
                       ->latest()
-                      ->paginate(50);
+                      ->paginate(50); // 50 item per halaman
 
-        return view('operator.user_index', compact('models'));
+        return view($this->viewPath . $this->viewIndex, compact('models'));
     }
 
     /**
@@ -29,19 +37,20 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('operator.user_form', [
+        return view($this->viewPath . $this->viewForm, [
             'model'  => new User(),
             'method' => 'POST',
-            'route'  => 'user.store',
+            'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
         ]);
     }
 
     /**
-     * Menyimpan data user baru ke database.
+     * Menyimpan data user baru ke dalam database.
      */
     public function store(Request $request)
     {
+        // Validasi input user
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
@@ -50,13 +59,15 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        $validated['password'] = bcrypt($request->password);
+        // Enkripsi password & tandai email terverifikasi
+        $validated['password'] = bcrypt($validated['password']);
         $validated['email_verified_at'] = now();
 
+        // Simpan ke database
         User::create($validated);
 
         flash('Data berhasil disimpan')->success();
-        return redirect()->route('user.index');
+        return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
@@ -64,7 +75,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        //
+        // Disiapkan jika suatu saat ingin menampilkan detail pengguna
     }
 
     /**
@@ -74,10 +85,10 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        return view('operator.user_form', [
+        return view($this->viewPath . $this->viewForm, [
             'model'  => $user,
             'method' => 'PUT',
-            'route'  => ['user.update', $user->id],
+            'route'  => [$this->routePrefix . '.update', $user->id],
             'button' => 'UPDATE',
         ]);
     }
@@ -89,6 +100,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Validasi input saat update
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
@@ -97,22 +109,23 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6',
         ]);
 
-        // Hanya enkripsi password jika diisi
+        // Update password jika disediakan
         if (!empty($validated['password'])) {
             $validated['password'] = bcrypt($validated['password']);
         } else {
             unset($validated['password']);
         }
 
+        // Simpan perubahan
         $user->update($validated);
 
         flash('Data berhasil diperbarui')->success();
-        return redirect()->route('user.index');
+        return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
      * Menghapus user berdasarkan ID.
-     * Mencegah penghapusan akun penting.
+     * Cegah penghapusan akun dengan email penting.
      */
     public function destroy($id)
     {
@@ -121,12 +134,12 @@ class UserController extends Controller
         // Cegah penghapusan akun penting
         if ($user->email === 'alkhak24@gmail.com') {
             flash('Akun ini tidak dapat dihapus.')->error();
-            return redirect()->route('user.index');
+            return redirect()->route($this->routePrefix . '.index');
         }
 
         $user->delete();
 
         flash('Data berhasil dihapus')->success();
-        return redirect()->route('user.index');
+        return redirect()->route($this->routePrefix . '.index');
     }
 }
