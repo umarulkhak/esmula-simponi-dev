@@ -33,13 +33,15 @@
                                     <td>{{ $item->akses ?? '-' }}</td>
                                     <td>
                                         {{-- Tombol Edit --}}
-                                        <a href="{{ route('user.edit', $item->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                        <a href="{{ route('user.edit', $item->id) }}" class="btn btn-sm btn-warning">
+                                            <i class="fa fa-edit"></i>Edit</a>
 
                                         {{-- Tombol Hapus --}}
                                         <form action="{{ route('user.destroy', $item->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                                            <button class="btn btn-sm btn-danger" type="submit">
+                                                <i class="fa fa-trash"></i>Hapus</button>
                                         </form>
                                     </td>
                                 </tr>
