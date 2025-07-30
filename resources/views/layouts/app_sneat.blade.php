@@ -151,14 +151,14 @@
             <!-- Data User -->
             <li class="menu-item {{\Route::is('user.*') ? 'active':''}}">
               <a href="{{ route('user.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                <i class="menu-icon tf-icons bx bx-dock-top"></i>
                 <div data-i18n="Basic">Data User</div>
               </a>
             </li>
             <!-- Logout -->
             <li class="menu-item">
               <a href="{{ route('logout') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                <i class="menu-icon tf-icons bx bx-power-off me-2"></i>
                 <div data-i18n="Basic">Logout</div>
               </a>
             </li>
