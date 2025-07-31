@@ -4,15 +4,19 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-12">
+
         <div class="card">
-            <h5 class="card-header">Data User</h5>
+            <h5 class="card-header">{{ $title }}</h5>
 
             <div class="card-body">
-                {{-- Tombol tambah user --}}
-                <a href="{{ route('user.create') }}" class="btn btn-primary btn-sm mb-3">Tambah Data</a>
+
+                {{-- Tombol tambah --}}
+                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
+                    Tambah Data
+                </a>
 
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th>No</th>
@@ -23,6 +27,7 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
@@ -30,24 +35,30 @@
                                     <td>{{ $item->name }}</td>
                                     <td>{{ $item->nohp ?? '-' }}</td>
                                     <td>{{ $item->email }}</td>
-                                    <td>{{ $item->akses ?? '-' }}</td>
-                                    <td>
-                                        {{-- Tombol Edit --}}
-                                        <a href="{{ route('user.edit', $item->id) }}" class="btn btn-sm btn-warning">
-                                            <i class="fa fa-edit"></i>Edit</a>
+                                    <td>{{ ucfirst($item->akses) ?? '-' }}</td>
+                                    <td class="d-flex gap-1">
+                                        {{-- Edit --}}
+                                        <a href="{{ route($routePrefix . '.edit', $item->id) }}" class="btn btn-sm btn-warning">
+                                            <i class="fa fa-edit me-1"></i> Edit
+                                        </a>
 
-                                        {{-- Tombol Hapus --}}
-                                        <form action="{{ route('user.destroy', $item->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                        {{-- Hapus --}}
+                                        <form 
+                                            action="{{ route($routePrefix . '.destroy', $item->id) }}" 
+                                            method="POST" 
+                                            onsubmit="return confirm('Yakin ingin menghapus data ini?')"
+                                        >
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-sm btn-danger" type="submit">
-                                                <i class="fa fa-trash"></i>Hapus</button>
+                                                <i class="fa fa-trash me-1"></i> Hapus
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6">Data tidak ada!</td>
+                                    <td colspan="6" class="text-center">Data tidak tersedia.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -58,8 +69,10 @@
                         {!! $models->links() !!}
                     </div>
                 </div>
+
             </div>
         </div>
+
     </div>
 </div>
 @endsection

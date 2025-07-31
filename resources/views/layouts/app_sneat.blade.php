@@ -155,6 +155,13 @@
                 <div data-i18n="Basic">Data User</div>
               </a>
             </li>
+            <!-- Data Wali -->
+            <li class="menu-item {{\Route::is('wali.*') ? 'active':''}}">
+              <a href="{{ route('wali.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-dock-top"></i>
+                <div data-i18n="Basic">Data Wali Murid</div>
+              </a>
+            </li>
             <!-- Logout -->
             <li class="menu-item">
               <a href="{{ route('logout') }}" class="menu-link">
