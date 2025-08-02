@@ -2,85 +2,132 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreSiswaRequest;
-use App\Http\Requests\UpdateSiswaRequest;
-use App\Models\Siswa;
+use App\Models\Siswa as Model;
+use Illuminate\Http\Request;
 
+/**
+ * Controller untuk manajemen data Siswa.
+ * Dibuat oleh Umar Ulkhak
+ */
 class SiswaController extends Controller
 {
+    private string $viewPath    = 'operator.';
+    private string $routePrefix = 'siswa';
+
+    private string $viewIndex   = 'siswa_index';
+    private string $viewForm    = 'siswa_form';
+    private string $viewShow    = 'siswa_show'; // Disiapkan untuk kebutuhan mendatang
+
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Menampilkan daftar Siswa.
      */
     public function index()
     {
-        //
+        $models = Model::latest()
+            ->paginate(50);
+
+        return view($this->viewPath . $this->viewIndex, [
+            'models'      => $models,
+            'routePrefix' => $this->routePrefix,
+            'title'       => 'Data Siswa',
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Menampilkan form tambah Siswa.
      */
     public function create()
     {
-        //
+        return view($this->viewPath . $this->viewForm, [
+            'model'  => new Model(),
+            'method' => 'POST',
+            'route'  => $this->routePrefix . '.store',
+            'button' => 'SIMPAN',
+            'title'  => 'Form Data Wali Murid',
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StoreSiswaRequest  $request
-     * @return \Illuminate\Http\Response
+     * Menyimpan data Siswa baru ke database.
      */
-    public function store(StoreSiswaRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'nohp'     => 'required|string|unique:users,nohp',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $validated['password'] = bcrypt($validated['password']);
+        $validated['email_verified_at'] = now();
+        $validated['akses'] = 'wali';
+
+        Model::create($validated);
+
+        flash('Data berhasil disimpan')->success();
+        return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Siswa  $siswa
-     * @return \Illuminate\Http\Response
+     * Menampilkan form edit Siswa.
      */
-    public function show(Siswa $siswa)
+    public function edit($id)
     {
-        //
+        $user = Model::findOrFail($id);
+
+        return view($this->viewPath . $this->viewForm, [
+            'model'  => $user,
+            'method' => 'PUT',
+            'route'  => [$this->routePrefix . '.update', $user->id],
+            'button' => 'UPDATE',
+            'title'  => 'Form Data Wali Murid',
+        ]);
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Siswa  $siswa
-     * @return \Illuminate\Http\Response
+     * Memperbarui data Siswa.
      */
-    public function edit(Siswa $siswa)
+    public function update(Request $request, $id)
     {
-        //
+        $user = Model::findOrFail($id);
+
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'nohp'     => 'required|string|unique:users,nohp,' . $user->id,
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
+
+        flash('Data berhasil diperbarui')->success();
+        return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateSiswaRequest  $request
-     * @param  \App\Models\Siswa  $siswa
-     * @return \Illuminate\Http\Response
+     * Menghapus siswa berdasarkan ID.
      */
-    public function update(UpdateSiswaRequest $request, Siswa $siswa)
+    public function destroy($id)
     {
-        //
+        $user = Model::where('akses', 'wali')->findOrFail($id);
+        $user->delete();
+
+        flash('Data berhasil dihapus')->success();
+        return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Siswa  $siswa
-     * @return \Illuminate\Http\Response
+     * (Opsional) Menampilkan detail user.
      */
-    public function destroy(Siswa $siswa)
+    public function show($id)
     {
-        //
+        // Untuk kebutuhan mendatang
     }
 }

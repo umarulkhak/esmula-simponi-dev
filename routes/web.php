@@ -1,12 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WaliController;
+use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
-use App\Http\Controllers\WaliController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,7 @@ Route::prefix('operator')
         Route::get('beranda', [BerandaOperatorController::class, 'index'])->name('operator.beranda');
         Route::resource('user', UserController::class);
         Route::resource('wali', WaliController::class);
+        Route::resource('siswa', SiswaController::class);
     });
 
 // ============================
