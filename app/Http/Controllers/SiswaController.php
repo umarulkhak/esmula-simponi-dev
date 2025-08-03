@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Siswa as Model;
+use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Siswa as Model;
 
 /**
  * Controller untuk manajemen data Siswa.
@@ -43,7 +44,8 @@ class SiswaController extends Controller
             'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
-            'title'  => 'Form Data Wali Murid',
+            'title'  => 'Form Data Siswa',
+            'wali'   => User::where('akses', 'wali')->pluck('name','id')
         ]);
     }
 
@@ -81,7 +83,7 @@ class SiswaController extends Controller
             'method' => 'PUT',
             'route'  => [$this->routePrefix . '.update', $user->id],
             'button' => 'UPDATE',
-            'title'  => 'Form Data Wali Murid',
+            'title'  => 'Form Data Siswa',
         ]);
     }
 
