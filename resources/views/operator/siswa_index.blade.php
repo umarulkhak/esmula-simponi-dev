@@ -21,7 +21,7 @@
                             <tr>
                                 <th>No</th>
                                 <th>Nama Wali Murid</th>
-                                <th>Nama</th>
+                                <th>Nama Siswa</th>
                                 <th>NISN</th>
                                 <th>Kelas</th>
                                 <th>Angkatan</th>
