@@ -12,7 +12,7 @@
 
                 {{-- Tombol tambah --}}
                 <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
-                    Tambah Data
+                <i class="fa fa-plus me-1"></i> Tambah Data
                 </a>
 
                 <div class="table-responsive">
