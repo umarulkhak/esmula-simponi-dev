@@ -16,7 +16,7 @@
                 {{-- Wali Murid --}}
                 <div class="form-group mb-3">
                     <label for="wali_id">Wali Murid</label>
-                    {!! Form::select('wali_id', $wali, null, ['class' => 'form-control']) !!}
+                    {!! Form::select('wali_id', $wali, null, ['class' => 'form-control select2', 'placeholder' => '-- Pilih Wali Murid --']) !!}
                     <span class="text-danger">{{ $errors->first('wali_id') }}</span>
                 </div>
 

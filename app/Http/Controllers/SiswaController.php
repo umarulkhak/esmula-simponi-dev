@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Siswa as Model;
+use Auth;
 
 /**
  * Controller untuk manajemen data Siswa.
@@ -55,16 +56,25 @@ class SiswaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'nohp'     => 'required|string|unique:users,nohp',
-            'password' => 'required|string|min:6|confirmed',
+            'wali_id'  => 'nullable|exists:users,id',
+            'nama'     => 'required|string|max:255',
+            'nisn'     => 'required|digits:10|unique:siswas,nisn',
+            'kelas'    => 'required|string|max:10',
+            'angkatan' => 'required|integer|digits:4',
+            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
         ]);
 
-        $validated['password'] = bcrypt($validated['password']);
-        $validated['email_verified_at'] = now();
-        $validated['akses'] = 'wali';
+       // Upload foto jika ada
+        if ($request->hasFile('foto')) {
+            $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
+        }
 
+        //wali status
+        if ($request->filled('wali_id')) {
+            $validated['wali_status'] = 'ok';
+        }
+
+        $validated['user_id'] = auth()->user()->id;
         Model::create($validated);
 
         flash('Data berhasil disimpan')->success();

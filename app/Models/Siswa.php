@@ -9,6 +9,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Siswa extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'wali_id',
+        'wali_status',
+        'nama',
+        'nisn',
+        'kelas',
+        'angkatan',
+        'foto',
+        'user_id',
+    ];
     protected $quarted = [];
 
     /**
