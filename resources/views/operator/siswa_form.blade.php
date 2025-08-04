@@ -16,7 +16,10 @@
                 {{-- Wali Murid --}}
                 <div class="form-group mb-3">
                     <label for="wali_id">Wali Murid</label>
-                    {!! Form::select('wali_id', $wali, null, ['class' => 'form-control select2', 'placeholder' => '-- Pilih Wali Murid --']) !!}
+                    {!! Form::select('wali_id', $wali, null, [
+                        'class' => 'form-control select2',
+                        'placeholder' => '-- Pilih Wali Murid --'
+                    ]) !!}
                     <span class="text-danger">{{ $errors->first('wali_id') }}</span>
                 </div>
 
@@ -48,10 +51,21 @@
                     <span class="text-danger">{{ $errors->first('angkatan') }}</span>
                 </div>
 
+                {{-- Foto Preview --}}
+                <div class="form-group mb-3">
+                    <label>Preview Foto</label>
+                    <div class="border rounded p-2" style="max-width: 220px;">
+                        <img id="preview-foto"
+                             src="{{ $model->foto ? \Storage::url($model->foto) : 'https://via.placeholder.com/200x200?text=Foto' }}"
+                             alt="Foto Siswa"
+                             class="img-thumbnail w-100">
+                    </div>
+                </div>
+
                 {{-- Upload Foto --}}
                 <div class="form-group mb-3">
-                    <label for="foto">Foto <small class="text-muted">(Format: jpg, png &max; 5MB)</small></label>
-                    {!! Form::file('foto', ['class' => 'form-control', 'accept' => 'image/*']) !!}
+                    <label for="foto">Foto <small class="text-muted">(Format: jpg, png & max 5MB)</small></label>
+                    {!! Form::file('foto', ['class' => 'form-control', 'accept' => 'image/*', 'id' => 'foto-input']) !!}
                     <span class="text-danger">{{ $errors->first('foto') }}</span>
                 </div>
 
@@ -66,3 +80,18 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('foto-input').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                document.getElementById('preview-foto').src = evt.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+@endpush
