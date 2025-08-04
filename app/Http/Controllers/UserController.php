@@ -11,31 +11,31 @@ use Illuminate\Http\Request;
  */
 class UserController extends Controller
 {
-    // Konstanta view path untuk keperluan reusabilitas
     private string $viewPath = 'operator.';
     private string $routePrefix = 'user';
 
-    // View names
-    private string $viewIndex  = 'user_index';
-    private string $viewForm   = 'user_form';
-    private string $viewShow   = 'user_show'; // Disiapkan untuk kebutuhan mendatang
+    private string $viewIndex = 'user_index';
+    private string $viewForm  = 'user_form';
+    private string $viewShow  = 'user_show'; // Disiapkan untuk kebutuhan mendatang
 
     /**
-     * Menampilkan daftar user, kecuali yang memiliki akses 'wali'.
+     * Menampilkan daftar user (kecuali wali).
      */
     public function index()
     {
+        $users = Model::where('akses', '<>', 'wali')
+                    ->latest()
+                    ->paginate(50);
+
         return view($this->viewPath . $this->viewIndex, [
-                    'models' => Model::where('akses','<>', 'wali')
-                      ->latest()
-                      ->paginate(50),
-                      'routePrefix' => $this->routePrefix,
-                      'title' => 'Data User'
+            'models'      => $users,
+            'routePrefix' => $this->routePrefix,
+            'title'       => 'Data User',
         ]);
     }
 
     /**
-     * Menampilkan form untuk menambahkan user baru.
+     * Form tambah user.
      */
     public function create()
     {
@@ -44,16 +44,15 @@ class UserController extends Controller
             'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
-            'title'  => 'Form Data User'
+            'title'  => 'Form Data User',
         ]);
     }
 
     /**
-     * Menyimpan data user baru ke dalam database.
+     * Simpan user baru.
      */
     public function store(Request $request)
     {
-        // Validasi input user
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
@@ -62,11 +61,9 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        // Enkripsi password & tandai email terverifikasi
         $validated['password'] = bcrypt($validated['password']);
         $validated['email_verified_at'] = now();
 
-        // Simpan ke database
         Model::create($validated);
 
         flash('Data berhasil disimpan')->success();
@@ -74,15 +71,15 @@ class UserController extends Controller
     }
 
     /**
-     * (Opsional) Menampilkan detail user tertentu.
+     * (Opsional) Detail user.
      */
     public function show($id)
     {
-        // Disiapkan jika suatu saat ingin menampilkan detail pengguna
+        // Siapkan jika ingin menampilkan detail
     }
 
     /**
-     * Menampilkan form edit user berdasarkan ID.
+     * Form edit user.
      */
     public function edit($id)
     {
@@ -93,34 +90,31 @@ class UserController extends Controller
             'method' => 'PUT',
             'route'  => [$this->routePrefix . '.update', $user->id],
             'button' => 'UPDATE',
-            'title'  => 'Form Data User'
+            'title'  => 'Form Data User',
         ]);
     }
 
     /**
-     * Memperbarui data user berdasarkan ID.
+     * Update data user.
      */
     public function update(Request $request, $id)
     {
         $user = Model::findOrFail($id);
 
-        // Validasi input saat update
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'nohp'     => 'required|string|unique:users,nohp,' . $user->id,
             'akses'    => 'required|in:operator,admin,wali',
-            'password' => 'nullable|string|min:6',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
-        // Update password jika disediakan
         if (!empty($validated['password'])) {
             $validated['password'] = bcrypt($validated['password']);
         } else {
             unset($validated['password']);
         }
 
-        // Simpan perubahan
         $user->update($validated);
 
         flash('Data berhasil diperbarui')->success();
@@ -128,14 +122,12 @@ class UserController extends Controller
     }
 
     /**
-     * Menghapus user berdasarkan ID.
-     * Cegah penghapusan akun dengan email penting.
+     * Hapus user (kecuali akun penting).
      */
     public function destroy($id)
     {
         $user = Model::findOrFail($id);
 
-        // Cegah penghapusan akun penting
         if ($user->email === 'alkhak24@gmail.com') {
             flash('Akun ini tidak dapat dihapus.')->error();
             return redirect()->route($this->routePrefix . '.index');
