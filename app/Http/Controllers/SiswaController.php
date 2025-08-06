@@ -20,6 +20,7 @@ class SiswaController extends Controller
     private string $routePrefix = 'siswa';
     private string $viewIndex   = 'siswa_index';
     private string $viewForm    = 'siswa_form';
+    private string $viewShow    = 'siswa_show';
 
     /**
      * Menampilkan daftar siswa.
@@ -148,5 +149,20 @@ class SiswaController extends Controller
 
         flash('Data berhasil dihapus')->success();
         return redirect()->route($this->routePrefix . '.index');
+    }
+
+    /**
+     * Menampilkan detail siswa.
+     */
+    public function show($id)
+    {
+        $siswa = Model::findOrFail($id);
+
+        return view($this->viewPath . $this->viewShow, [
+            'model'        => $siswa,
+            'title'        => 'Detail Siswa',
+            'routePrefix'  => $this->routePrefix,
+        ]);
+
     }
 }

@@ -43,7 +43,10 @@
                                         <a href="{{ route($routePrefix . '.edit', $item->id) }}" class="btn btn-sm btn-warning">
                                             <i class="fa fa-edit me-1"></i> Edit
                                         </a>
-
+                                        {{-- Show --}}
+                                        <a href="{{ route($routePrefix . '.show', $item->id) }}" class="btn btn-sm btn-info">
+                                            <i class="fa fa-edit me-1"></i> Detail
+                                        </a>
                                         {{-- Hapus --}}
                                         <form 
                                             action="{{ route($routePrefix . '.destroy', $item->id) }}" 
