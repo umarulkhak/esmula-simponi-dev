@@ -69,10 +69,15 @@
           <div class="col-12 mb-3">
             <p class="form-label mb-1">Preview Foto</p>
             <div class="border rounded p-2" style="max-width: 220px;">
+              @php
+                $fotoPath = $model->foto && \Storage::exists($model->foto)
+                            ? \Storage::url($model->foto)
+                            : asset('images/no-image.png');
+              @endphp
               <img id="preview-foto"
-                   src="{{ $model->foto ? \Storage::url($model->foto) : 'https://via.placeholder.com/200x200?text=Foto' }}"
-                   alt="Foto Siswa"
-                   class="img-thumbnail w-100">
+                  src="{{ $fotoPath }}"
+                  alt="Foto Siswa"
+                  class="img-thumbnail w-100">
             </div>
           </div>
 
