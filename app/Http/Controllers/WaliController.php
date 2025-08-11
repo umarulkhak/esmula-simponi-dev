@@ -5,25 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\User as Model;
 use Illuminate\Http\Request;
 
-/**
- * Controller untuk manajemen data Wali Murid.
- * Dibuat oleh Umar Ulkhak
- */
 class WaliController extends Controller
 {
     private string $viewPath    = 'operator.';
     private string $routePrefix = 'wali';
 
-    private string $viewIndex   = 'user_index';
+    private string $viewIndex   = 'wali_index';
     private string $viewForm    = 'user_form';
-    private string $viewShow    = 'user_show'; // Disiapkan untuk kebutuhan mendatang
+    private string $viewShow    = 'wali_show';
 
     /**
      * Menampilkan daftar wali murid.
      */
     public function index()
     {
-        $models = Model::where('akses', 'wali')
+        $models = Model::wali()
             ->latest()
             ->paginate(50);
 
@@ -75,7 +71,7 @@ class WaliController extends Controller
      */
     public function edit($id)
     {
-        $user = Model::findOrFail($id);
+        $user = Model::wali()->findOrFail($id);
 
         return view($this->viewPath . $this->viewForm, [
             'model'  => $user,
@@ -91,7 +87,7 @@ class WaliController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = Model::findOrFail($id);
+        $user = Model::wali()->findOrFail($id);
 
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
@@ -117,7 +113,7 @@ class WaliController extends Controller
      */
     public function destroy($id)
     {
-        $user = Model::where('akses', 'wali')->findOrFail($id);
+        $user = Model::wali()->findOrFail($id);
         $user->delete();
 
         flash('Data berhasil dihapus')->success();
@@ -125,10 +121,15 @@ class WaliController extends Controller
     }
 
     /**
-     * (Opsional) Menampilkan detail user.
+     * Menampilkan detail Wali.
      */
     public function show($id)
     {
-        // Untuk kebutuhan mendatang
+        $model = Model::wali()->findOrFail($id);
+
+        return view($this->viewPath . $this->viewShow, [
+            'model' => $model,
+            'title' => 'Detail Data Wali'
+        ]);
     }
 }
