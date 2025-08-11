@@ -15,31 +15,52 @@
                         <table class="table table-bordered">
                             <tbody>
                                 <tr>
-                                    <th style="width: 30%;">ID</th>
+                                    <th class="table-light" style="width: 30%;">ID</th>
                                     <td>{{ $model->id }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Nama</th>
+                                    <th class="table-light">Nama</th>
                                     <td>{{ $model->name }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Email</th>
+                                    <th class="table-light">Email</th>
                                     <td>{{ $model->email }}</td>
                                 </tr>
                                 <tr>
-                                    <th>No HP</th>
+                                    <th class="table-light">No HP</th>
                                     <td>{{ $model->nohp }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Dibuat Pada</th>
+                                    <th class="table-light">Dibuat Pada</th>
                                     <td>{{ $model->created_at ? $model->created_at->format('d-m-Y H:i') : '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Diubah Terakhir</th>
+                                    <th class="table-light">Diubah Terakhir</th>
                                     <td>{{ $model->updated_at ? $model->updated_at->format('d-m-Y H:i') : '-' }}</td>
                                 </tr>
                             </tbody>
                         </table>
+
+                        {{-- Tambah Data Anak --}}
+                        <h5 class="mt-4">Tambah Data Anak</h5>
+                        {!! Form::open(['route' => 'walisiswa.store', 'method' => 'POST']) !!}
+                            {!! Form::hidden('wali_id', $model->id) !!}
+
+                            <div class="form-group">
+                                {!! Form::label('siswa_id', 'Pilih Data Siswa') !!}
+                                {!! Form::select('siswa_id', $siswa, null, [
+                                    'class' => 'form-control select2',
+                                    'id' => 'siswa_id',
+                                    'placeholder' => '-- Pilih Siswa --'
+                                ]) !!}
+                                <span class="text-danger">{{ $errors->first('siswa_id') }}</span>
+                            </div>
+
+                            {!! Form::button('<i class="fa-regular fa-floppy-disk"></i> Simpan', [
+                                'type' => 'submit',
+                                'class' => 'btn btn-primary my-2'
+                            ]) !!}
+                        {!! Form::close() !!}
 
                         {{-- Data Anak --}}
                         <h5 class="mt-4">Data Anak</h5>

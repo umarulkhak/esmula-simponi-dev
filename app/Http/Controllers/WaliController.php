@@ -125,10 +125,9 @@ class WaliController extends Controller
      */
     public function show($id)
     {
-        $model = Model::wali()->findOrFail($id);
-
         return view($this->viewPath . $this->viewShow, [
-            'model' => $model,
+            'siswa' => \App\Models\Siswa::whereNotIn('wali_id', [$id])->pluck('nama', 'id'),
+            'model' => Model::wali()->findOrFail($id),
             'title' => 'Detail Data Wali'
         ]);
     }
