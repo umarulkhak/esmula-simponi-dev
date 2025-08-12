@@ -64,43 +64,45 @@
 
                         {{-- Data Anak --}}
                         <h5 class="mt-4">Data Anak</h5>
-                        <table class="table table-bordered">
-                            <thead class="table-secondary">
-                                <tr>
-                                    <th class="w-10">No</th>
-                                    <th class="w-15">NISN</th>
-                                    <th>Nama</th>
-                                    <th class="w-20">Kelas</th>
-                                    <th class="w-20">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($model->siswa as $item)
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-secondary">
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $item->nisn }}</td>
-                                        <td>{{ $item->nama }}</td>
-                                        <td>{{ $item->kelas }}</td>
-                                        <td>
-                                            {!! Form::open([
-                                                'route' => ['walisiswa.update', $item->id],
-                                                'method' => 'PUT',
-                                                'onsubmit' => 'return confirm("Yakin ingin menghapus data ini?")',
-                                                'class' => 'd-inline'
-                                            ]) !!}
-                                                <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="fa fa-trash"></i> Hapus
-                                                </button>
-                                            {!! Form::close() !!}
-                                        </td>
+                                        <th class="w-10">No</th>
+                                        <th class="w-15">NISN</th>
+                                        <th>Nama</th>
+                                        <th class="w-20">Kelas</th>
+                                        <th class="w-20">Aksi</th>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center">Belum ada data anak</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @forelse ($model->siswa as $item)
+                                        <tr>
+                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $item->nisn }}</td>
+                                            <td>{{ $item->nama }}</td>
+                                            <td>{{ $item->kelas }}</td>
+                                            <td>
+                                                {!! Form::open([
+                                                    'route' => ['walisiswa.update', $item->id],
+                                                    'method' => 'PUT',
+                                                    'onsubmit' => 'return confirm("Yakin ingin menghapus data ini?")',
+                                                    'class' => 'd-inline'
+                                                ]) !!}
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fa fa-trash"></i> Hapus
+                                                    </button>
+                                                {!! Form::close() !!}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center">Belum ada data anak</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
 
                         {{-- Tombol Kembali --}}
                         <a href="{{ url()->previous() }}" class="btn btn-dark btn-sm mt-3">
