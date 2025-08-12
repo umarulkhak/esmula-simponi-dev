@@ -103,7 +103,7 @@
                         </table>
 
                         {{-- Tombol Kembali --}}
-                        <a href="{{ url()->previous() }}" class="btn btn-dark mt-3">
+                        <a href="{{ url()->previous() }}" class="btn btn-dark btn-sm mt-3">
                             <i class="fa fa-arrow-left me-1"></i> Kembali
                         </a>
                     </div>

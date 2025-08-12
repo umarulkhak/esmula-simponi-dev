@@ -17,8 +17,8 @@
                 ? Storage::url($model->foto)
                 : asset('images/no-image.png');
         @endphp
-        <img 
-            src="{{ $fotoPath }}" 
+        <img
+            src="{{ $fotoPath }}"
             alt="Foto Siswa"
             class="img-thumbnail"
             style="max-width: 100%; max-height: 250px;">
@@ -77,7 +77,7 @@
               </tbody>
             </table>
 
-            <a href="{{ route($routePrefix . '.index') }}" class="btn btn-dark mt-3">
+            <a href="{{ route($routePrefix . '.index') }}" class="btn btn-dark btn-sm mt-3">
               <i class="fa fa-arrow-left me-1"></i> Kembali
             </a>
           </div>
