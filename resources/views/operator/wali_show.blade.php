@@ -3,19 +3,19 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-12">
-        
+
         <div class="card">
             <h5 class="card-header">{{ $title ?? 'Detail Wali Murid' }}</h5>
 
             <div class="card-body">
                 <div class="row">
-                    
+
                     {{-- Detail Data Wali --}}
                     <div class="col-md-8">
                         <table class="table table-bordered">
                             <tbody>
                                 <tr>
-                                    <th class="table-light" style="width: 30%;">ID</th>
+                                    <th class="table-light w-30">ID</th>
                                     <td>{{ $model->id }}</td>
                                 </tr>
                                 <tr>
@@ -32,11 +32,11 @@
                                 </tr>
                                 <tr>
                                     <th class="table-light">Dibuat Pada</th>
-                                    <td>{{ $model->created_at ? $model->created_at->format('d-m-Y H:i') : '-' }}</td>
+                                    <td>{{ optional($model->created_at)->format('d-m-Y H:i') ?? '-' }}</td>
                                 </tr>
                                 <tr>
                                     <th class="table-light">Diubah Terakhir</th>
-                                    <td>{{ $model->updated_at ? $model->updated_at->format('d-m-Y H:i') : '-' }}</td>
+                                    <td>{{ optional($model->updated_at)->format('d-m-Y H:i') ?? '-' }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -67,9 +67,11 @@
                         <table class="table table-bordered">
                             <thead class="table-secondary">
                                 <tr>
-                                    <th style="width: 10%">No</th>
-                                    <th style="width: 30%">NISN</th>
+                                    <th class="w-10">No</th>
+                                    <th class="w-15">NISN</th>
                                     <th>Nama</th>
+                                    <th class="w-20">Kelas</th>
+                                    <th class="w-20">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -78,10 +80,23 @@
                                         <td>{{ $loop->iteration }}</td>
                                         <td>{{ $item->nisn }}</td>
                                         <td>{{ $item->nama }}</td>
+                                        <td>{{ $item->kelas }}</td>
+                                        <td>
+                                            {!! Form::open([
+                                                'route' => ['walisiswa.update', $item->id],
+                                                'method' => 'PUT',
+                                                'onsubmit' => 'return confirm("Yakin ingin menghapus data ini?")',
+                                                'class' => 'd-inline'
+                                            ]) !!}
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fa fa-trash"></i> Hapus
+                                                </button>
+                                            {!! Form::close() !!}
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center">Belum ada data anak</td>
+                                        <td colspan="5" class="text-center">Belum ada data anak</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -92,7 +107,7 @@
                             <i class="fa fa-arrow-left me-1"></i> Kembali
                         </a>
                     </div>
-                    
+
                 </div>
             </div>
         </div>
