@@ -57,7 +57,7 @@ class UserController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'nohp'     => 'required|string|unique:users,nohp',
-            'akses'    => 'required|in:operator,admin',
+            'akses'    => 'required|in:operator,admin,wali',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
