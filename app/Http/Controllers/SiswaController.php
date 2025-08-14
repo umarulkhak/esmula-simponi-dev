@@ -29,7 +29,7 @@ class SiswaController extends Controller
     {
         $models = $request->filled('q')
             ? Model::search($request->q)->paginate(50)
-            : Model::latest()->paginate(50);
+            : Model::with('wali', 'user')->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,

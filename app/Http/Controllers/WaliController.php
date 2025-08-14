@@ -152,7 +152,7 @@ class WaliController extends Controller
     {
         return view($this->viewPath . $this->viewShow, [
             'siswa' => \App\Models\Siswa::whereNull('wali_id')->pluck('nama', 'id'),
-            'model' => Model::wali()->findOrFail($id),
+            'model' => Model::with('siswa')->wali()->findOrFail($id),
             'title' => 'Detail Data Wali'
         ]);
     }
