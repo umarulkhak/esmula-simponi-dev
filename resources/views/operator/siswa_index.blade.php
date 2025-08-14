@@ -4,17 +4,32 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-12">
-
         <div class="card">
             <h5 class="card-header">{{ $title }}</h5>
-
             <div class="card-body">
 
                 {{-- Tombol tambah --}}
                 <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
-                <i class="fa fa-plus me-1"></i> Tambah Data
+                    <i class="fa fa-plus me-1"></i> Tambah Data
                 </a>
 
+                {{-- Form pencarian --}}
+                {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
+                    <div class="input-group mb-3">
+                        <input
+                            type="text"
+                            name="q"
+                            class="form-control"
+                            placeholder="Cari Nama Siswa"
+                            value="{{ request('q') }}"
+                        >
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="bx bx-search"></i>
+                        </button>
+                    </div>
+                {!! Form::close() !!}
+
+                {{-- Tabel data --}}
                 <div class="table-responsive">
                     <table class="table table-striped align-middle">
                         <thead>
@@ -28,7 +43,6 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
@@ -40,11 +54,11 @@
                                     <td>{{ $item->angkatan }}</td>
                                     <td class="d-flex gap-1">
                                         {{-- Edit --}}
-                                        <a href="{{ route($routePrefix . '.edit', $item->id) }}" class="btn btn-sm btn-warning">
+                                        <a href="{{ route($routePrefix . '.edit', $item->id) }}" class="btn btn-warning btn-sm">
                                             <i class="fa fa-edit me-1"></i> Edit
                                         </a>
-                                        {{-- Show --}}
-                                        <a href="{{ route($routePrefix . '.show', $item->id) }}" class="btn btn-sm btn-info">
+                                        {{-- Detail --}}
+                                        <a href="{{ route($routePrefix . '.show', $item->id) }}" class="btn btn-info btn-sm">
                                             <i class="fa fa-info me-1"></i> Detail
                                         </a>
                                         {{-- Hapus --}}
@@ -55,7 +69,7 @@
                                         >
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" type="submit">
+                                            <button type="submit" class="btn btn-danger btn-sm">
                                                 <i class="fa fa-trash me-1"></i> Hapus
                                             </button>
                                         </form>
@@ -63,21 +77,20 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center">Data tidak tersedia.</td>
+                                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
 
-                    {{-- Pagination --}}
-                    <div class="mt-3">
-                        {!! $models->links() !!}
-                    </div>
+                {{-- Pagination --}}
+                <div class="mt-3">
+                    {!! $models->links() !!}
                 </div>
 
             </div>
         </div>
-
     </div>
 </div>
 @endsection

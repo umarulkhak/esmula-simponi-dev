@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Siswa as Model;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Siswa as Model;
-use App\Models\User;
 
 /**
  * Controller untuk manajemen data Siswa.
@@ -25,9 +25,11 @@ class SiswaController extends Controller
     /**
      * Menampilkan daftar siswa.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $models = Model::latest()->paginate(50);
+        $models = $request->filled('q')
+            ? Model::search($request->q)->paginate(50)
+            : Model::latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -47,7 +49,7 @@ class SiswaController extends Controller
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
             'title'  => 'Form Data Siswa',
-            'wali'   => User::where('akses', 'wali')->pluck('name', 'id'),
+            'wali'   => $this->getWaliOptions(),
         ]);
     }
 
@@ -56,14 +58,7 @@ class SiswaController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'wali_id'  => 'nullable|exists:users,id',
-            'nama'     => 'required|string|max:255',
-            'nisn'     => 'required|digits:10|unique:siswas,nisn',
-            'kelas'    => 'required|string|max:10',
-            'angkatan' => 'required|integer|digits:4',
-            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
-        ]);
+        $validated = $this->validateData($request);
 
         if ($request->hasFile('foto')) {
             $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
@@ -94,7 +89,7 @@ class SiswaController extends Controller
             'route'  => [$this->routePrefix . '.update', $siswa->id],
             'button' => 'UPDATE',
             'title'  => 'Form Data Siswa',
-            'wali'   => User::where('akses', 'wali')->pluck('name', 'id'),
+            'wali'   => $this->getWaliOptions(),
         ]);
     }
 
@@ -105,20 +100,10 @@ class SiswaController extends Controller
     {
         $siswa = Model::findOrFail($id);
 
-        $validated = $request->validate([
-            'wali_id'  => 'nullable|exists:users,id',
-            'nama'     => 'required|string|max:255',
-            'nisn'     => "required|digits:10|unique:siswas,nisn,{$id}",
-            'kelas'    => 'required|string|max:10',
-            'angkatan' => 'required|integer|digits:4',
-            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
-        ]);
+        $validated = $this->validateData($request, $id);
 
         if ($request->hasFile('foto')) {
-            if (!empty($siswa->foto) && Storage::exists($siswa->foto)) {
-                Storage::delete($siswa->foto);
-            }
-
+            $this->deleteFotoIfExists($siswa->foto);
             $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
         }
 
@@ -141,10 +126,7 @@ class SiswaController extends Controller
     {
         $siswa = Model::findOrFail($id);
 
-        if (!empty($siswa->foto) && Storage::exists($siswa->foto)) {
-            Storage::delete($siswa->foto);
-        }
-
+        $this->deleteFotoIfExists($siswa->foto);
         $siswa->delete();
 
         flash('Data berhasil dihapus')->success();
@@ -154,15 +136,51 @@ class SiswaController extends Controller
     /**
      * Menampilkan detail siswa.
      */
-    public function show($id)
+    public function show(int $id)
     {
         $siswa = Model::findOrFail($id);
 
         return view($this->viewPath . $this->viewShow, [
-            'model'        => $siswa,
-            'title'        => 'Detail Siswa',
-            'routePrefix'  => $this->routePrefix,
+            'model'       => $siswa,
+            'title'       => 'Detail Siswa',
+            'routePrefix' => $this->routePrefix,
         ]);
+    }
 
+    /**
+     * Ambil daftar wali murid untuk dropdown.
+     */
+    private function getWaliOptions()
+    {
+        return User::where('akses', 'wali')->pluck('name', 'id');
+    }
+
+    /**
+     * Validasi input siswa.
+     */
+    private function validateData(Request $request, ?int $id = null): array
+    {
+        return $request->validate([
+            'wali_id'  => 'nullable|exists:users,id',
+            'nama'     => 'required|string|max:255',
+            'nisn'     => [
+                'required',
+                'digits:10',
+                'unique:siswas,nisn' . ($id ? ',' . $id : ''),
+            ],
+            'kelas'    => 'required|string|max:10',
+            'angkatan' => 'required|integer|digits:4',
+            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
+        ]);
+    }
+
+    /**
+     * Hapus foto siswa jika ada.
+     */
+    private function deleteFotoIfExists(?string $path): void
+    {
+        if (!empty($path) && Storage::exists($path)) {
+            Storage::delete($path);
+        }
     }
 }
