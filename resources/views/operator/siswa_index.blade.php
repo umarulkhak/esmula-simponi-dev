@@ -40,7 +40,7 @@
                                 <th>NISN</th>
                                 <th>Kelas</th>
                                 <th>Angkatan</th>
-                                <th>Created By</th>
+                                <th>Dibuat</th>
                                 <th class="text-center" style="width: 180px;">Aksi</th>
                             </tr>
                         </thead>
@@ -56,26 +56,32 @@
                                     <td>{{ $item->user->name }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
-                                            {{-- Edit --}}
-                                            <a href="{{ route($routePrefix . '.edit', $item->id) }}" class="btn btn-warning btn-sm">
-                                                <i class="fa fa-edit me-1"></i> Edit
+
+                                            <a href="{{ route($routePrefix . '.edit', $item->id) }}"
+                                               class="btn btn-warning btn-sm d-flex align-items-center gap-1">
+                                                <i class="fa fa-edit"></i>
+                                                <span>Edit</span>
                                             </a>
-                                            {{-- Detail --}}
-                                            <a href="{{ route($routePrefix . '.show', $item->id) }}" class="btn btn-info btn-sm">
-                                                <i class="fa fa-info me-1"></i> Detail
+
+                                            <a href="{{ route($routePrefix . '.show', $item->id) }}"
+                                               class="btn btn-info btn-sm d-flex align-items-center gap-1">
+                                                <i class="fa fa-info"></i>
+                                                <span>Detail</span>
                                             </a>
-                                            {{-- Hapus --}}
-                                            <form
-                                                action="{{ route($routePrefix . '.destroy', $item->id) }}"
-                                                method="POST"
-                                                onsubmit="return confirm('Yakin ingin menghapus data ini?')"
-                                            >
+
+                                            <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
+                                                  method="POST"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="fa fa-trash me-1"></i> Hapus
+                                                <button type="submit"
+                                                        class="btn btn-danger btn-sm d-flex align-items-center gap-1">
+                                                    <i class="fa fa-trash"></i>
+                                                    <span>Hapus</span>
                                                 </button>
                                             </form>
+
                                         </div>
                                     </td>
                                 </tr>

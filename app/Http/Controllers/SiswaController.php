@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Siswa as Model;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Siswa as Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreSiswaRequest;
+use App\Http\Requests\UpdateSiswaRequest;
 
 /**
  * Controller untuk manajemen data Siswa.
@@ -56,9 +58,9 @@ class SiswaController extends Controller
     /**
      * Menyimpan data siswa baru.
      */
-    public function store(Request $request)
+    public function store(StoreSiswaRequest $request)
     {
-        $validated = $this->validateData($request);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto')) {
             $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
@@ -96,11 +98,10 @@ class SiswaController extends Controller
     /**
      * Memperbarui data siswa.
      */
-    public function update(Request $request, int $id)
+    public function update(UpdateSiswaRequest $request, int $id)
     {
         $siswa = Model::findOrFail($id);
-
-        $validated = $this->validateData($request, $id);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto')) {
             $this->deleteFotoIfExists($siswa->foto);
@@ -153,25 +154,6 @@ class SiswaController extends Controller
     private function getWaliOptions()
     {
         return User::where('akses', 'wali')->pluck('name', 'id');
-    }
-
-    /**
-     * Validasi input siswa.
-     */
-    private function validateData(Request $request, ?int $id = null): array
-    {
-        return $request->validate([
-            'wali_id'  => 'nullable|exists:users,id',
-            'nama'     => 'required|string|max:255',
-            'nisn'     => [
-                'required',
-                'digits:10',
-                'unique:siswas,nisn' . ($id ? ',' . $id : ''),
-            ],
-            'kelas'    => 'required|string|max:10',
-            'angkatan' => 'required|integer|digits:4',
-            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
-        ]);
     }
 
     /**

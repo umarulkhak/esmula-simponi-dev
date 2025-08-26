@@ -3,28 +3,30 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSiswaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
+    public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
-     */
-    public function rules()
+    public function rules(): array
     {
+        $id = $this->route('siswa'); // ambil ID dari route parameter
+
         return [
-            //
+            'wali_id'  => 'nullable|exists:users,id',
+            'nama'     => 'required|string|max:255',
+            'nisn'     => [
+                'required',
+                'digits:10',
+                Rule::unique('siswas', 'nisn')->ignore($id),
+            ],
+            'kelas'    => 'required|string|max:10',
+            'angkatan' => 'required|integer|digits:4',
+            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:5000',
         ];
     }
 }
