@@ -113,6 +113,13 @@
                 <div data-i18n="Basic">Data Wali Murid</div>
               </a>
             </li>
+            <!-- Data Biaya -->
+            <li class="menu-item {{\Route::is('biaya.*') ? 'active':''}}">
+              <a href="{{ route('biaya.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-dock-top"></i>
+                <div data-i18n="Basic">Data Biaya</div>
+              </a>
+            </li>
             <!-- Data Siswa -->
             <li class="menu-item {{\Route::is('siswa.*') ? 'active':''}}">
               <a href="{{ route('siswa.index') }}" class="menu-link">
@@ -252,7 +259,7 @@
                 </div>
               @endif
               @include('flash::message')
-              @yield('content') 
+              @yield('content')
             </div>
             <!-- / Content -->
 
