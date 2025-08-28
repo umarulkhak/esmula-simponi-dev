@@ -49,7 +49,7 @@
                                         {{ $loop->iteration + ($models->firstItem() - 1) }}
                                     </td>
                                     <td>{{ $item->nama }}</td>
-                                    <td>Rp {{ number_format($item->jumlah, 0, ',', '.') }}</td>
+                                    <td>{{ formatRupiah($item->jumlah) }}</td>
                                     <td>{{ $item->user->name ?? '-' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
