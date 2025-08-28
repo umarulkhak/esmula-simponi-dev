@@ -5,8 +5,12 @@
 <div class="row justify-content-center">
   <div class="col-md-12">
     <div class="card">
+
+      {{-- Judul Form --}}
       <h5 class="card-header">{{ $title }}</h5>
+
       <div class="card-body">
+        {{-- Form menggunakan Form::model agar bisa dipakai untuk create & edit --}}
         {!! Form::model($model, [
           'route'  => $route,
           'method' => $method,
@@ -14,9 +18,10 @@
 
         <div class="row">
 
-          {{-- Nama Biaya --}}
+          {{-- Input: Nama Biaya --}}
           <div class="col-12 mb-3">
             <label for="nama" class="form-label">Nama Biaya</label>
+
             {!! Form::text('nama', old('nama', $model->nama ?? null), [
               'class'       => 'form-control',
               'id'          => 'nama',
@@ -24,28 +29,32 @@
               'required'    => true,
               'autofocus'   => true,
             ]) !!}
+
+            {{-- Validasi error --}}
             @error('nama')
               <span class="text-danger">{{ $message }}</span>
             @enderror
           </div>
 
-          {{-- Jumlah --}}
+          {{-- Input: Jumlah / Nominal --}}
           <div class="col-12 mb-3">
             <label for="jumlah" class="form-label">Jumlah / Nominal</label>
-            {!! Form::number('jumlah', old('jumlah', $model->jumlah ?? null), [
-              'class'       => 'form-control',
+
+            {!! Form::text('jumlah', old('jumlah', $model->jumlah ?? null), [
+              'class'       => 'form-control rupiah',
               'id'          => 'jumlah',
-              'placeholder' => 'Masukkan jumlah / nominal biaya',
+              'placeholder' => 'Masukkan jumlah biaya',
               'required'    => true,
-              'min'         => 0,
             ]) !!}
+
+            {{-- Validasi error --}}
             @error('jumlah')
               <span class="text-danger">{{ $message }}</span>
             @enderror
           </div>
         </div>
 
-        {{-- Tombol Submit --}}
+        {{-- Tombol Aksi --}}
         <div class="form-group mt-4">
           {!! Form::submit($button, ['class' => 'btn btn-primary']) !!}
           <a href="{{ route('biaya.index') }}" class="btn btn-secondary">Batal</a>
