@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Request untuk validasi update data Biaya.
@@ -11,8 +12,6 @@ class UpdateBiayaRequest extends FormRequest
 {
     /**
      * Menentukan apakah user diizinkan melakukan request ini.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -28,17 +27,26 @@ class UpdateBiayaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Nama wajib, unik di tabel 'biayas'
-            // Kecuali untuk record saat ini (supaya tidak bentrok dengan dirinya sendiri)
-            'nama'   => 'required|unique:biayas,nama,' . $this->biaya,
-
-            // Jumlah wajib diisi
-            'jumlah' => 'required',
+            'nama' => [
+                'required',
+                Rule::unique('biayas', 'nama')->ignore($this->biaya),
+            ],
+            'jumlah' => ['required', 'numeric'],
         ];
     }
 
     /**
-     * Pesan error kustom untuk validasi (opsional).
+     * Normalisasi input sebelum divalidasi.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'jumlah' => $this->jumlah ? str_replace('.', '', $this->jumlah) : null,
+        ]);
+    }
+
+    /**
+     * Pesan error kustom untuk validasi.
      *
      * @return array<string, string>
      */
@@ -48,6 +56,7 @@ class UpdateBiayaRequest extends FormRequest
             'nama.required'   => 'Nama biaya wajib diisi.',
             'nama.unique'     => 'Nama biaya sudah digunakan.',
             'jumlah.required' => 'Jumlah biaya wajib diisi.',
+            'jumlah.numeric'  => 'Jumlah biaya harus berupa angka.',
         ];
     }
 }

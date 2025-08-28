@@ -6,8 +6,6 @@ use App\Http\Requests\StoreBiayaRequest;
 use App\Http\Requests\UpdateBiayaRequest;
 use App\Models\Biaya as Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Controller untuk manajemen data Biaya.
@@ -20,17 +18,17 @@ use Illuminate\Support\Facades\Storage;
 class BiayaController extends Controller
 {
     /**
-     * Path view blade yang digunakan
+     * Path view blade yang digunakan.
      */
     private string $viewPath = 'operator.';
 
     /**
-     * Prefix route yang digunakan
+     * Prefix route yang digunakan.
      */
     private string $routePrefix = 'biaya';
 
     /**
-     * Nama file view untuk index, form, dan show
+     * Nama file view untuk index, form, dan show.
      */
     private string $viewIndex = 'biaya_index';
     private string $viewForm  = 'biaya_form';
@@ -43,8 +41,8 @@ class BiayaController extends Controller
     public function index(Request $request)
     {
         $models = $request->filled('q')
-            ? Model::search($request->q)->paginate(50) // Jika ada pencarian
-            : Model::with('user')->latest()->paginate(50); // Default tampilkan terbaru
+            ? Model::search($request->q)->paginate(50)
+            : Model::with('user')->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -59,8 +57,8 @@ class BiayaController extends Controller
     public function create()
     {
         return view($this->viewPath . $this->viewForm, [
-            'model'  => new Model(),              // Model kosong untuk create
-            'method' => 'POST',                   // HTTP Method
+            'model'  => new Model(),
+            'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
             'title'  => 'Form Data Biaya',
@@ -72,10 +70,7 @@ class BiayaController extends Controller
      */
     public function store(StoreBiayaRequest $request)
     {
-        $validated = $request->validated();
-        $validated['user_id'] = Auth::id(); // Simpan ID user yang input
-
-        Model::create($validated);
+        Model::create($request->validated());
 
         flash('Data berhasil disimpan')->success();
 
@@ -85,10 +80,8 @@ class BiayaController extends Controller
     /**
      * Menampilkan form edit Biaya.
      */
-    public function edit(int $id)
+    public function edit(Model $biaya)
     {
-        $biaya = Model::findOrFail($id);
-
         return view($this->viewPath . $this->viewForm, [
             'model'  => $biaya,
             'method' => 'PUT',
@@ -101,14 +94,9 @@ class BiayaController extends Controller
     /**
      * Memperbarui data Biaya.
      */
-    public function update(UpdateBiayaRequest $request, int $id)
+    public function update(UpdateBiayaRequest $request, Model $biaya)
     {
-        $biaya = Model::findOrFail($id);
-
-        $validated = $request->validated();
-        $validated['user_id'] = Auth::id(); // Update siapa yang mengedit
-
-        $biaya->update($validated);
+        $biaya->update($request->validated());
 
         flash('Data berhasil diperbarui')->success();
 
@@ -118,13 +106,8 @@ class BiayaController extends Controller
     /**
      * Menghapus data Biaya.
      */
-    public function destroy(int $id)
+    public function destroy(Model $biaya)
     {
-        $biaya = Model::findOrFail($id);
-
-        // Hapus foto jika ada
-        $this->deleteFotoIfExists($biaya->foto);
-
         $biaya->delete();
 
         flash('Data berhasil dihapus')->success();
@@ -135,24 +118,12 @@ class BiayaController extends Controller
     /**
      * Menampilkan detail Biaya.
      */
-    public function show(int $id)
+    public function show(Model $biaya)
     {
-        $biaya = Model::findOrFail($id);
-
         return view($this->viewPath . $this->viewShow, [
             'model'       => $biaya,
             'title'       => 'Detail Biaya',
             'routePrefix' => $this->routePrefix,
         ]);
-    }
-
-    /**
-     * Hapus file foto jika ada di storage.
-     */
-    private function deleteFotoIfExists(?string $path): void
-    {
-        if ($path && Storage::exists($path)) {
-            Storage::delete($path);
-        }
     }
 }

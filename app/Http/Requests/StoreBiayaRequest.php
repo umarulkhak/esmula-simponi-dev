@@ -11,13 +11,11 @@ class StoreBiayaRequest extends FormRequest
 {
     /**
      * Menentukan apakah user diizinkan melakukan request ini.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
-        // Untuk sekarang semua user diizinkan.
-        // Bisa diubah sesuai kebutuhan (misal cek role/permission).
+        // Untuk saat ini semua user diizinkan.
+        // Ubah sesuai kebutuhan (misalnya cek role/permission).
         return true;
     }
 
@@ -29,16 +27,23 @@ class StoreBiayaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Nama biaya wajib diisi & harus unik di tabel 'biayas'
-            'nama'   => 'required|unique:biayas,nama',
-
-            // Jumlah wajib diisi (bisa tambahkan rule numeric kalau perlu)
-            'jumlah' => 'required',
+            'nama'   => ['required', 'unique:biayas,nama'],
+            'jumlah' => ['required', 'numeric'],
         ];
     }
 
     /**
-     * Pesan error kustom untuk validasi (opsional).
+     * Normalisasi input sebelum divalidasi.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'jumlah' => $this->jumlah ? str_replace('.', '', $this->jumlah) : null,
+        ]);
+    }
+
+    /**
+     * Pesan error kustom untuk validasi.
      *
      * @return array<string, string>
      */
@@ -48,6 +53,7 @@ class StoreBiayaRequest extends FormRequest
             'nama.required'   => 'Nama biaya wajib diisi.',
             'nama.unique'     => 'Nama biaya sudah digunakan.',
             'jumlah.required' => 'Jumlah biaya wajib diisi.',
+            'jumlah.numeric'  => 'Jumlah biaya harus berupa angka.',
         ];
     }
 }

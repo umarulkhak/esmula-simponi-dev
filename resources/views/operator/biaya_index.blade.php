@@ -15,8 +15,8 @@
                 </a>
 
                 {{-- Form Pencarian --}}
-                {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
-                    <div class="input-group mb-3">
+                {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET', 'class' => 'mb-3']) !!}
+                    <div class="input-group">
                         <input
                             type="text"
                             name="q"
@@ -50,7 +50,7 @@
                                     </td>
                                     <td>{{ $item->nama }}</td>
                                     <td>Rp {{ number_format($item->jumlah, 0, ',', '.') }}</td>
-                                    <td>{{ $item->user->name }}</td>
+                                    <td>{{ $item->user->name ?? '-' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
 

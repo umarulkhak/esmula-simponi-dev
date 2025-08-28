@@ -20,40 +20,35 @@
 
           {{-- Input: Nama Biaya --}}
           <div class="col-12 mb-3">
-            <label for="nama" class="form-label">Nama Biaya</label>
-
+            {!! Form::label('nama', 'Nama Biaya', ['class' => 'form-label']) !!}
             {!! Form::text('nama', old('nama', $model->nama ?? null), [
-              'class'       => 'form-control',
+              'class'       => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
               'id'          => 'nama',
               'placeholder' => 'Masukkan nama biaya',
               'autofocus'   => true,
             ]) !!}
-
-            {{-- Validasi error --}}
             @error('nama')
-              <span class="text-danger">{{ $message }}</span>
+              <div class="invalid-feedback">{{ $message }}</div>
             @enderror
           </div>
 
           {{-- Input: Jumlah / Nominal --}}
           <div class="col-12 mb-3">
-            <label for="jumlah" class="form-label">Jumlah / Nominal</label>
-
+            {!! Form::label('jumlah', 'Jumlah / Nominal', ['class' => 'form-label']) !!}
             {!! Form::text('jumlah', old('jumlah', $model->jumlah ?? null), [
-              'class'       => 'form-control rupiah',
+              'class'       => 'form-control rupiah' . ($errors->has('jumlah') ? ' is-invalid' : ''),
               'id'          => 'jumlah',
               'placeholder' => 'Masukkan jumlah biaya',
             ]) !!}
-
-            {{-- Validasi error --}}
             @error('jumlah')
-              <span class="text-danger">{{ $message }}</span>
+              <div class="invalid-feedback">{{ $message }}</div>
             @enderror
           </div>
+
         </div>
 
         {{-- Tombol Aksi --}}
-        <div class="form-group mt-4">
+        <div class="form-group mt-4 d-flex gap-2">
           {!! Form::submit($button, ['class' => 'btn btn-primary']) !!}
           <a href="{{ route('biaya.index') }}" class="btn btn-secondary">Batal</a>
         </div>
