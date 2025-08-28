@@ -26,7 +26,6 @@
               'class'       => 'form-control',
               'id'          => 'nama',
               'placeholder' => 'Masukkan nama biaya',
-              'required'    => true,
               'autofocus'   => true,
             ]) !!}
 
@@ -44,7 +43,6 @@
               'class'       => 'form-control rupiah',
               'id'          => 'jumlah',
               'placeholder' => 'Masukkan jumlah biaya',
-              'required'    => true,
             ]) !!}
 
             {{-- Validasi error --}}
