@@ -113,6 +113,13 @@
                 <div data-i18n="Basic">Data Wali Murid</div>
               </a>
             </li>
+            <!-- Data Siswa -->
+            <li class="menu-item {{\Route::is('siswa.*') ? 'active':''}}">
+              <a href="{{ route('siswa.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-dock-top"></i>
+                <div data-i18n="Basic">Data Siswa</div>
+              </a>
+            </li>
             <!-- Data Biaya -->
             <li class="menu-item {{\Route::is('biaya.*') ? 'active':''}}">
               <a href="{{ route('biaya.index') }}" class="menu-link">
@@ -120,11 +127,11 @@
                 <div data-i18n="Basic">Data Biaya</div>
               </a>
             </li>
-            <!-- Data Siswa -->
-            <li class="menu-item {{\Route::is('siswa.*') ? 'active':''}}">
-              <a href="{{ route('siswa.index') }}" class="menu-link">
+            <!-- Data Tagihan -->
+            <li class="menu-item {{\Route::is('tagihan.*') ? 'active':''}}">
+              <a href="{{ route('tagihan.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-dock-top"></i>
-                <div data-i18n="Basic">Data Siswa</div>
+                <div data-i18n="Basic">Data Tagihan</div>
               </a>
             </li>
             <!-- Logout -->
@@ -234,7 +241,7 @@
                       <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="auth-login-basic.html">
+                      <a class="dropdown-item" href="{{ route('logout') }}">
                         <i class="bx bx-power-off me-2"></i>
                         <span class="align-middle">Log Out</span>
                       </a>

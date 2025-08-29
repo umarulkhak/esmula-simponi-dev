@@ -10,6 +10,7 @@ use App\Http\Controllers\WaliSiswaController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
 use App\Http\Controllers\BiayaController;
+use App\Http\Controllers\TagihanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,7 @@ Route::prefix('operator')
         Route::resource('siswa', SiswaController::class);
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);
+        Route::resource('tagihan', TagihanController::class);
     });
 
 // ============================
