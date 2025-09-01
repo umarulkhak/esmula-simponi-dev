@@ -10,13 +10,39 @@
       <h5 class="card-header">{{ $title }}</h5>
 
       <div class="card-body">
-        {{-- Form menggunakan Form::model agar bisa dipakai untuk create & edit --}}
-        {!! Form::model($model, [
-            'route'  => $route,
-            'method' => $method,
-        ]) !!}
+        {{-- Form create & edit --}}
+        {!! Form::model($model, ['route' => $route, 'method' => $method]) !!}
 
         <div class="row">
+
+          {{-- Biaya --}}
+          <div class="col-12 mb-3">
+            <label class="form-label fw-bold">Biaya Yang Ditagihkan</label>
+            <div class="row">
+              @foreach($biaya as $id => $nama)
+                <div class="col-md-4 mb-3">
+                  <label for="biaya_{{ $id }}"
+                         class="card h-100 shadow-sm biaya-card cursor-pointer">
+                    <div class="card-body d-flex align-items-center">
+                      <div class="form-check m-0">
+                        {!! Form::checkbox(
+                            'biaya_id[]',
+                            $id,
+                            in_array($id, old('biaya_id', $model->biaya_id ?? [])),
+                            ['class' => 'form-check-input me-2', 'id' => 'biaya_'.$id]
+                        ) !!}
+                        <span class="form-check-label">{{ $nama }}</span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              @endforeach
+            </div>
+
+            @error('biaya_id')
+              <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+          </div>
 
           {{-- Angkatan --}}
           <div class="col-md-6 mb-3">
@@ -87,7 +113,7 @@
             @enderror
           </div>
 
-          {{-- Keterangan (Full width) --}}
+          {{-- Keterangan --}}
           <div class="col-12 mb-3">
             {!! Form::label('keterangan', 'Keterangan', ['class' => 'form-label']) !!}
             {!! Form::textarea(
@@ -103,11 +129,10 @@
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
           </div>
-
         </div>
 
         {{-- Tombol Aksi --}}
-        <div class="form-group mt-4 d-flex gap-2">
+        <div class="mt-4 d-flex gap-2">
           {!! Form::submit($button, ['class' => 'btn btn-primary']) !!}
           <a href="{{ route('tagihan.index') }}" class="btn btn-secondary">Batal</a>
         </div>
@@ -118,3 +143,34 @@
   </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+  .biaya-card {
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    background-color: #fff;
+  }
+  .biaya-card:hover {
+    border-color: #0d6efd;
+    background-color: #f0f6ff;
+    box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
+  }
+  .biaya-card .form-check-input {
+    display: none;
+  }
+  .biaya-card input[type="checkbox"]:checked ~ .form-check-label {
+    font-weight: 600;
+    color: #fff;
+    background-color: #0d6efd;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.4rem;
+    display: inline-block;
+  }
+  .biaya-card input[type="checkbox"]:checked ~ .form-check-label::before {
+    content: "✓ ";
+  }
+</style>
+@endpush

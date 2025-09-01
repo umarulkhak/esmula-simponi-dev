@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreTagihanRequest;
-use App\Http\Requests\UpdateTagihanRequest;
+use App\Models\Biaya;
 use App\Models\Siswa;
 use App\Models\Tagihan;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreTagihanRequest;
+use App\Http\Requests\UpdateTagihanRequest;
 
 /**
  * Controller untuk manajemen data Tagihan.
@@ -14,35 +15,47 @@ use Illuminate\Http\Request;
  * Mengatur CRUD (Create, Read, Update, Delete) data Tagihan.
  *
  * @author  Umar Ulkhak
- * @date    2 Sepetember 2025
+ * @date    2 September 2025
  */
 class TagihanController extends Controller
 {
     /**
      * Path view blade yang digunakan.
+     *
+     * @var string
      */
     private string $viewPath = 'operator.';
 
     /**
      * Prefix route yang digunakan.
+     *
+     * @var string
      */
     private string $routePrefix = 'tagihan';
 
     /**
      * Nama file view untuk index, form, dan show.
+     *
+     * @var string
      */
     private string $viewIndex = 'tagihan_index';
     private string $viewForm  = 'tagihan_form';
     private string $viewShow  = 'tagihan_show';
 
     /**
-     * Display a listing of the resource.
+     * Tampilkan daftar data Tagihan.
      */
     public function index(Request $request)
     {
-        $models = $request->filled('q')
-            ? Tagihan::with(['user', 'siswa'])->search($request->q)->paginate(50)
-            : Tagihan::with(['user', 'siswa'])->latest()->paginate(50);
+        $query = Tagihan::with(['user', 'siswa']);
+
+        if ($request->filled('q')) {
+            $query->search($request->q);
+        } else {
+            $query->latest();
+        }
+
+        $models = $query->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -52,7 +65,7 @@ class TagihanController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Form tambah Tagihan.
      */
     public function create()
     {
@@ -66,46 +79,47 @@ class TagihanController extends Controller
             'title'    => 'Form Data Tagihan',
             'angkatan' => $siswa->pluck('angkatan', 'angkatan'),
             'kelas'    => $siswa->pluck('kelas', 'kelas'),
+            'biaya'    => Biaya::get()->pluck('nama_biaya_full', 'id'),
         ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Simpan data Tagihan baru.
      */
     public function store(StoreTagihanRequest $request)
     {
-        //
+        // TODO: implementasi penyimpanan
     }
 
     /**
-     * Display the specified resource.
+     * Detail Tagihan.
      */
     public function show(Tagihan $tagihan)
     {
-        //
+        // TODO: implementasi detail
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Form edit Tagihan.
      */
     public function edit(Tagihan $tagihan)
     {
-        //
+        // TODO: implementasi form edit
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update data Tagihan.
      */
     public function update(UpdateTagihanRequest $request, Tagihan $tagihan)
     {
-        //
+        // TODO: implementasi update
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus Tagihan.
      */
     public function destroy(Tagihan $tagihan)
     {
-        //
+        // TODO: implementasi delete
     }
 }
