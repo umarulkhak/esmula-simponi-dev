@@ -20,7 +20,7 @@
 
           {{-- Input: Nama Biaya --}}
           <div class="col-12 mb-3">
-            {!! Form::label('nama', 'Nama Biaya', ['class' => 'form-label']) !!}
+            <label for="nama">Nama Biaya</label>
             {!! Form::text('nama', old('nama', $model->nama ?? null), [
               'class'       => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
               'id'          => 'nama',
@@ -34,7 +34,7 @@
 
           {{-- Input: Jumlah / Nominal --}}
           <div class="col-12 mb-3">
-            {!! Form::label('jumlah', 'Jumlah / Nominal', ['class' => 'form-label']) !!}
+            <label for="jumlah">Jumlah / Nominal</label>
             {!! Form::text('jumlah', old('jumlah', $model->jumlah ?? null), [
               'class'       => 'form-control rupiah' . ($errors->has('jumlah') ? ' is-invalid' : ''),
               'id'          => 'jumlah',

@@ -39,7 +39,7 @@
                                 <th>Nama Biaya</th>
                                 <th>Jumlah</th>
                                 <th>Dibuat Oleh</th>
-                                <th class="text-center" style="width: 220px;">Aksi</th>
+                                <th class="text-center" style="width: 180px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -59,13 +59,6 @@
                                                class="btn btn-warning btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-edit"></i>
                                                 <span>Edit</span>
-                                            </a>
-
-                                            {{-- Detail --}}
-                                            <a href="{{ route($routePrefix . '.show', $item->id) }}"
-                                               class="btn btn-info btn-sm d-flex align-items-center gap-1">
-                                                <i class="fa fa-info"></i>
-                                                <span>Detail</span>
                                             </a>
 
                                             {{-- Hapus --}}

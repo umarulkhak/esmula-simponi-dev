@@ -17,7 +17,7 @@
 
           {{-- Biaya --}}
           <div class="col-12 mb-3">
-            <label class="form-label fw-bold">Biaya Yang Ditagihkan</label>
+            <label for="biaya_id">Biaya Yang Ditagihkan</label>
             <div class="row">
               @foreach($biaya as $id => $nama)
                 <div class="col-md-4 mb-3">
@@ -46,7 +46,7 @@
 
           {{-- Angkatan --}}
           <div class="col-md-6 mb-3">
-            {!! Form::label('angkatan', 'Tagihan Untuk Angkatan', ['class' => 'form-label']) !!}
+            <label for="angkatan">Tagihan Untuk Angkatan</label>
             {!! Form::select(
                 'angkatan',
                 $angkatan,
@@ -65,7 +65,7 @@
 
           {{-- Kelas --}}
           <div class="col-md-6 mb-3">
-            {!! Form::label('kelas', 'Kelas', ['class' => 'form-label']) !!}
+            <label for="kelas">Kelas</label>
             {!! Form::select(
                 'kelas',
                 $kelas,
@@ -83,7 +83,7 @@
 
           {{-- Tanggal Tagihan --}}
           <div class="col-md-6 mb-3">
-            {!! Form::label('tanggal_tagihan', 'Tanggal Tagihan', ['class' => 'form-label']) !!}
+            <label for="tanggal_tagihan">Tanggal Tagihan</label>
             {!! Form::date(
                 'tanggal_tagihan',
                 old('tanggal_tagihan', $model->tanggal_tagihan ?? date('Y-m-d')),
@@ -99,7 +99,7 @@
 
           {{-- Tanggal Jatuh Tempo --}}
           <div class="col-md-6 mb-3">
-            {!! Form::label('tanggal_jatuh_tempo', 'Tanggal Jatuh Tempo', ['class' => 'form-label']) !!}
+            <label for="tanggal_jatuh_tempo">Tanggal Jatuh Tempo</label>
             {!! Form::date(
                 'tanggal_jatuh_tempo',
                 old('tanggal_jatuh_tempo', $model->tanggal_jatuh_tempo ?? date('Y-m-d')),
@@ -115,7 +115,7 @@
 
           {{-- Keterangan --}}
           <div class="col-12 mb-3">
-            {!! Form::label('keterangan', 'Keterangan', ['class' => 'form-label']) !!}
+            <label for="keterangan">Keterangan</label>
             {!! Form::textarea(
                 'keterangan',
                 old('keterangan', $model->keterangan ?? null),

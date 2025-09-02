@@ -15,59 +15,69 @@
         <div class="row">
           {{-- Wali Murid --}}
           <div class="col-12 mb-3">
-            <label for="wali_id" class="form-label">Wali Murid</label>
+            <label for="wali_id">Wali Murid</label>
             {!! Form::select('wali_id', $wali, null, [
-              'class' => 'form-control select2',
+              'class' => 'form-control select2' . ($errors->has('wali_id') ? ' is-invalid' : ''),
               'placeholder' => '-- Pilih Wali Murid --',
               'id' => 'wali_id',
             ]) !!}
-            <span class="text-danger">{{ $errors->first('wali_id') }}</span>
+            @error('wali_id')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
 
           {{-- Nama Siswa --}}
           <div class="col-12 mb-3">
-            <label for="nama" class="form-label">Nama</label>
+            <label for="nama">Nama</label>
             {!! Form::text('nama', null, [
-              'class' => 'form-control',
+              'class' => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
               'id' => 'nama',
               'autofocus' => true,
             ]) !!}
-            <span class="text-danger">{{ $errors->first('nama') }}</span>
+            @error('nama')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
 
           {{-- NISN --}}
           <div class="col-12 mb-3">
-            <label for="nisn" class="form-label">NISN</label>
+            <label for="nisn">NISN</label>
             {!! Form::text('nisn', null, [
-              'class' => 'form-control',
+              'class' => 'form-control' . ($errors->has('nisn') ? ' is-invalid' : ''),
               'id' => 'nisn',
             ]) !!}
-            <span class="text-danger">{{ $errors->first('nisn') }}</span>
+            @error('nisn')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
 
           {{-- Kelas --}}
           <div class="col-12 mb-3">
-            <label for="kelas" class="form-label">Kelas</label>
+            <label for="kelas">Kelas</label>
             {!! Form::text('kelas', null, [
-              'class' => 'form-control',
+              'class' => 'form-control' . ($errors->has('kelas') ? ' is-invalid' : ''),
               'id' => 'kelas',
             ]) !!}
-            <span class="text-danger">{{ $errors->first('kelas') }}</span>
+            @error('kelas')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
 
           {{-- Tahun Angkatan --}}
           <div class="col-12 mb-3">
-            <label for="angkatan" class="form-label">Tahun Angkatan</label>
+            <label for="angkatan">Tahun Angkatan</label>
             {!! Form::selectRange('angkatan', 2023, date('Y') + 1, null, [
-              'class' => 'form-control',
+              'class' => 'form-control' . ($errors->has('angkatan') ? ' is-invalid' : ''),
               'id' => 'angkatan',
             ]) !!}
-            <span class="text-danger">{{ $errors->first('angkatan') }}</span>
+            @error('angkatan')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
 
           {{-- Preview Foto --}}
           <div class="col-12 mb-3">
-            <p class="form-label mb-1">Preview Foto</p>
+            <p class="mb-1">Preview Foto</p>
             <div class="border rounded p-2" style="max-width: 220px;">
               @php
                 $fotoPath = $model->foto && \Storage::exists($model->foto)
@@ -75,23 +85,25 @@
                             : asset('images/no-image.png');
               @endphp
               <img id="preview-foto"
-                  src="{{ $fotoPath }}"
-                  alt="Foto Siswa"
-                  class="img-thumbnail w-100">
+                   src="{{ $fotoPath }}"
+                   alt="Foto Siswa"
+                   class="img-thumbnail w-100">
             </div>
           </div>
 
           {{-- Upload Foto --}}
           <div class="col-12 mb-3">
-            <label for="foto" class="form-label">
+            <label for="foto">
               Foto <small class="text-muted">(jpg/png max 5MB)</small>
             </label>
             {!! Form::file('foto', [
-              'class' => 'form-control',
+              'class' => 'form-control' . ($errors->has('foto') ? ' is-invalid' : ''),
               'accept' => 'image/*',
               'id' => 'foto',
             ]) !!}
-            <span class="text-danger">{{ $errors->first('foto') }}</span>
+            @error('foto')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
           </div>
         </div>
 
