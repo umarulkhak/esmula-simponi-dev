@@ -21,8 +21,7 @@
             <div class="row">
               @foreach($biaya as $id => $nama)
                 <div class="col-md-4 mb-3">
-                  <label for="biaya_{{ $id }}"
-                         class="card h-100 shadow-sm biaya-card cursor-pointer">
+                  <div class="card h-100 shadow-sm biaya-card cursor-pointer">
                     <div class="card-body d-flex align-items-center">
                       <div class="form-check m-0">
                         {!! Form::checkbox(
@@ -31,10 +30,12 @@
                             in_array($id, old('biaya_id', $model->biaya_id ?? [])),
                             ['class' => 'form-check-input me-2', 'id' => 'biaya_'.$id]
                         ) !!}
-                        <span class="form-check-label">{{ $nama }}</span>
+                        <label for="biaya_{{ $id }}" class="form-check-label">
+                          {{ $nama }}
+                        </label>
                       </div>
                     </div>
-                  </label>
+                  </div>
                 </div>
               @endforeach
             </div>
