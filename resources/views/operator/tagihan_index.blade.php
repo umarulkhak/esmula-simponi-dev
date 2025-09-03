@@ -21,7 +21,7 @@
                             type="text"
                             name="q"
                             class="form-control"
-                            placeholder="Cari Data"
+                            placeholder="Cari Nama Siswa / Biaya"
                             value="{{ request('q') }}"
                         >
                         <button class="btn btn-outline-primary" type="submit">
@@ -36,9 +36,14 @@
                         <thead>
                             <tr>
                                 <th class="text-center" style="width: 50px;">No</th>
-                                <th>Nama Biaya</th>
+                                <th>Siswa</th>
+                                <th>Kelas</th>
+                                <th>Angkatan</th>
+                                <th>Jenis Tagihan</th>
                                 <th>Jumlah</th>
-                                <th>Dibuat Oleh</th>
+                                <th>Tanggal Tagihan</th>
+                                <th>Jatuh Tempo</th>
+                                <th>Status</th>
                                 <th class="text-center" style="width: 220px;">Aksi</th>
                             </tr>
                         </thead>
@@ -48,9 +53,22 @@
                                     <td class="text-center">
                                         {{ $loop->iteration + ($models->firstItem() - 1) }}
                                     </td>
-                                    <td>{{ $item->nama }}</td>
-                                    <td>{{ $item->formatRupiah('jumlah') }}</td>
-                                    <td>{{ $item->user->name ?? '-' }}</td>
+                                    <td>{{ $item->siswa->nama ?? '-' }}</td>
+                                    <td>{{ $item->kelas ?? '-' }}</td>
+                                    <td>{{ $item->angkatan ?? '-' }}</td>
+                                    <td>{{ $item->nama_biaya }}</td>
+                                    <td>Rp {{ number_format($item->jumlah_biaya, 0, ',', '.') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_tagihan)->format('d/m/Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->format('d/m/Y') }}</td>
+                                    <td>
+                                        @if($item->status == 'baru')
+                                            <span class="badge bg-warning">Baru</span>
+                                        @elseif($item->status == 'lunas')
+                                            <span class="badge bg-success">Lunas</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
 
@@ -58,14 +76,12 @@
                                             <a href="{{ route($routePrefix . '.edit', $item->id) }}"
                                                class="btn btn-warning btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-edit"></i>
-                                                <span>Edit</span>
                                             </a>
 
                                             {{-- Detail --}}
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
                                                class="btn btn-info btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-info"></i>
-                                                <span>Detail</span>
                                             </a>
 
                                             {{-- Hapus --}}
@@ -78,7 +94,6 @@
                                                 <button type="submit"
                                                         class="btn btn-danger btn-sm d-flex align-items-center gap-1">
                                                     <i class="fa fa-trash"></i>
-                                                    <span>Hapus</span>
                                                 </button>
                                             </form>
 
@@ -87,7 +102,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center">Data tidak tersedia.</td>
+                                    <td colspan="10" class="text-center">Data tagihan tidak tersedia.</td>
                                 </tr>
                             @endforelse
                         </tbody>

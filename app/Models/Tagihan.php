@@ -10,6 +10,18 @@ class Tagihan extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'siswa_id',
+        'angkatan',
+        'kelas',
+        'tanggal_tagihan',
+        'tanggal_jatuh_tempo',
+        'nama_biaya',
+        'jumlah_biaya',
+        'keterangan',
+        'status',
+    ];
+
     /**
      * Get the user that owns the Tagihan
      *
@@ -28,5 +40,11 @@ class Tagihan extends Model
     public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class);
+    }
+
+    public function formatRupiah($field = 'jumlah')
+    {
+        $value = $this->$field ?? 0;
+        return 'Rp ' . number_format($value, 0, ',', '.');
     }
 }

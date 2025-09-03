@@ -83,14 +83,51 @@ class TagihanController extends Controller
     public function store(StoreTagihanRequest $request)
     {
         // 1. Validasi sudah dilakukan oleh FormRequest
+        $requestData = $request->validated();
+
         // 2. Ambil data biaya yang ditagihkan
+        $biayaIdArray = $requestData['biaya_id'] ?? [];
+
         // 3. Ambil data siswa berdasarkan kelas atau angkatan
-        // 4. Loop data siswa
-        // 5. Simpan tagihan berdasarkan biaya & siswa
-        // 6. Simpan notifikasi database untuk tagihan
-        // 7. Kirim pesan WhatsApp (jika ada integrasi)
-        // 8. Redirect back dengan pesan sukses
+        $siswa = Siswa::query();
+
+        if (!empty($requestData['kelas'])) {
+            $siswa->where('kelas', $requestData['kelas']);
+        }
+
+        if (!empty($requestData['angkatan'])) {
+            $siswa->where('angkatan', $requestData['angkatan']);
+        }
+
+        $siswa = $siswa->get();
+        $biaya = Biaya::whereIn('id', $biayaIdArray)->get();
+
+        // 4. Loop data siswa dan biaya
+        foreach ($siswa as $itemSiswa) {
+            foreach ($biaya as $itemBiaya) {
+                $dataTagihan = [
+                    'siswa_id'            => $itemSiswa->id,
+                    'angkatan'            => $itemSiswa->angkatan, // ambil dari siswa
+                    'kelas'               => $itemSiswa->kelas,    // ambil dari siswa
+                    'tanggal_tagihan'     => $requestData['tanggal_tagihan'],
+                    'tanggal_jatuh_tempo' => $requestData['tanggal_jatuh_tempo'],
+                    'nama_biaya'          => $itemBiaya->nama,
+                    'jumlah_biaya'        => $itemBiaya->jumlah,
+                    'keterangan'          => $requestData['keterangan'] ?? null,
+                    'status'              => 'baru',
+                ];
+
+                // simpan data tagihan
+                Model::create($dataTagihan);
+            }
+        }
+
+        // 5. Redirect dengan pesan sukses
+        return redirect()
+            ->route($this->routePrefix . '.index')
+            ->with('success', 'Tagihan berhasil dibuat untuk ' . count($siswa) . ' siswa.');
     }
+
 
     /**
      * Detail Tagihan.
@@ -121,6 +158,16 @@ class TagihanController extends Controller
      */
     public function destroy(Model $tagihan)
     {
-        // TODO: implementasi delete
+        try {
+            $tagihan->delete();
+
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('success', 'Tagihan berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
+        }
     }
 }
