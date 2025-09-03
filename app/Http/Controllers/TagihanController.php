@@ -8,6 +8,7 @@ use App\Models\Tagihan as Model;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreTagihanRequest;
 use App\Http\Requests\UpdateTagihanRequest;
+use Carbon\Carbon;
 
 /**
  * Controller untuk manajemen data Tagihan.
@@ -102,32 +103,49 @@ class TagihanController extends Controller
         $siswa = $siswa->get();
         $biaya = Biaya::whereIn('id', $biayaIdArray)->get();
 
+        // parsing tanggal agar bisa ambil bulan & tahun
+        $tanggalTagihan    = Carbon::parse($requestData['tanggal_tagihan']);
+        $tanggalJatuhTempo = Carbon::parse($requestData['tanggal_jatuh_tempo']);
+
+        $bulanTagihan = $tanggalTagihan->format('m');
+        $tahunTagihan = $tanggalTagihan->format('Y');
+
+        $jumlahTersimpan = 0;
+
         // 4. Loop data siswa dan biaya
         foreach ($siswa as $itemSiswa) {
             foreach ($biaya as $itemBiaya) {
-                $dataTagihan = [
-                    'siswa_id'            => $itemSiswa->id,
-                    'angkatan'            => $itemSiswa->angkatan, // ambil dari siswa
-                    'kelas'               => $itemSiswa->kelas,    // ambil dari siswa
-                    'tanggal_tagihan'     => $requestData['tanggal_tagihan'],
-                    'tanggal_jatuh_tempo' => $requestData['tanggal_jatuh_tempo'],
-                    'nama_biaya'          => $itemBiaya->nama,
-                    'jumlah_biaya'        => $itemBiaya->jumlah,
-                    'keterangan'          => $requestData['keterangan'] ?? null,
-                    'status'              => 'baru',
-                ];
+                // cek apakah tagihan sudah ada
+                $cekTagihan = Model::where('siswa_id', $itemSiswa->id)
+                    ->where('nama_biaya', $itemBiaya->nama)
+                    ->whereMonth('tanggal_tagihan', $bulanTagihan)
+                    ->whereYear('tanggal_tagihan', $tahunTagihan)
+                    ->first();
 
-                // simpan data tagihan
-                Model::create($dataTagihan);
+                if (!$cekTagihan) {
+                    $dataTagihan = [
+                        'siswa_id'            => $itemSiswa->id,
+                        'angkatan'            => $itemSiswa->angkatan,
+                        'kelas'               => $itemSiswa->kelas,
+                        'tanggal_tagihan'     => $tanggalTagihan,
+                        'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                        'nama_biaya'          => $itemBiaya->nama,
+                        'jumlah_biaya'        => $itemBiaya->jumlah,
+                        'keterangan'          => $requestData['keterangan'] ?? null,
+                        'status'              => 'baru',
+                    ];
+
+                    Model::create($dataTagihan);
+                    $jumlahTersimpan++;
+                }
             }
         }
 
         // 5. Redirect dengan pesan sukses
         return redirect()
             ->route($this->routePrefix . '.index')
-            ->with('success', 'Tagihan berhasil dibuat untuk ' . count($siswa) . ' siswa.');
+            ->with('success', "Tagihan berhasil dibuat: {$jumlahTersimpan} tagihan baru untuk " . count($siswa) . " siswa.");
     }
-
 
     /**
      * Detail Tagihan.

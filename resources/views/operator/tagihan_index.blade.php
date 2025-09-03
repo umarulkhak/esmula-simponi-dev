@@ -44,6 +44,7 @@
                                 <th>Tanggal Tagihan</th>
                                 <th>Jatuh Tempo</th>
                                 <th>Status</th>
+                                <th>Dibuat Oleh</th>
                                 <th class="text-center" style="width: 220px;">Aksi</th>
                             </tr>
                         </thead>
@@ -57,7 +58,7 @@
                                     <td>{{ $item->kelas ?? '-' }}</td>
                                     <td>{{ $item->angkatan ?? '-' }}</td>
                                     <td>{{ $item->nama_biaya }}</td>
-                                    <td>Rp {{ number_format($item->jumlah_biaya, 0, ',', '.') }}</td>
+                                    <td>{{ $item->formatRupiah('jumlah_biaya') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($item->tanggal_tagihan)->format('d/m/Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->format('d/m/Y') }}</td>
                                     <td>
@@ -69,6 +70,7 @@
                                             <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
                                         @endif
                                     </td>
+                                    <td>{{ $item->user->name ?? '-' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
 
@@ -102,7 +104,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center">Data tagihan tidak tersedia.</td>
+                                    <td colspan="11" class="text-center">Data tagihan tidak tersedia.</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -11,6 +11,7 @@ class Tagihan extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'siswa_id',
         'angkatan',
         'kelas',
@@ -23,9 +24,7 @@ class Tagihan extends Model
     ];
 
     /**
-     * Get the user that owns the Tagihan
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Relasi ke User (pembuat tagihan).
      */
     public function user(): BelongsTo
     {
@@ -33,18 +32,28 @@ class Tagihan extends Model
     }
 
     /**
-     * Get the user that owns the Tagihan
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Relasi ke Siswa.
      */
     public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class);
     }
 
-    public function formatRupiah($field = 'jumlah')
+    /**
+     * Format angka ke dalam bentuk Rupiah.
+     */
+    public function formatRupiah($field = 'jumlah_biaya'): string
     {
         $value = $this->$field ?? 0;
         return 'Rp ' . number_format($value, 0, ',', '.');
+    }
+
+    /**
+     * Event model untuk otomatis mengisi user_id.
+     */
+    protected static function booted(): void
+    {
+        static::creating(fn($tagihan) => $tagihan->user_id = auth()->id());
+        static::updating(fn($tagihan) => $tagihan->user_id = auth()->id());
     }
 }
