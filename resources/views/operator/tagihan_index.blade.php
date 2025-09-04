@@ -71,6 +71,7 @@
                                 <th>No</th>
                                 <th>NISN</th>
                                 <th>Nama</th>
+                                <th>Kelas</th>
                                 <th>Tanggal Tagihan</th>
                                 <th>Status</th>
                                 <th class="text-center" style="width: 220px;">Aksi</th>
@@ -82,6 +83,7 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $item->siswa->nisn }}</td>
                                     <td>{{ $item->siswa->nama }}</td>
+                                    <td>{{ $item->siswa->kelas }}</td>
                                     <td>{{ $item->tanggal_tagihan->translatedFormat('d M Y') }}</td>
                                     <td>
                                         @if($item->status == 'baru')
