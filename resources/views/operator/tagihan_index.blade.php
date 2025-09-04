@@ -8,59 +8,65 @@
             <h5 class="card-header">{{ $title }}</h5>
             <div class="card-body">
 
-                {{-- Tombol Tambah --}}
-                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
-                    <i class="fa fa-plus"></i>
-                    <span>Tambah Data</span>
-                </a>
-
-                {{-- Form Pencarian --}}
-                {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET', 'class' => 'mb-3']) !!}
-                    <div class="input-group">
-                        <input
-                            type="text"
-                            name="q"
-                            class="form-control"
-                            placeholder="Cari Nama Siswa / Biaya"
-                            value="{{ request('q') }}"
-                        >
-                        <button class="btn btn-outline-primary" type="submit">
-                            <i class="bx bx-search"></i>
-                        </button>
+                {{-- Tombol Tambah Data (kiri) + Form Pencarian (kanan) --}}
+                <div class="row mb-3 align-items-center">
+                    {{-- Tombol Tambah Data --}}
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
+                            <i class="fa fa-plus"></i>
+                            <span>Tambah Data</span>
+                        </a>
                     </div>
-                {!! Form::close() !!}
+
+                    {{-- Form Pencarian --}}
+                    <div class="col-md-8 text-md-end">
+                        {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
+                        <div class="row g-2 justify-content-md-end">
+                            <div class="col-12 col-md-auto">
+                                {!! Form::selectMonth('bulan', request('bulan'), [
+                                    'class' => 'form-control',
+                                    'id' => 'filter_bulan',
+                                    'placeholder' => 'Pilih Bulan'
+                                ]) !!}
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                {!! Form::selectRange('tahun', 2022, date('Y') + 1, request('tahun'), [
+                                    'class' => 'form-control',
+                                    'id' => 'filter_tahun',
+                                    'placeholder' => 'Pilih Tahun'
+                                ]) !!}
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <button class="btn btn-secondary w-100 w-md-auto" type="submit" id="btn_filter">
+                                    <i class="fa fa-search"></i>
+                                    <span>Tampil</span>
+                                </button>
+                            </div>
+                        </div>
+                        {!! Form::close() !!}
+                    </div>
+                </div>
 
                 {{-- Tabel Data --}}
                 <div class="table-responsive">
                     <table class="table table-striped align-middle">
                         <thead>
                             <tr>
-                                <th class="text-center" style="width: 50px;">No</th>
-                                <th>Siswa</th>
-                                <th>Kelas</th>
-                                <th>Angkatan</th>
-                                <th>Jenis Tagihan</th>
-                                <th>Jumlah</th>
+                                <th>No</th>
+                                <th>NISN</th>
+                                <th>Nama</th>
                                 <th>Tanggal Tagihan</th>
-                                <th>Jatuh Tempo</th>
                                 <th>Status</th>
-                                <th>Dibuat Oleh</th>
                                 <th class="text-center" style="width: 220px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
-                                    <td class="text-center">
-                                        {{ $loop->iteration + ($models->firstItem() - 1) }}
-                                    </td>
-                                    <td>{{ $item->siswa->nama ?? '-' }}</td>
-                                    <td>{{ $item->kelas ?? '-' }}</td>
-                                    <td>{{ $item->angkatan ?? '-' }}</td>
-                                    <td>{{ $item->nama_biaya }}</td>
-                                    <td>{{ $item->formatRupiah('jumlah_biaya') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_tagihan)->format('d/m/Y') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->format('d/m/Y') }}</td>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $item->siswa->nisn }}</td>
+                                    <td>{{ $item->siswa->nama }}</td>
+                                    <td>{{ $item->tanggal_tagihan }}</td>
                                     <td>
                                         @if($item->status == 'baru')
                                             <span class="badge bg-warning">Baru</span>
@@ -70,7 +76,6 @@
                                             <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $item->user->name ?? '-' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
 
@@ -78,12 +83,14 @@
                                             <a href="{{ route($routePrefix . '.edit', $item->id) }}"
                                                class="btn btn-warning btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-edit"></i>
+                                                <span>Edit</span>
                                             </a>
 
                                             {{-- Detail --}}
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
                                                class="btn btn-info btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-info"></i>
+                                                <span>Detail</span>
                                             </a>
 
                                             {{-- Hapus --}}
@@ -96,6 +103,7 @@
                                                 <button type="submit"
                                                         class="btn btn-danger btn-sm d-flex align-items-center gap-1">
                                                     <i class="fa fa-trash"></i>
+                                                    <span>Hapus</span>
                                                 </button>
                                             </form>
 
