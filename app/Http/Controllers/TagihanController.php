@@ -2,55 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use Carbon\Carbon;
 use App\Models\Biaya;
 use App\Models\Siswa;
-use App\Models\Tagihan as Model;
+use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreTagihanRequest;
-use App\Http\Requests\UpdateTagihanRequest;
-use Carbon\Carbon;
-use Exception;
 
 /**
- * Controller untuk manajemen data Tagihan.
+ * Controller untuk manajemen Tagihan (CRUD).
  *
- * Mengatur CRUD (Create, Read, Update, Delete) data Tagihan.
- *
- * @author  Umar Ulkhak
- * @date    2 September 2025
+ * @author Umar Ulkhak
+ * @date   2 September 2025
  */
 class TagihanController extends Controller
 {
-    /**
-     * Path view blade yang digunakan.
-     */
+    /** Path view blade. */
     private string $viewPath = 'operator.';
 
-    /**
-     * Prefix route yang digunakan.
-     */
+    /** Prefix route. */
     private string $routePrefix = 'tagihan';
 
-    /**
-     * Nama file view untuk index, form, dan show.
-     */
+    /** Nama view. */
     private string $viewIndex = 'tagihan_index';
     private string $viewForm  = 'tagihan_form';
     private string $viewShow  = 'tagihan_show';
 
-    /**
-     * Status default tagihan.
-     */
+    /** Status default tagihan. */
     private const STATUS_BARU = 'baru';
 
     /**
-     * Tampilkan daftar data Tagihan.
+     * Tampilkan daftar data tagihan.
      */
     public function index(Request $request)
     {
-        $query = Model::with(['user', 'siswa'])->groupBy('siswa_id');
+        $query = Tagihan::with(['user', 'siswa'])
+            ->groupBy('siswa_id');
 
-        if ($request->filled('bulan') && $request->filled('tahun')) {
+        if ($request->filled(['bulan', 'tahun'])) {
             $query->whereMonth('tanggal_tagihan', $request->bulan)
                   ->whereYear('tanggal_tagihan', $request->tahun);
         }
@@ -61,24 +51,22 @@ class TagihanController extends Controller
             $query->latest();
         }
 
-        $models = $query->paginate(50);
-
         return view($this->viewPath . $this->viewIndex, [
-            'models'      => $models,
+            'models'      => $query->paginate(50),
             'routePrefix' => $this->routePrefix,
             'title'       => 'Data Tagihan',
         ]);
     }
 
     /**
-     * Form tambah Tagihan.
+     * Form tambah tagihan.
      */
     public function create()
     {
         $siswa = Siswa::all();
 
         return view($this->viewPath . $this->viewForm, [
-            'model'    => new Model(),
+            'model'    => new Tagihan(),
             'method'   => 'POST',
             'route'    => $this->routePrefix . '.store',
             'button'   => 'SIMPAN',
@@ -90,56 +78,37 @@ class TagihanController extends Controller
     }
 
     /**
-     * Simpan data Tagihan baru.
+     * Simpan tagihan baru.
      */
     public function store(StoreTagihanRequest $request)
     {
-        $requestData = $request->validated();
+        $data      = $request->validated();
+        $biayaIds  = $data['biaya_id'] ?? [];
+        $siswaList = $this->filterSiswa($data);
+        $biayaList = Biaya::whereIn('id', $biayaIds)->get();
 
-        $biayaIdArray = $requestData['biaya_id'] ?? [];
-
-        // filter siswa
-        $siswaQuery = Siswa::query();
-        if (!empty($requestData['kelas'])) {
-            $siswaQuery->where('kelas', $requestData['kelas']);
-        }
-        if (!empty($requestData['angkatan'])) {
-            $siswaQuery->where('angkatan', $requestData['angkatan']);
-        }
-        $siswa = $siswaQuery->get();
-
-        // ambil biaya
-        $biaya = Biaya::whereIn('id', $biayaIdArray)->get();
-
-        // parsing tanggal
-        $tanggalTagihan    = Carbon::parse($requestData['tanggal_tagihan']);
-        $tanggalJatuhTempo = Carbon::parse($requestData['tanggal_jatuh_tempo']);
-        $bulanTagihan      = $tanggalTagihan->format('m');
-        $tahunTagihan      = $tanggalTagihan->format('Y');
+        $tanggalTagihan    = Carbon::parse($data['tanggal_tagihan']);
+        $tanggalJatuhTempo = Carbon::parse($data['tanggal_jatuh_tempo']);
+        $bulan             = $tanggalTagihan->format('m');
+        $tahun             = $tanggalTagihan->format('Y');
 
         $jumlahTersimpan = 0;
 
-        foreach ($siswa as $itemSiswa) {
-            foreach ($biaya as $itemBiaya) {
-                $cekTagihan = Model::where('siswa_id', $itemSiswa->id)
-                    ->where('nama_biaya', $itemBiaya->nama)
-                    ->whereMonth('tanggal_tagihan', $bulanTagihan)
-                    ->whereYear('tanggal_tagihan', $tahunTagihan)
-                    ->first();
-
-                if ($cekTagihan) {
+        foreach ($siswaList as $siswa) {
+            foreach ($biayaList as $biaya) {
+                if ($this->cekDuplikat($siswa->id, $biaya->nama, $bulan, $tahun)) {
                     continue;
                 }
 
-                Model::create([
-                    'siswa_id'            => $itemSiswa->id,
-                    'angkatan'            => $itemSiswa->angkatan,
-                    'kelas'               => $itemSiswa->kelas,
+                Tagihan::create([
+                    'siswa_id'            => $siswa->id,
+                    'angkatan'            => $siswa->angkatan,
+                    'kelas'               => $siswa->kelas,
                     'tanggal_tagihan'     => $tanggalTagihan,
                     'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                    'nama_biaya'          => $itemBiaya->nama,
-                    'jumlah_biaya'        => $itemBiaya->jumlah,
-                    'keterangan'          => $requestData['keterangan'] ?? null,
+                    'nama_biaya'          => $biaya->nama,
+                    'jumlah_biaya'        => $biaya->jumlah,
+                    'keterangan'          => $data['keterangan'] ?? null,
                     'status'              => self::STATUS_BARU,
                 ]);
 
@@ -151,38 +120,40 @@ class TagihanController extends Controller
             ->route($this->routePrefix . '.index')
             ->with(
                 'success',
-                "Tagihan berhasil dibuat: {$jumlahTersimpan} tagihan baru untuk " . count($siswa) . " siswa."
+                "Tagihan berhasil dibuat: {$jumlahTersimpan} tagihan baru untuk " . count($siswaList) . " siswa."
             );
     }
 
     /**
-     * Detail Tagihan.
+     * Detail tagihan per siswa.
      */
-    public function show(Model $tagihan)
+    public function show(Request $request, int $id)
     {
-        // TODO: implementasi detail
+        $siswa = Siswa::findOrFail($id);
+
+        $query = Tagihan::with('siswa')
+            ->where('siswa_id', $siswa->id);
+
+        if ($bulan = $request->input('bulan')) {
+            $query->whereMonth('tanggal_tagihan', $bulan);
+        }
+
+        if ($tahun = $request->input('tahun')) {
+            $tahun = strlen($tahun) === 2 ? '20' . $tahun : $tahun;
+            $query->whereYear('tanggal_tagihan', $tahun);
+        }
+
+        return view($this->viewPath . $this->viewShow, [
+            'siswa'   => $siswa,
+            'tagihan' => $query->orderBy('tanggal_tagihan', 'desc')->get(),
+            'title'   => "Daftar Tagihan {$siswa->nama}",
+        ]);
     }
 
     /**
-     * Form edit Tagihan.
+     * Hapus tagihan.
      */
-    public function edit(Model $tagihan)
-    {
-        // TODO: implementasi form edit
-    }
-
-    /**
-     * Update data Tagihan.
-     */
-    public function update(UpdateTagihanRequest $request, Model $tagihan)
-    {
-        // TODO: implementasi update
-    }
-
-    /**
-     * Hapus Tagihan.
-     */
-    public function destroy(Model $tagihan)
+    public function destroy(Tagihan $tagihan)
     {
         try {
             $tagihan->delete();
@@ -195,5 +166,32 @@ class TagihanController extends Controller
                 ->route($this->routePrefix . '.index')
                 ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
         }
+    }
+
+    /* ==========================
+     |  PRIVATE HELPER
+     |==========================*/
+
+    /**
+     * Filter siswa berdasarkan kelas & angkatan.
+     */
+    private function filterSiswa(array $data)
+    {
+        return Siswa::query()
+            ->when(!empty($data['kelas']), fn($q) => $q->where('kelas', $data['kelas']))
+            ->when(!empty($data['angkatan']), fn($q) => $q->where('angkatan', $data['angkatan']))
+            ->get();
+    }
+
+    /**
+     * Cek duplikat tagihan.
+     */
+    private function cekDuplikat(int $siswaId, string $namaBiaya, string $bulan, string $tahun): bool
+    {
+        return Tagihan::where('siswa_id', $siswaId)
+            ->where('nama_biaya', $namaBiaya)
+            ->whereMonth('tanggal_tagihan', $bulan)
+            ->whereYear('tanggal_tagihan', $tahun)
+            ->exists();
     }
 }

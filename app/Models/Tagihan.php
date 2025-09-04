@@ -10,6 +10,11 @@ class Tagihan extends Model
 {
     use HasFactory;
 
+    /**
+     * Kolom yang bisa diisi secara mass-assignment.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'user_id',
         'siswa_id',
@@ -22,6 +27,20 @@ class Tagihan extends Model
         'keterangan',
         'status',
     ];
+
+    /**
+     * Tipe data tanggal.
+     *
+     * @var array<int, string>
+     */
+    protected $dates = [
+        'tanggal_tagihan',
+        'tanggal_jatuh_tempo',
+    ];
+
+    /* ==========================
+     |  RELASI
+     |==========================*/
 
     /**
      * Relasi ke User (pembuat tagihan).
@@ -39,21 +58,38 @@ class Tagihan extends Model
         return $this->belongsTo(Siswa::class);
     }
 
+    /* ==========================
+     |  CUSTOM ATTRIBUTE / HELPER
+     |==========================*/
+
     /**
-     * Format angka ke dalam bentuk Rupiah.
+     * Format field tertentu ke dalam format Rupiah.
+     *
+     * @param  string  $field
+     * @return string
      */
-    public function formatRupiah($field = 'jumlah_biaya'): string
+    public function formatRupiah(string $field = 'jumlah_biaya'): string
     {
         $value = $this->$field ?? 0;
         return 'Rp ' . number_format($value, 0, ',', '.');
     }
 
+    /* ==========================
+     |  EVENT MODEL
+     |==========================*/
+
     /**
-     * Event model untuk otomatis mengisi user_id.
+     * Event model untuk otomatis mengisi user_id
+     * saat create dan update.
      */
     protected static function booted(): void
     {
-        static::creating(fn($tagihan) => $tagihan->user_id = auth()->id());
-        static::updating(fn($tagihan) => $tagihan->user_id = auth()->id());
+        static::creating(function (self $tagihan) {
+            $tagihan->user_id = auth()->id();
+        });
+
+        static::updating(function (self $tagihan) {
+            $tagihan->user_id = auth()->id();
+        });
     }
 }

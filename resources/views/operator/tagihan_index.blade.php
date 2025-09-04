@@ -22,20 +22,36 @@
                     <div class="col-md-8 text-md-end">
                         {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
                         <div class="row g-2 justify-content-md-end">
+
+                            {{-- Bulan --}}
                             <div class="col-12 col-md-auto">
-                                {!! Form::selectMonth('bulan', request('bulan'), [
-                                    'class' => 'form-control',
-                                    'id' => 'filter_bulan',
-                                    'placeholder' => 'Pilih Bulan'
-                                ]) !!}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fa fa-calendar-alt"></i>
+                                    </span>
+                                    {!! Form::selectMonth('bulan', request('bulan'), [
+                                        'class' => 'form-control',
+                                        'id' => 'filter_bulan',
+                                        'placeholder' => 'Pilih Bulan'
+                                    ]) !!}
+                                </div>
                             </div>
+
+                            {{-- Tahun --}}
                             <div class="col-12 col-md-auto">
-                                {!! Form::selectRange('tahun', 2022, date('Y') + 1, request('tahun'), [
-                                    'class' => 'form-control',
-                                    'id' => 'filter_tahun',
-                                    'placeholder' => 'Pilih Tahun'
-                                ]) !!}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    {!! Form::selectRange('tahun', 2022, date('Y') + 1, request('tahun'), [
+                                        'class' => 'form-control',
+                                        'id' => 'filter_tahun',
+                                        'placeholder' => 'Pilih Tahun'
+                                    ]) !!}
+                                </div>
                             </div>
+
+                            {{-- Tombol Tampil --}}
                             <div class="col-12 col-md-auto">
                                 <button class="btn btn-secondary w-100 w-md-auto" type="submit" id="btn_filter">
                                     <i class="fa fa-search"></i>
@@ -66,7 +82,7 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $item->siswa->nisn }}</td>
                                     <td>{{ $item->siswa->nama }}</td>
-                                    <td>{{ $item->tanggal_tagihan }}</td>
+                                    <td>{{ $item->tanggal_tagihan->translatedFormat('d M Y') }}</td>
                                     <td>
                                         @if($item->status == 'baru')
                                             <span class="badge bg-warning">Baru</span>
@@ -80,14 +96,19 @@
                                         <div class="d-flex justify-content-center gap-1">
 
                                             {{-- Edit --}}
-                                            <a href="{{ route($routePrefix . '.edit', $item->id) }}"
+                                            {{-- <a href="{{ route($routePrefix . '.edit', $item->id) }}"
                                                class="btn btn-warning btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-edit"></i>
                                                 <span>Edit</span>
-                                            </a>
+                                            </a> --}}
 
                                             {{-- Detail --}}
-                                            <a href="{{ route($routePrefix . '.show', $item->id) }}"
+                                            <a href="{{ route($routePrefix . '.show', [
+                                                $item->siswa,
+                                                'siswa_id' => $item->siswa_id,
+                                                'bulan' => $item->tanggal_tagihan->format('m'),
+                                                'tahun' => $item->tanggal_tagihan->format('y'),
+                                                ]) }}"
                                                class="btn btn-info btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-info"></i>
                                                 <span>Detail</span>
