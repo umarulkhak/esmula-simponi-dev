@@ -108,7 +108,7 @@
 
         {{-- Tombol Kembali --}}
         <div class="mt-4">
-          <a href="{{ route('tagihan.index') }}" class="btn btn-primary">
+          <a href="{{ route('tagihan.index') }}" class="btn btn-secondary">
             <i class="fa fa-arrow-left me-1"></i> Kembali
           </a>
         </div>
