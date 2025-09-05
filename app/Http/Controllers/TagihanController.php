@@ -10,6 +10,15 @@ use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreTagihanRequest;
 
+/**
+ * Controller untuk manajemen data Tagihan.
+ *
+ * Mengatur CRUD Tagihan siswa, termasuk pembuatan, tampilan, dan penghapusan tagihan.
+ *
+ * @author  Umar Ulkhak
+ * @date    6 September 2025
+ */
+
 class TagihanController extends Controller
 {
     private string $viewPath = 'operator.';
