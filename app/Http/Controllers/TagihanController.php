@@ -19,9 +19,6 @@ class TagihanController extends Controller
     private string $viewShow  = 'tagihan_show';
     private const STATUS_BARU = 'baru';
 
-    /**
-     * Daftar tagihan.
-     */
     public function index(Request $request)
     {
         $query = Tagihan::with(['user', 'siswa'])->groupBy('siswa_id');
@@ -44,9 +41,6 @@ class TagihanController extends Controller
         ]);
     }
 
-    /**
-     * Form tambah tagihan.
-     */
     public function create()
     {
         $siswa = Siswa::all();
@@ -63,9 +57,6 @@ class TagihanController extends Controller
         ]);
     }
 
-    /**
-     * Simpan tagihan baru dengan detail biaya.
-     */
     public function store(StoreTagihanRequest $request)
     {
         $data      = $request->validated();
@@ -87,13 +78,13 @@ class TagihanController extends Controller
                 }
 
                 $tagihan = Tagihan::create([
-                    'siswa_id'             => $siswa->id,
-                    'angkatan'             => $siswa->angkatan,
-                    'kelas'                => $siswa->kelas,
-                    'tanggal_tagihan'      => $tanggalTagihan,
+                    'siswa_id'            => $siswa->id,
+                    'angkatan'            => $siswa->angkatan,
+                    'kelas'               => $siswa->kelas,
+                    'tanggal_tagihan'     => $tanggalTagihan,
                     'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                    'keterangan'           => $data['keterangan'] ?? null,
-                    'status'               => self::STATUS_BARU,
+                    'keterangan'          => $data['keterangan'] ?? null,
+                    'status'              => self::STATUS_BARU,
                 ]);
 
                 $tagihan->details()->create([
@@ -107,21 +98,14 @@ class TagihanController extends Controller
 
         return redirect()
             ->route($this->routePrefix . '.index')
-            ->with(
-                'success',
-                "Tagihan berhasil dibuat: {$jumlahTersimpan} tagihan baru untuk " . count($siswaList) . " siswa."
-            );
+            ->with('success', "Tagihan berhasil dibuat: {$jumlahTersimpan} tagihan baru untuk " . count($siswaList) . " siswa.");
     }
 
-    /**
-     * Detail tagihan per siswa.
-     */
     public function show(Request $request, int $id)
     {
         $siswa = Siswa::findOrFail($id);
 
-        $query = Tagihan::with('details')
-            ->where('siswa_id', $siswa->id);
+        $query = Tagihan::with('details')->where('siswa_id', $siswa->id);
 
         if ($bulan = $request->input('bulan')) {
             $query->whereMonth('tanggal_tagihan', $bulan);
@@ -140,29 +124,12 @@ class TagihanController extends Controller
     }
 
     /**
-     * Hapus tagihan per siswa (semua tagihan siswa) - digunakan di index.
-     */
-    public function destroySiswa(int $siswaId)
-    {
-        try {
-            $jumlah = Tagihan::where('siswa_id', $siswaId)->delete();
-
-            return redirect()
-                ->route($this->routePrefix . '.index')
-                ->with('success', "Semua tagihan siswa berhasil dihapus ({$jumlah} tagihan).");
-        } catch (Exception $e) {
-            return redirect()
-                ->route($this->routePrefix . '.index')
-                ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Hapus tagihan per item (digunakan di show detail)
+     * Hapus satu tagihan beserta detailnya
      */
     public function destroy(Tagihan $tagihan)
     {
         try {
+            $tagihan->details()->delete(); // hapus semua detail
             $tagihan->delete();
 
             return redirect()
@@ -175,9 +142,35 @@ class TagihanController extends Controller
         }
     }
 
+    /**
+     * Hapus semua tagihan siswa beserta detailnya
+     */
+    public function destroySiswa(int $siswaId)
+    {
+        try {
+            $tagihans = Tagihan::where('siswa_id', $siswaId)->get();
+            $jumlahDetail = 0;
+
+            foreach ($tagihans as $tagihan) {
+                $jumlahDetail += $tagihan->details()->count();
+                $tagihan->details()->delete(); // hapus semua detail
+                $tagihan->delete();            // hapus tagihan utama
+            }
+
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('success', "Semua tagihan siswa berhasil dihapus ({$jumlahDetail} detail).");
+
+        } catch (Exception $e) {
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
+        }
+    }
+
     /* ==========================
-     |  PRIVATE HELPER
-     |==========================*/
+       PRIVATE HELPER
+       =========================*/
 
     private function filterSiswa(array $data)
     {

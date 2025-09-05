@@ -8,9 +8,21 @@
             <h5 class="card-header">{{ $title }}</h5>
             <div class="card-body">
 
+                {{-- Flash Message --}}
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @elseif(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
                 {{-- Tombol Tambah Data + Form Pencarian --}}
                 <div class="row mb-3 align-items-center">
-
                     {{-- Tombol Tambah Data --}}
                     <div class="col-md-4 mb-2 mb-md-0">
                         <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
@@ -23,13 +35,9 @@
                     <div class="col-md-8 text-md-end">
                         {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
                         <div class="row g-2 justify-content-md-end">
-
-                            {{-- Bulan --}}
                             <div class="col-12 col-md-auto">
                                 <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fa fa-calendar-alt"></i>
-                                    </span>
+                                    <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
                                     {!! Form::selectMonth('bulan', request('bulan'), [
                                         'class' => 'form-control',
                                         'id' => 'filter_bulan',
@@ -37,13 +45,9 @@
                                     ]) !!}
                                 </div>
                             </div>
-
-                            {{-- Tahun --}}
                             <div class="col-12 col-md-auto">
                                 <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fa fa-calendar"></i>
-                                    </span>
+                                    <span class="input-group-text"><i class="fa fa-calendar"></i></span>
                                     {!! Form::selectRange('tahun', 2022, date('Y') + 1, request('tahun'), [
                                         'class' => 'form-control',
                                         'id' => 'filter_tahun',
@@ -51,15 +55,11 @@
                                     ]) !!}
                                 </div>
                             </div>
-
-                            {{-- Tombol Tampil --}}
                             <div class="col-12 col-md-auto">
-                                <button class="btn btn-secondary w-100 w-md-auto" type="submit" id="btn_filter">
-                                    <i class="fa fa-search"></i>
-                                    <span>Tampil</span>
+                                <button class="btn btn-secondary w-100 w-md-auto" type="submit">
+                                    <i class="fa fa-search"></i> Tampil
                                 </button>
                             </div>
-
                         </div>
                         {!! Form::close() !!}
                     </div>

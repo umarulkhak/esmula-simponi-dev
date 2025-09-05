@@ -59,5 +59,9 @@ class Tagihan extends Model
         static::updating(function (self $tagihan) {
             $tagihan->user_id = auth()->id();
         });
+
+        static::deleting(function (self $tagihan) {
+        $tagihan->details()->delete();
+    });
     }
 }

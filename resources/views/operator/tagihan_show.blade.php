@@ -9,9 +9,21 @@
       <h5 class="card-header">{{ $title }}</h5>
       <div class="card-body">
 
+        {{-- Flash Message --}}
+        @if(session('success'))
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+              {{ session('success') }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        @elseif(session('error'))
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              {{ session('error') }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        @endif
+
         {{-- Info Siswa --}}
         <div class="row mb-4 align-items-start">
-
           {{-- Foto Siswa --}}
           <div class="col-md-2 mb-3 d-flex flex-column">
             <h6 class="fw-bold mb-3">Foto Siswa</h6>
@@ -51,7 +63,6 @@
               </table>
             </div>
           </div>
-
         </div>
 
         {{-- Daftar Tagihan --}}
@@ -65,7 +76,7 @@
                 <th>Nama Biaya</th>
                 <th class="text-end">Jumlah</th>
                 <th class="text-center">Status</th>
-                <th class="text-center" style="width: 120px;">Aksi</th> {{-- Kolom hapus --}}
+                <th class="text-center" style="width: 120px;">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -88,7 +99,9 @@
                           @endif
                         </td>
                         <td class="text-center">
-                          <form action="{{ route('tagihan.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tagihan ini beserta semua detailnya?')">
+                          <form action="{{ route('tagihan.destroy', $item->id) }}"
+                                method="POST"
+                                onsubmit="return confirm('Yakin ingin menghapus tagihan ini beserta semua detailnya?')">
                               @csrf
                               @method('DELETE')
                               <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1">
@@ -104,7 +117,6 @@
                 </tr>
               @endforelse
             </tbody>
-
             @if ($totalTagihan > 0)
               <tfoot class="table-secondary">
                 <tr>
