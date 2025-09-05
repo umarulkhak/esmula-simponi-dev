@@ -11,29 +11,19 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreTagihanRequest;
 
 /**
- * Controller untuk manajemen Tagihan (CRUD).
- *
- * @author Umar Ulkhak
- * @date   2 September 2025
+ * Controller untuk manajemen Tagihan (CRUD) dengan detail biaya.
  */
 class TagihanController extends Controller
 {
-    /** Path view blade. */
     private string $viewPath = 'operator.';
-
-    /** Prefix route. */
     private string $routePrefix = 'tagihan';
-
-    /** Nama view. */
     private string $viewIndex = 'tagihan_index';
     private string $viewForm  = 'tagihan_form';
     private string $viewShow  = 'tagihan_show';
-
-    /** Status default tagihan. */
     private const STATUS_BARU = 'baru';
 
     /**
-     * Tampilkan daftar data tagihan.
+     * Daftar tagihan.
      */
     public function index(Request $request)
     {
@@ -78,7 +68,7 @@ class TagihanController extends Controller
     }
 
     /**
-     * Simpan tagihan baru.
+     * Simpan tagihan baru dengan detail biaya.
      */
     public function store(StoreTagihanRequest $request)
     {
@@ -100,16 +90,21 @@ class TagihanController extends Controller
                     continue;
                 }
 
-                Tagihan::create([
+                // Simpan Tagihan utama
+                $tagihan = Tagihan::create([
                     'siswa_id'            => $siswa->id,
                     'angkatan'            => $siswa->angkatan,
                     'kelas'               => $siswa->kelas,
                     'tanggal_tagihan'     => $tanggalTagihan,
                     'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                    'nama_biaya'          => $biaya->nama,
-                    'jumlah_biaya'        => $biaya->jumlah,
                     'keterangan'          => $data['keterangan'] ?? null,
                     'status'              => self::STATUS_BARU,
+                ]);
+
+                // Simpan TagihanDetail
+                $tagihan->details()->create([
+                    'nama_biaya'   => $biaya->nama,
+                    'jumlah_biaya' => $biaya->jumlah,
                 ]);
 
                 $jumlahTersimpan++;
@@ -131,7 +126,7 @@ class TagihanController extends Controller
     {
         $siswa = Siswa::findOrFail($id);
 
-        $query = Tagihan::with('siswa')
+        $query = Tagihan::with('details')
             ->where('siswa_id', $siswa->id);
 
         if ($bulan = $request->input('bulan')) {
@@ -184,14 +179,14 @@ class TagihanController extends Controller
     }
 
     /**
-     * Cek duplikat tagihan.
+     * Cek duplikat tagihan berdasarkan detail biaya.
      */
     private function cekDuplikat(int $siswaId, string $namaBiaya, string $bulan, string $tahun): bool
     {
         return Tagihan::where('siswa_id', $siswaId)
-            ->where('nama_biaya', $namaBiaya)
             ->whereMonth('tanggal_tagihan', $bulan)
             ->whereYear('tanggal_tagihan', $tahun)
+            ->whereHas('details', fn($q) => $q->where('nama_biaya', $namaBiaya))
             ->exists();
     }
 }

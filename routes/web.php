@@ -69,3 +69,4 @@ Route::get('logout', function () {
     Auth::logout();
     return redirect('login');
 })->name('logout');
+

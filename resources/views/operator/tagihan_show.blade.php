@@ -6,19 +6,30 @@
 
     {{-- Card Utama --}}
     <div class="card mb-4">
-      <h5 class="card-header">
-        <i class="fa fa-file-invoice me-1"></i> {{ $title }}
-      </h5>
+      <h5 class="card-header">{{ $title }}</h5>
       <div class="card-body">
 
         {{-- Info Siswa --}}
-        <div class="row mb-4">
-          <div class="col-md-6">
-            <h6 class="fw-bold mb-3 text-primary">
-              <i class="fa fa-user-graduate me-1"></i> Informasi Siswa
-            </h6>
+        <div class="row mb-4 align-items-start">
+
+          {{-- Foto Siswa --}}
+          <div class="col-md-2 mb-3 d-flex flex-column">
+            <h6 class="fw-bold mb-3">Foto Siswa</h6>
+            @php
+                $fotoPath = $siswa->foto && Storage::exists($siswa->foto)
+                    ? Storage::url($siswa->foto)
+                    : asset('images/no-image.png');
+            @endphp
+            <div style="width: 85%; aspect-ratio: 3/4; overflow: hidden;">
+              <img src="{{ $fotoPath }}" alt="Foto Siswa" class="rounded shadow-sm border" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+          </div>
+
+          {{-- Detail Siswa --}}
+          <div class="col-md-4">
+            <h6 class="fw-bold mb-3">Informasi Siswa</h6>
             <div class="table-responsive">
-              <table class="table table-bordered">
+              <table class="table table-bordered mb-0">
                 <tbody>
                   <tr>
                     <th style="width: 130px;">Nama</th>
@@ -40,12 +51,11 @@
               </table>
             </div>
           </div>
+
         </div>
 
         {{-- Daftar Tagihan --}}
-        <h6 class="fw-bold mb-3 text-primary">
-          <i class="fa fa-file-invoice-dollar me-1"></i> Daftar Tagihan
-        </h6>
+        <h6 class="fw-bold mb-3">Daftar Tagihan</h6>
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
             <thead class="table-secondary">
@@ -60,45 +70,36 @@
             <tbody>
               @php $totalTagihan = 0; @endphp
               @forelse ($tagihan as $item)
-                @php $totalTagihan += $item->jumlah_biaya; @endphp
-                <tr>
-                  <td class="text-center">{{ $loop->iteration }}</td>
-                  <td>{{ $item->tanggal_tagihan->translatedFormat('d M Y') }}</td>
-                  <td>{{ $item->nama_biaya }}</td>
-                  <td class="text-end">{{ $item->formatRupiah('jumlah_biaya') }}</td>
-                  <td class="text-center">
-                    @if ($item->status === 'baru')
-                      <span class="badge bg-warning">
-                        <i class="fa fa-clock me-1"></i> Baru
-                      </span>
-                    @elseif ($item->status === 'lunas')
-                      <span class="badge bg-success">
-                        <i class="fa fa-check-circle me-1"></i> Lunas
-                      </span>
-                    @else
-                      <span class="badge bg-secondary">
-                        <i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status) }}
-                      </span>
-                    @endif
-                  </td>
-                </tr>
+                  @foreach($item->details as $detail)
+                      @php $totalTagihan += $detail->jumlah_biaya; @endphp
+                      <tr>
+                        <td class="text-center">{{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
+                        <td>{{ $item->tanggal_tagihan->translatedFormat('d M Y') }}</td>
+                        <td>{{ $detail->nama_biaya }}</td>
+                        <td class="text-end">{{ 'Rp ' . number_format($detail->jumlah_biaya, 0, ',', '.') }}</td>
+                        <td class="text-center">
+                          @if ($item->status === 'baru')
+                            <span class="badge bg-warning"><i class="fa fa-clock me-1"></i> Baru</span>
+                          @elseif ($item->status === 'lunas')
+                            <span class="badge bg-success"><i class="fa fa-check-circle me-1"></i> Lunas</span>
+                          @else
+                            <span class="badge bg-secondary"><i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status) }}</span>
+                          @endif
+                        </td>
+                      </tr>
+                  @endforeach
               @empty
                 <tr>
-                  <td colspan="5" class="text-center text-muted">
-                    <i class="fa fa-info-circle me-1"></i>
-                    Tidak ada tagihan untuk siswa ini.
-                  </td>
+                  <td colspan="5" class="text-center text-muted"><i class="fa fa-info-circle me-1"></i>Tidak ada tagihan untuk siswa ini.</td>
                 </tr>
               @endforelse
             </tbody>
 
-            @if ($tagihan->count())
+            @if ($totalTagihan > 0)
               <tfoot class="table-secondary">
                 <tr>
                   <th colspan="3" class="text-end">Total</th>
-                  <th class="text-end">
-                    {{ 'Rp ' . number_format($totalTagihan, 0, ',', '.') }}
-                  </th>
+                  <th class="text-end">{{ 'Rp ' . number_format($totalTagihan, 0, ',', '.') }}</th>
                   <th></th>
                 </tr>
               </tfoot>
@@ -108,9 +109,7 @@
 
         {{-- Tombol Kembali --}}
         <div class="mt-4">
-          <a href="{{ route('tagihan.index') }}" class="btn btn-secondary">
-            <i class="fa fa-arrow-left me-1"></i> Kembali
-          </a>
+          <a href="{{ route('tagihan.index') }}" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"></i> Kembali</a>
         </div>
 
       </div>
