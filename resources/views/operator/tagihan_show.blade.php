@@ -65,6 +65,7 @@
                 <th>Nama Biaya</th>
                 <th class="text-end">Jumlah</th>
                 <th class="text-center">Status</th>
+                <th class="text-center" style="width: 120px;">Aksi</th> {{-- Kolom hapus --}}
               </tr>
             </thead>
             <tbody>
@@ -86,11 +87,20 @@
                             <span class="badge bg-secondary"><i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status) }}</span>
                           @endif
                         </td>
+                        <td class="text-center">
+                          <form action="{{ route('tagihan.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tagihan ini beserta semua detailnya?')">
+                              @csrf
+                              @method('DELETE')
+                              <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1">
+                                  <i class="fa fa-trash me-1"></i> Hapus
+                              </button>
+                          </form>
+                        </td>
                       </tr>
                   @endforeach
               @empty
                 <tr>
-                  <td colspan="5" class="text-center text-muted"><i class="fa fa-info-circle me-1"></i>Tidak ada tagihan untuk siswa ini.</td>
+                  <td colspan="6" class="text-center text-muted"><i class="fa fa-info-circle me-1"></i>Tidak ada tagihan untuk siswa ini.</td>
                 </tr>
               @endforelse
             </tbody>
@@ -100,7 +110,7 @@
                 <tr>
                   <th colspan="3" class="text-end">Total</th>
                   <th class="text-end">{{ 'Rp ' . number_format($totalTagihan, 0, ',', '.') }}</th>
-                  <th></th>
+                  <th colspan="2"></th>
                 </tr>
               </tfoot>
             @endif

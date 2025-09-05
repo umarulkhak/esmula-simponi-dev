@@ -42,6 +42,11 @@ Route::prefix('operator')
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);
         Route::resource('tagihan', TagihanController::class);
+        Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
+
+        Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
+        ->name('tagihan.destroySiswa');
+
     });
 
 // ============================

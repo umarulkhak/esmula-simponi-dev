@@ -10,9 +10,6 @@ use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreTagihanRequest;
 
-/**
- * Controller untuk manajemen Tagihan (CRUD) dengan detail biaya.
- */
 class TagihanController extends Controller
 {
     private string $viewPath = 'operator.';
@@ -27,8 +24,7 @@ class TagihanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tagihan::with(['user', 'siswa'])
-            ->groupBy('siswa_id');
+        $query = Tagihan::with(['user', 'siswa'])->groupBy('siswa_id');
 
         if ($request->filled(['bulan', 'tahun'])) {
             $query->whereMonth('tanggal_tagihan', $request->bulan)
@@ -90,18 +86,16 @@ class TagihanController extends Controller
                     continue;
                 }
 
-                // Simpan Tagihan utama
                 $tagihan = Tagihan::create([
-                    'siswa_id'            => $siswa->id,
-                    'angkatan'            => $siswa->angkatan,
-                    'kelas'               => $siswa->kelas,
-                    'tanggal_tagihan'     => $tanggalTagihan,
+                    'siswa_id'             => $siswa->id,
+                    'angkatan'             => $siswa->angkatan,
+                    'kelas'                => $siswa->kelas,
+                    'tanggal_tagihan'      => $tanggalTagihan,
                     'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                    'keterangan'          => $data['keterangan'] ?? null,
-                    'status'              => self::STATUS_BARU,
+                    'keterangan'           => $data['keterangan'] ?? null,
+                    'status'               => self::STATUS_BARU,
                 ]);
 
-                // Simpan TagihanDetail
                 $tagihan->details()->create([
                     'nama_biaya'   => $biaya->nama,
                     'jumlah_biaya' => $biaya->jumlah,
@@ -146,7 +140,25 @@ class TagihanController extends Controller
     }
 
     /**
-     * Hapus tagihan.
+     * Hapus tagihan per siswa (semua tagihan siswa) - digunakan di index.
+     */
+    public function destroySiswa(int $siswaId)
+    {
+        try {
+            $jumlah = Tagihan::where('siswa_id', $siswaId)->delete();
+
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('success', "Semua tagihan siswa berhasil dihapus ({$jumlah} tagihan).");
+        } catch (Exception $e) {
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Hapus tagihan per item (digunakan di show detail)
      */
     public function destroy(Tagihan $tagihan)
     {
@@ -154,11 +166,11 @@ class TagihanController extends Controller
             $tagihan->delete();
 
             return redirect()
-                ->route($this->routePrefix . '.index')
+                ->back()
                 ->with('success', 'Tagihan berhasil dihapus.');
         } catch (Exception $e) {
             return redirect()
-                ->route($this->routePrefix . '.index')
+                ->back()
                 ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
         }
     }
@@ -167,9 +179,6 @@ class TagihanController extends Controller
      |  PRIVATE HELPER
      |==========================*/
 
-    /**
-     * Filter siswa berdasarkan kelas & angkatan.
-     */
     private function filterSiswa(array $data)
     {
         return Siswa::query()
@@ -178,9 +187,6 @@ class TagihanController extends Controller
             ->get();
     }
 
-    /**
-     * Cek duplikat tagihan berdasarkan detail biaya.
-     */
     private function cekDuplikat(int $siswaId, string $namaBiaya, string $bulan, string $tahun): bool
     {
         return Tagihan::where('siswa_id', $siswaId)

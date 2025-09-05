@@ -8,8 +8,9 @@
             <h5 class="card-header">{{ $title }}</h5>
             <div class="card-body">
 
-                {{-- Tombol Tambah Data (kiri) + Form Pencarian (kanan) --}}
+                {{-- Tombol Tambah Data + Form Pencarian --}}
                 <div class="row mb-3 align-items-center">
+
                     {{-- Tombol Tambah Data --}}
                     <div class="col-md-4 mb-2 mb-md-0">
                         <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
@@ -58,6 +59,7 @@
                                     <span>Tampil</span>
                                 </button>
                             </div>
+
                         </div>
                         {!! Form::close() !!}
                     </div>
@@ -97,34 +99,26 @@
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
 
-                                            {{-- Edit --}}
-                                            {{-- <a href="{{ route($routePrefix . '.edit', $item->id) }}"
-                                               class="btn btn-warning btn-sm d-flex align-items-center gap-1">
-                                                <i class="fa fa-edit"></i>
-                                                <span>Edit</span>
-                                            </a> --}}
-
                                             {{-- Detail --}}
                                             <a href="{{ route($routePrefix . '.show', [
                                                 $item->siswa,
                                                 'siswa_id' => $item->siswa_id,
                                                 'bulan' => $item->tanggal_tagihan->format('m'),
                                                 'tahun' => $item->tanggal_tagihan->format('y'),
-                                                ]) }}"
+                                            ]) }}"
                                                class="btn btn-info btn-sm d-flex align-items-center gap-1">
                                                 <i class="fa fa-info"></i>
                                                 <span>Detail</span>
                                             </a>
 
-                                            {{-- Hapus --}}
-                                            <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
+                                            {{-- Hapus Semua Tagihan Siswa --}}
+                                            <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
                                                   method="POST"
                                                   class="d-inline"
-                                                  onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                                  onsubmit="return confirm('Yakin ingin menghapus semua tagihan siswa ini?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit"
-                                                        class="btn btn-danger btn-sm d-flex align-items-center gap-1">
+                                                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1">
                                                     <i class="fa fa-trash"></i>
                                                     <span>Hapus</span>
                                                 </button>
@@ -135,7 +129,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center">Data tagihan tidak tersedia.</td>
+                                    <td colspan="7" class="text-center">Data tagihan tidak tersedia.</td>
                                 </tr>
                             @endforelse
                         </tbody>
