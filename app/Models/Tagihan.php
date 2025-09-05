@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tagihan extends Model
 {
@@ -39,7 +40,7 @@ class Tagihan extends Model
     }
 
     // Relasi ke TagihanDetail
-    public function details()
+    public function tagihanDetails(): HasMany
     {
         return $this->hasMany(TagihanDetail::class);
     }
@@ -60,8 +61,18 @@ class Tagihan extends Model
             $tagihan->user_id = auth()->id();
         });
 
+        // ✅ Perbaikan utama: gunakan relasi tagihanDetails()
         static::deleting(function (self $tagihan) {
-        $tagihan->details()->delete();
-    });
+            $tagihan->tagihanDetails()->delete();
+        });
+    }
+
+    // ✅ Scope untuk pencarian (nama atau NISN siswa)
+    public function scopeSearch($query, $term)
+    {
+        return $query->whereHas('siswa', function ($q) use ($term) {
+            $q->where('nama', 'like', "%{$term}%")
+              ->orWhere('nisn', 'like', "%{$term}%");
+        });
     }
 }

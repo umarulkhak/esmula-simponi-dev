@@ -4,132 +4,302 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-12">
-        <div class="card">
-            <h5 class="card-header">{{ $title }}</h5>
+        <div class="card shadow-sm border-0">
+
+            {{-- Header Card --}}
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold">Data Tagihan</h5>
+                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm">
+                    <i class="fa fa-plus me-1"></i> Tambah Tagihan
+                </a>
+            </div>
+
             <div class="card-body">
 
                 {{-- Flash Message --}}
                 @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="fa fa-check-circle me-2"></i>
                         {{ session('success') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @elseif(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
                         {{ session('error') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @endif
 
-                {{-- Tombol Tambah Data + Form Pencarian --}}
-                <div class="row mb-3 align-items-center">
-                    {{-- Tombol Tambah Data --}}
-                    <div class="col-md-4 mb-2 mb-md-0">
-                        <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mb-3">
-                            <i class="fa fa-plus"></i>
-                            <span>Tambah Data</span>
-                        </a>
-                    </div>
+                {{-- Dashboard Cards --}}
+                @php
+                    $totalSiswa = $models->unique('siswa_id')->count();
+                    $totalTagihan = $models->count();
+                    $lunas = $models->where('status', 'lunas')->count();
+                    $belum = $models->where('status', 'baru')->count();
 
-                    {{-- Form Pencarian --}}
-                    <div class="col-md-8 text-md-end">
-                        {!! Form::open(['route' => $routePrefix . '.index', 'method' => 'GET']) !!}
-                        <div class="row g-2 justify-content-md-end">
-                            <div class="col-12 col-md-auto">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
-                                    {!! Form::selectMonth('bulan', request('bulan'), [
-                                        'class' => 'form-control',
-                                        'id' => 'filter_bulan',
-                                        'placeholder' => 'Pilih Bulan'
-                                    ]) !!}
+                    $bulan = request('bulan') ?? now()->format('m');
+                    $tahun = request('tahun') ?? now()->format('Y');
+
+                    $prevMonth = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonth();
+                    $modelsPrev = \App\Models\Tagihan::whereMonth('tanggal_tagihan', $prevMonth->format('m'))
+                        ->whereYear('tanggal_tagihan', $prevMonth->format('Y'))
+                        ->get();
+
+                    $totalSiswaPrev = $modelsPrev->unique('siswa_id')->count();
+                    $lunasPrev = $modelsPrev->where('status', 'lunas')->count();
+                    $belumPrev = $modelsPrev->where('status', 'baru')->count();
+                    $totalTagihanPrev = $modelsPrev->count();
+
+                    $diffSiswa = $totalSiswa - $totalSiswaPrev;
+                    $diffLunas = $lunas - $lunasPrev;
+                    $diffBelum = $belum - $belumPrev;
+
+                    $persentase = $totalTagihan > 0 ? round(($lunas / $totalTagihan) * 100, 1) : 0;
+                    $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
+                    $diffPersen = $persentase - $persentasePrev;
+                @endphp
+
+                <div class="row mb-4 g-3">
+                    <!-- Total Siswa -->
+                    <div class="col-12 col-md-3">
+                        <div class="card border rounded-3 p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-muted small mb-1">Total Siswa</h6>
+                                    <h2 class="fw-bold mb-1">{{ $totalSiswa }}</h2>
+                                    <p class="{{ $diffSiswa >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
+                                        {{ $diffSiswa >= 0 ? '+' : '' }}{{ $diffSiswa }} siswa dibanding bulan lalu
+                                    </p>
                                 </div>
-                            </div>
-                            <div class="col-12 col-md-auto">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fa fa-calendar"></i></span>
-                                    {!! Form::selectRange('tahun', 2022, date('Y') + 1, request('tahun'), [
-                                        'class' => 'form-control',
-                                        'id' => 'filter_tahun',
-                                        'placeholder' => 'Pilih Tahun'
-                                    ]) !!}
+                                <div class="bg-light rounded-2 p-2">
+                                    <i class="fa fa-users text-primary fs-4"></i>
                                 </div>
-                            </div>
-                            <div class="col-12 col-md-auto">
-                                <button class="btn btn-secondary w-100 w-md-auto" type="submit">
-                                    <i class="fa fa-search"></i> Tampil
-                                </button>
                             </div>
                         </div>
-                        {!! Form::close() !!}
+                    </div>
+
+                    <!-- Tagihan Lunas -->
+                    <div class="col-12 col-md-3">
+                        <div class="card border rounded-3 p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-muted small mb-1">Tagihan Lunas</h6>
+                                    <h2 class="fw-bold mb-1">{{ $lunas }}</h2>
+                                    <p class="{{ $diffLunas >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
+                                        {{ $diffLunas >= 0 ? '+' : '' }}{{ $diffLunas }} dari bulan lalu
+                                    </p>
+                                </div>
+                                <div class="bg-light rounded-2 p-2">
+                                    <i class="fa fa-check-circle text-success fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tagihan Belum Bayar -->
+                    <div class="col-12 col-md-3">
+                        <div class="card border rounded-3 p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-muted small mb-1">Belum Bayar</h6>
+                                    <h2 class="fw-bold mb-1">{{ $belum }}</h2>
+                                    <p class="{{ $diffBelum <= 0 ? 'text-success' : 'text-danger' }} small mb-0">
+                                        {{ $diffBelum >= 0 ? '+' : '' }}{{ $diffBelum }} dari bulan lalu
+                                    </p>
+                                </div>
+                                <div class="bg-light rounded-2 p-2">
+                                    <i class="fa fa-clock text-warning fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tingkat Pembayaran -->
+                    <div class="col-12 col-md-3">
+                        <div class="card border rounded-3 p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-muted small mb-1">Tingkat Pembayaran</h6>
+                                    <h2 class="fw-bold mb-1">{{ $persentase }}%</h2>
+                                    <p class="{{ $diffPersen >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
+                                        {{ $diffPersen >= 0 ? '+' : '' }}{{ $diffPersen }}% dari bulan lalu
+                                    </p>
+                                </div>
+                                <div class="bg-light rounded-2 p-2">
+                                    <i class="fa fa-chart-line text-purple fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Form Filter Data --}}
+                <div class="card mb-4 border">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa fa-filter text-muted"></i>
+                            <h6 class="mb-0 fw-bold">Filter Data</h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" class="row g-3 align-items-end">
+                            <div class="col-12 col-md-3">
+                                <label for="bulan" class="form-label small">Bulan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                                    <select name="bulan" id="bulan" class="form-select form-select-sm">
+                                        <option value="">Semua Bulan</option>
+                                        @for ($i = 1; $i <= 12; $i++)
+                                            <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}"
+                                                {{ request('bulan') == str_pad($i, 2, '0', STR_PAD_LEFT) ? 'selected' : '' }}>
+                                                {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="tahun" class="form-label small">Tahun</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                    <select name="tahun" id="tahun" class="form-select form-select-sm">
+                                        <option value="">Semua Tahun</option>
+                                        @for ($y = date('Y'); $y >= 2022; $y--)
+                                            <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>
+                                                {{ $y }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="q" class="form-label small">Cari Siswa</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                    <input type="text" name="q" id="q" class="form-control form-control-sm"
+                                           placeholder="Nama/NISN..." value="{{ request('q') }}">
+
+                                    {{-- Tombol Filter --}}
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                                        <i class="fa fa-filter me-1"></i> Filter
+                                    </button>
+
+                                    {{-- Tombol Reset --}}
+                                    <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fa fa-undo me-1"></i> Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
                 {{-- Tabel Data --}}
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle">
-                        <thead>
+                    <table class="table table-hover align-middle" id="table-tagihan">
+                        <thead class="table-light">
                             <tr>
-                                <th>No</th>
+                                <th class="text-center" style="width: 5%">#</th>
                                 <th>NISN</th>
-                                <th>Nama</th>
-                                <th>Kelas</th>
-                                <th>Tanggal Tagihan</th>
-                                <th>Status</th>
-                                <th class="text-center" style="width: 220px;">Aksi</th>
+                                <th>Nama Siswa</th>
+                                <th class="text-center">Kelas</th>
+                                <th class="text-center">Tanggal</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center" style="width: 10%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($models as $item)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $item->siswa->nisn }}</td>
-                                    <td>{{ $item->siswa->nama }}</td>
-                                    <td>{{ $item->siswa->kelas }}</td>
-                                    <td>{{ $item->tanggal_tagihan->translatedFormat('d M Y') }}</td>
-                                    <td>
-                                        @if($item->status == 'baru')
-                                            <span class="badge bg-warning">Baru</span>
-                                        @elseif($item->status == 'lunas')
-                                            <span class="badge bg-success">Lunas</span>
-                                        @else
-                                            <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-
-                                            {{-- Detail --}}
-                                            <a href="{{ route($routePrefix . '.show', [
-                                                $item->siswa,
-                                                'siswa_id' => $item->siswa_id,
-                                                'bulan' => $item->tanggal_tagihan->format('m'),
-                                                'tahun' => $item->tanggal_tagihan->format('y'),
-                                            ]) }}"
-                                               class="btn btn-info btn-sm d-flex align-items-center gap-1">
-                                                <i class="fa fa-info"></i>
-                                                <span>Detail</span>
-                                            </a>
-
-                                            {{-- Hapus Semua Tagihan Siswa --}}
-                                            <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
-                                                  method="POST"
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Yakin ingin menghapus semua tagihan siswa ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-1">
-                                                    <i class="fa fa-trash"></i>
-                                                    <span>Hapus</span>
-                                                </button>
-                                            </form>
-
-                                        </div>
-                                    </td>
-                                </tr>
+                                @if($item->siswa)
+                                    <tr>
+                                        <td class="text-center fw-bold">{{ $loop->iteration }}</td>
+                                        <td><span class="badge bg-light text-dark">{{ $item->siswa->nisn }}</span></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-grow-1">
+                                                    <strong>{{ $item->siswa->nama }}</strong>
+                                                    <div class="text-muted small">Angkatan: {{ $item->siswa->angkatan }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            @php
+                                                $kelas = $item->siswa->kelas ?? 'Tanpa Kelas';
+                                                $colorMap = [
+                                                    'VII' => 'primary',
+                                                    'VIII' => 'success',
+                                                    'IX' => 'danger',
+                                                ];
+                                                $color = $colorMap[$kelas] ?? 'secondary';
+                                            @endphp
+                                            <span class="badge bg-{{ $color }} text-white px-3 py-2 rounded-pill">
+                                                {{ $kelas }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark">
+                                                {{ $item->tanggal_tagihan->translatedFormat('d M Y') }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->status == 'baru')
+                                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                                    <i class="fa fa-clock me-1"></i> BARU
+                                                </span>
+                                            @elseif($item->status == 'lunas')
+                                                <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                                                    <i class="fa fa-check-circle me-1"></i> LUNAS
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                                                    <i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status) }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ route($routePrefix . '.show', [
+                                                    $item->siswa->id,
+                                                    'bulan' => $item->tanggal_tagihan->format('m'),
+                                                    'tahun' => $item->tanggal_tagihan->format('Y'),
+                                                ]) }}"
+                                                   class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                                                   title="Lihat detail">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
+                                                <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
+                                                      method="POST"
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('⚠️ PERHATIAN!\n\nYakin ingin menghapus SEMUA tagihan siswa ini?\n\nNama: {{ $item->siswa->nama }}\nNISN: {{ $item->siswa->nisn }}\n\nTindakan ini tidak bisa dibatalkan!')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Hapus semua">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center">Data tagihan tidak tersedia.</td>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="text-center">
+                                            <div class="mb-3">
+                                                <i class="fa fa-database fa-3x text-muted"></i>
+                                            </div>
+                                            <h5 class="text-muted fw-normal mb-2">
+                                                Belum ada data tagihan
+                                            </h5>
+                                            <p class="text-muted small">
+                                                Silakan tambah data tagihan baru.
+                                            </p>
+                                            <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm mt-3">
+                                                <i class="fa fa-plus me-1"></i> Tambah Tagihan
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -137,9 +307,16 @@
                 </div>
 
                 {{-- Pagination --}}
-                <div class="mt-3">
-                    {!! $models->links() !!}
-                </div>
+                @if($models->isNotEmpty())
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <small class="text-muted">
+                                Menampilkan {{ $models->firstItem() }} - {{ $models->lastItem() }} dari {{ $models->total() }} data
+                            </small>
+                            {!! $models->links() !!}
+                        </div>
+                    </div>
+                @endif
 
             </div>
         </div>
@@ -147,4 +324,54 @@
 </div>
 @endsection
 
-{{-- Dibuat oleh Umar Ulkhak --}}
+@push('styles')
+<style>
+    /* Styling Dashboard Cards */
+    .card.border {
+        border: 1px solid #e9ecef;
+        border-radius: 0.75rem;
+        transition: box-shadow 0.2s ease;
+    }
+
+    .card.border:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+
+    /* Ikon Card */
+    .card .bg-light {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Teks Tambahan */
+    .text-success, .text-danger {
+        font-size: 0.85rem;
+    }
+
+    /* Tombol Aksi */
+    .btn-sm.rounded-pill {
+        min-width: 40px;
+        padding: 0.25rem 0.75rem;
+    }
+
+    /* Custom warna ungu untuk chart */
+    .bg-purple {
+        background-color: #6f42c1 !important;
+        color: white !important;
+    }
+</style>
+@endpush
+
+{{--
+    Dibuat oleh: Umar Ulkhak
+    Diperbarui: 6 September 2025
+    Fitur:
+    - Dashboard card modern dengan rumus data dinamis
+    - Warna kelas: VII (biru), VIII (hijau), IX (merah)
+    - Tombol aksi rapi dengan gap-2
+    - Filter & Reset sejajar di samping input pencarian
+    - Desain profesional & responsif
+--}}
