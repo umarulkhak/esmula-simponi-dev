@@ -10,6 +10,7 @@ use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreTagihanRequest;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Controller untuk manajemen data Tagihan Siswa.
@@ -64,6 +65,7 @@ class TagihanController extends Controller
             $query->search($request->q);
         }
 
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $models */
         $models = $query->latest()->paginate(50);
 
         // ✅ Ambil semua data sebagai collection — HANYA 1 QUERY
