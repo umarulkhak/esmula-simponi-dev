@@ -1,61 +1,111 @@
-{{-- resources/views/operator/biaya_form.blade.php --}}
+{{--
+|--------------------------------------------------------------------------
+| VIEW: Operator - Form Biaya
+|--------------------------------------------------------------------------
+| Penulis     : Umar Ulkhak
+| Tujuan      : Menampilkan form tambah/edit data biaya.
+| Fitur       :
+|   - Form dinamis (bisa untuk create & edit)
+|   - Validasi error dengan feedback visual
+|   - Input nominal otomatis format rupiah (masking)
+|   - Tombol aksi: Simpan & Batal
+|   - Responsif di desktop & mobile
+|   - Clean Code: struktur blade rapi, komentar jelas
+|
+| Variabel yang diharapkan dari Controller:
+|   - $title   → Judul halaman (misal: "Form Tambah Data Biaya")
+|   - $model   → Instance model Biaya (atau new Model untuk create)
+|   - $method  → HTTP method ('POST' untuk create, 'PUT' untuk edit)
+|   - $route   → Route tujuan (misal: 'biaya.store' atau ['biaya.update', $id])
+|   - $button  → Teks tombol submit (misal: "SIMPAN" atau "UPDATE")
+|
+--}}
+
 @extends('layouts.app_sneat')
 
 @section('content')
-<div class="row justify-content-center">
-  <div class="col-md-12">
-    <div class="card">
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {{ $title }}
+                </h5>
+                @if($method === 'PUT')
+                    <small class="text-muted">ID: {{ $model->id }}</small>
+                @endif
+            </div>
+            <div class="card-body">
 
-      {{-- Judul Form --}}
-      <h5 class="card-header">{{ $title }}</h5>
+                {!! Form::model($model, [
+                    'route'  => $route,
+                    'method' => $method,
+                    'class'  => 'needs-validation',
+                    'novalidate'
+                ]) !!}
 
-      <div class="card-body">
-        {{-- Form menggunakan Form::model agar bisa dipakai untuk create & edit --}}
-        {!! Form::model($model, [
-          'route'  => $route,
-          'method' => $method,
-        ]) !!}
+                <div class="row g-3">
 
-        <div class="row">
+                    {{-- Input: Nama Biaya --}}
+                    <div class="col-12">
+                        <label for="nama" class="form-label fw-semibold">Nama Biaya <span class="text-danger">*</span></label>
+                        {!! Form::text('nama', null, [
+                            'class'       => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
+                            'id'          => 'nama',
+                            'placeholder' => 'Contoh: SPP Bulanan, Uang Gedung',
+                            'required',
+                            'autofocus'
+                        ]) !!}
+                        @error('nama')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Masukkan nama biaya yang deskriptif.</div>
+                    </div>
 
-          {{-- Input: Nama Biaya --}}
-          <div class="col-12 mb-3">
-            <label for="nama">Nama Biaya</label>
-            {!! Form::text('nama', old('nama', $model->nama ?? null), [
-              'class'       => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
-              'id'          => 'nama',
-              'placeholder' => 'Masukkan nama biaya',
-              'autofocus'   => true,
-            ]) !!}
-            @error('nama')
-              <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-          </div>
+                    {{-- Input: Jumlah / Nominal --}}
+                    <div class="col-12">
+                        <label for="jumlah" class="form-label fw-semibold">Jumlah / Nominal <span class="text-danger">*</span></label>
+                        {!! Form::text('jumlah', null, [
+                            'class'       => 'form-control rupiah' . ($errors->has('jumlah') ? ' is-invalid' : ''),
+                            'id'          => 'jumlah',
+                            'placeholder' => 'Contoh: 150000',
+                            'required'
+                        ]) !!}
+                        @error('jumlah')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Nominal akan otomatis diformat ke Rupiah (Rp).</div>
+                    </div>
 
-          {{-- Input: Jumlah / Nominal --}}
-          <div class="col-12 mb-3">
-            <label for="jumlah">Jumlah / Nominal</label>
-            {!! Form::text('jumlah', old('jumlah', $model->jumlah ?? null), [
-              'class'       => 'form-control rupiah' . ($errors->has('jumlah') ? ' is-invalid' : ''),
-              'id'          => 'jumlah',
-              'placeholder' => 'Masukkan jumlah biaya',
-            ]) !!}
-            @error('jumlah')
-              <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-          </div>
+                </div>
 
+                {{-- Tombol Aksi --}}
+                <div class="d-flex gap-2 mt-4">
+                    {!! Form::submit($button, ['class' => 'btn btn-primary px-4']) !!}
+                    <a href="{{ route('biaya.index') }}" class="btn btn-outline-secondary">Batal</a>
+                </div>
+
+                {!! Form::close() !!}
+            </div>
         </div>
-
-        {{-- Tombol Aksi --}}
-        <div class="form-group mt-4 d-flex gap-2">
-          {!! Form::submit($button, ['class' => 'btn btn-primary']) !!}
-          <a href="{{ route('biaya.index') }}" class="btn btn-secondary">Batal</a>
-        </div>
-
-        {!! Form::close() !!}
-      </div>
     </div>
-  </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validasi Bootstrap
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+@endpush

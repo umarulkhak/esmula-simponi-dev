@@ -1,118 +1,134 @@
 @extends('layouts.app_sneat')
 
 @section('content')
-<div class="row justify-content-center">
-  <div class="col-md-12">
-    <div class="card">
-      <h5 class="card-header">{{ $title }}</h5>
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ $title }}</h5>
+        @if($method === 'PUT')
+          <small class="text-muted">ID: {{ $model->id }}</small>
+        @endif
+      </div>
       <div class="card-body">
+
         {!! Form::model($model, [
           'route'  => $route,
           'method' => $method,
           'files'  => true,
+          'class'  => 'needs-validation',
+          'novalidate'
         ]) !!}
 
-        <div class="row">
-          {{-- Wali Murid --}}
-          <div class="col-12 mb-3">
-            <label for="wali_id">Wali Murid</label>
+        <div class="row g-3">
+
+          {{-- Wali Murid & Nama Siswa — 2 kolom di desktop --}}
+          <div class="col-12 col-lg-6">
+            <label for="wali_id" class="form-label fw-semibold">Wali Murid <span class="text-danger">*</span></label>
             {!! Form::select('wali_id', $wali, null, [
-              'class' => 'form-control select2' . ($errors->has('wali_id') ? ' is-invalid' : ''),
-              'placeholder' => '-- Pilih Wali Murid --',
+              'class' => 'form-select select2' . ($errors->has('wali_id') ? ' is-invalid' : ''),
+              'placeholder' => 'Pilih Wali Murid',
               'id' => 'wali_id',
+              'required'
             ]) !!}
             @error('wali_id')
-              <div class="invalid-feedback">{{ $message }}</div>
+              <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
+            <div class="form-text">Pastikan wali murid sudah terdaftar.</div>
           </div>
 
-          {{-- Nama Siswa --}}
-          <div class="col-12 mb-3">
-            <label for="nama">Nama</label>
+          <div class="col-12 col-lg-6">
+            <label for="nama" class="form-label fw-semibold">Nama Lengkap Siswa <span class="text-danger">*</span></label>
             {!! Form::text('nama', null, [
               'class' => 'form-control' . ($errors->has('nama') ? ' is-invalid' : ''),
               'id' => 'nama',
-              'autofocus' => true,
+              'placeholder' => 'Contoh: Budi Santoso',
+              'required',
+              'autofocus'
             ]) !!}
             @error('nama')
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
           </div>
 
-          {{-- NISN --}}
-          <div class="col-12 mb-3">
-            <label for="nisn">NISN</label>
+          {{-- NISN & Kelas — 2 kolom di desktop --}}
+          <div class="col-12 col-lg-6">
+            <label for="nisn" class="form-label fw-semibold">NISN</label>
             {!! Form::text('nisn', null, [
               'class' => 'form-control' . ($errors->has('nisn') ? ' is-invalid' : ''),
               'id' => 'nisn',
+              'placeholder' => 'Contoh: 1234567890',
+              'pattern' => '[0-9]*',
+              'title' => 'Hanya angka yang diperbolehkan'
             ]) !!}
             @error('nisn')
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+            <div class="form-text">Nomor Induk Siswa Nasional (opsional).</div>
           </div>
 
-          {{-- Kelas --}}
-          <div class="col-12 mb-3">
-            <label for="kelas">Kelas</label>
-            {!! Form::text('kelas', null, [
-              'class' => 'form-control' . ($errors->has('kelas') ? ' is-invalid' : ''),
+          <div class="col-12 col-lg-6">
+            <label for="kelas" class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
+            {!! Form::select('kelas', [
+              '' => 'Pilih Kelas',
+              'VII' => 'VII',
+              'VIII' => 'VIII',
+              'IX' => 'IX'
+            ], null, [
+              'class' => 'form-select' . ($errors->has('kelas') ? ' is-invalid' : ''),
               'id' => 'kelas',
+              'required'
             ]) !!}
             @error('kelas')
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+            <div class="form-text">Pilih tingkat kelas: VII, VIII, atau IX.</div>
           </div>
 
-          {{-- Tahun Angkatan --}}
-          <div class="col-12 mb-3">
-            <label for="angkatan">Tahun Angkatan</label>
+          {{-- Tahun Angkatan & Foto — 2 kolom di desktop --}}
+          <div class="col-12 col-lg-6">
+            <label for="angkatan" class="form-label fw-semibold">Tahun Angkatan <span class="text-danger">*</span></label>
             {!! Form::selectRange('angkatan', 2023, date('Y') + 1, null, [
-              'class' => 'form-control' . ($errors->has('angkatan') ? ' is-invalid' : ''),
+              'class' => 'form-select' . ($errors->has('angkatan') ? ' is-invalid' : ''),
               'id' => 'angkatan',
+              'required'
             ]) !!}
             @error('angkatan')
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
           </div>
 
-          {{-- Preview Foto --}}
-          <div class="col-12 mb-3">
-            <p class="mb-1">Preview Foto</p>
-            <div class="border rounded p-2" style="max-width: 220px;">
-              @php
-                $fotoPath = $model->foto && \Storage::exists($model->foto)
-                            ? \Storage::url($model->foto)
-                            : asset('images/no-image.png');
-              @endphp
+          <div class="col-12 col-lg-6">
+            <label for="foto" class="form-label fw-semibold">Foto Siswa</label>
+            <div class="border rounded p-3 mb-2 bg-light text-center">
               <img id="preview-foto"
-                   src="{{ $fotoPath }}"
-                   alt="Foto Siswa"
-                   class="img-thumbnail w-100">
+                   src="{{ $model->foto && \Storage::exists($model->foto) ? \Storage::url($model->foto) : asset('images/no-image.png') }}"
+                   alt="Preview Foto Siswa"
+                   class="img-fluid rounded"
+                   style="max-height: 200px; object-fit: cover; width: auto; max-width: 100%; border: 1px dashed #ccc;">
             </div>
-          </div>
-
-          {{-- Upload Foto --}}
-          <div class="col-12 mb-3">
-            <label for="foto">
-              Foto <small class="text-muted">(jpg/png max 5MB)</small>
-            </label>
             {!! Form::file('foto', [
               'class' => 'form-control' . ($errors->has('foto') ? ' is-invalid' : ''),
-              'accept' => 'image/*',
+              'accept' => 'image/jpeg, image/png',
               'id' => 'foto',
+              'aria-describedby' => 'fotoHelp'
             ]) !!}
             @error('foto')
               <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+            <div id="fotoHelp" class="form-text">Format: JPG/PNG, maksimal 5MB.</div>
           </div>
+
         </div>
 
-        {{-- Tombol Submit --}}
-        <div class="form-group mt-4">
-          {!! Form::submit($button, ['class' => 'btn btn-primary']) !!}
+        {{-- Tombol Aksi — tetap full width --}}
+        <div class="d-flex gap-2 mt-4 flex-wrap">
+          {!! Form::submit($button, ['class' => 'btn btn-primary px-4']) !!}
+          <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">Batal</a>
         </div>
 
         {!! Form::close() !!}
+
       </div>
     </div>
   </div>
@@ -121,14 +137,45 @@
 
 @push('scripts')
 <script>
-  document.getElementById('foto').addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        document.getElementById('preview-foto').src = evt.target.result;
-      }
-      reader.readAsDataURL(file);
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // Preview foto real-time
+    const fotoInput = document.getElementById('foto');
+    const previewImg = document.getElementById('preview-foto');
+
+    if (fotoInput && previewImg) {
+      fotoInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file && /^image\//.test(file.type)) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            previewImg.src = evt.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewImg.src = "{{ asset('images/no-image.png') }}";
+        }
+      });
+    }
+
+    // Validasi Bootstrap
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+
+    // Optional: Inisialisasi Select2 jika dipakai
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+      $('.select2').select2({
+        width: '100%',
+        placeholder: "Pilih..."
+      });
     }
   });
 </script>

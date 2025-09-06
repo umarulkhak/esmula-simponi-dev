@@ -1,93 +1,249 @@
 @extends('layouts.app_sneat')
 
 @section('content')
-<div class="row justify-content-center">
-  <div class="col-md-12">
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bx bx-user-circle me-2"></i>
+                    {{ $title ?? 'Detail Profil Siswa' }}
+                </h5>
+                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bx bx-arrow-back me-1"></i> Kembali ke Daftar
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
 
-    <div class="card">
-      <h5 class="card-header">{{ $title ?? 'Detail Siswa' }}</h5>
+                    {{-- === SECTION: FOTO PROFILE === --}}
+                    <div class="col-12 col-md-4 text-center">
+                        @php
+                            $fotoPath = $model->foto && \Storage::exists($model->foto)
+                                ? \Storage::url($model->foto)
+                                : asset('images/no-image.png');
+                        @endphp
 
-      <div class="card-body">
-        <div class="row">
+                        <div class="mb-3 position-relative d-inline-block">
+                            <img
+                                src="{{ $fotoPath }}"
+                                alt="Foto Profil {{ $model->nama }}"
+                                class="img-fluid rounded shadow-sm"
+                                style="max-width: 100%; max-height: 280px; object-fit: cover; border: 3px solid #f8f9fa;">
+                            <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-2 shadow-sm">
+                                <i class="bx bx-image text-muted fs-5"></i>
+                            </div>
+                        </div>
 
-          {{-- Foto Siswa --}}
-        <div class="col-md-4 text-center mb-3">
-        @php
-            $fotoPath = $model->foto && Storage::exists($model->foto)
-                ? Storage::url($model->foto)
-                : asset('images/no-image.png');
-        @endphp
-        <img
-            src="{{ $fotoPath }}"
-            alt="Foto Siswa"
-            class="img-thumbnail"
-            style="max-width: 100%; max-height: 250px;">
+                        <div class="mt-2">
+                            <span class="badge bg-label-primary rounded-pill px-3 py-1">
+                                ID: #{{ $model->id }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- === SECTION: DETAIL DATA === --}}
+                    <div class="col-12 col-md-8">
+                        <div class="bg-light rounded p-4 h-100">
+                            <h6 class="fw-bold mb-4">
+                                <i class="bx bx-info-circle me-2"></i>
+                                Informasi Siswa
+                            </h6>
+
+                            <div class="row g-3">
+
+                                {{-- Baris 1 --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-primary rounded p-2 me-3">
+                                            <i class="bx bx-user fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Nama Lengkap</div>
+                                            <div class="fw-semibold">{{ $model->nama }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-info rounded p-2 me-3">
+                                            <i class="bx bx-id-card fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">NISN</div>
+                                            <div class="fw-semibold">{{ $model->nisn ?? '–' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Baris 2 --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-success rounded p-2 me-3">
+                                            <i class="bx bx-book fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Kelas</div>
+                                            <div class="fw-semibold">
+                                                <span class="badge bg-label-{{ $model->kelas == 'VII' ? 'success' : ($model->kelas == 'VIII' ? 'warning' : 'danger') }} rounded-pill px-3 py-1">
+                                                    {{ $model->kelas }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-secondary rounded p-2 me-3">
+                                            <i class="bx bx-calendar fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Angkatan</div>
+                                            <div class="fw-semibold">{{ $model->angkatan }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Baris 3 --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-warning rounded p-2 me-3">
+                                            <i class="bx bx-group fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Wali Murid</div>
+                                            <div class="fw-semibold">{{ $model->wali->name ?? '–' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-{{ $model->wali_status === 'ok' ? 'success' : 'secondary' }} rounded p-2 me-3">
+                                            <i class="bx bx-check-circle fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Status Wali</div>
+                                            <div class="fw-semibold">
+                                                @if ($model->wali_status === 'ok')
+                                                    <span class="badge bg-label-success rounded-pill px-3 py-1">Aktif</span>
+                                                @else
+                                                    <span class="badge bg-label-secondary rounded-pill px-3 py-1">Tidak Ada</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Baris 4 --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-dark rounded p-2 me-3">
+                                            <i class="bx bx-user-plus fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Dibuat Oleh</div>
+                                            <div class="fw-semibold">{{ $model->user->name ?? '–' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-primary rounded p-2 me-3">
+                                            <i class="bx bx-time fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Dibuat Pada</div>
+                                            <div class="fw-semibold">{{ $model->created_at?->format('d M Y H:i') ?? '–' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Baris 5 --}}
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-label-info rounded p-2 me-3">
+                                            <i class="bx bx-edit fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Diubah Terakhir</div>
+                                            <div class="fw-semibold">{{ $model->updated_at?->format('d M Y H:i') ?? '–' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {{-- Tombol Aksi --}}
+                            <div class="mt-4 pt-3 border-top">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route($routePrefix . '.edit', $model->id) }}" class="btn btn-warning btn-sm">
+                                        <i class="bx bx-edit me-1"></i> Edit Data
+                                    </a>
+                                    <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bx bx-arrow-back me-1"></i> Kembali
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
-
-          {{-- Detail Data Siswa --}}
-          <div class="col-md-8">
-            <table class="table table-bordered">
-              <tbody>
-                <tr>
-                  <th style="width: 30%;">ID</th>
-                  <td>{{ $model->id }}</td>
-                </tr>
-                <tr>
-                  <th>Wali Murid</th>
-                  <td>{{ $model->wali->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Status Wali</th>
-                  <td>
-                    @if ($model->wali_status === 'ok')
-                      <span class="badge bg-label-success">Aktif</span>
-                    @else
-                      <span class="badge bg-label-secondary">Tidak Ada</span>
-                    @endif
-                  </td>
-                </tr>
-                <tr>
-                  <th>Nama Siswa</th>
-                  <td>{{ $model->nama }}</td>
-                </tr>
-                <tr>
-                  <th>NISN</th>
-                  <td>{{ $model->nisn }}</td>
-                </tr>
-                <tr>
-                  <th>Kelas</th>
-                  <td>{{ $model->kelas }}</td>
-                </tr>
-                <tr>
-                  <th>Angkatan</th>
-                  <td>{{ $model->angkatan }}</td>
-                </tr>
-                <tr>
-                  <th>Dibuat Pada</th>
-                  <td>{{ $model->created_at ? $model->created_at->format('d-m-Y H:i') : '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Diubah Terakhir</th>
-                  <td>{{ $model->updated_at ? $model->updated_at->format('d-m-Y H:i') : '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Dibuat Oleh</th>
-                  <td>{{ $model->user->name ?? '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <a href="{{ route($routePrefix . '.index') }}" class="btn btn-dark btn-sm mt-3">
-              <i class="fa fa-arrow-left me-1"></i> Kembali
-            </a>
-          </div>
-
-        </div>
-      </div>
     </div>
-
-  </div>
 </div>
 @endsection
 
-{{-- Dibuat oleh Umar Ulkhak --}}
+@push('styles')
+<style>
+    /* Optional: hover effect untuk card */
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+        transition: all 0.3s ease;
+    }
+
+    /* Optional: animasi saat load */
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Optional: Tambahkan animasi saat halaman load
+        document.querySelector('.card').classList.add('fade-in');
+    });
+</script>
+@endpush
+
+{{--
+|--------------------------------------------------------------------------
+| VIEW: Detail Siswa
+|--------------------------------------------------------------------------
+| Penulis     : Umar Ulkhak
+| Tujuan      : Menampilkan detail lengkap profil siswa dengan tampilan user-friendly.
+| Fitur       :
+|   - Foto profil besar dengan fallback
+|   - Layout 2 kolom (foto + detail) di desktop, 1 kolom di mobile
+|   - Ikon & warna untuk setiap informasi
+|   - Badge status visual
+|   - Tombol aksi: Edit & Kembali
+|   - Animasi halus saat load
+|
+| Variabel yang diharapkan:
+|   - $model      → Instance model Siswa
+|   - $title      → Judul halaman (opsional)
+|   - $routePrefix → Prefix route (misal: 'siswa')
+|
+--}}

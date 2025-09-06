@@ -41,12 +41,10 @@ Route::prefix('operator')
         Route::resource('siswa', SiswaController::class);
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);
-        Route::resource('tagihan', TagihanController::class);
         Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
 
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
-        ->name('tagihan.destroySiswa');
-
+            ->name('tagihan.destroySiswa');
     });
 
 // ============================
@@ -74,4 +72,3 @@ Route::get('logout', function () {
     Auth::logout();
     return redirect('login');
 })->name('logout');
-

@@ -13,25 +13,60 @@ use App\Http\Requests\UpdateSiswaRequest;
 /**
  * Controller untuk manajemen data Siswa.
  *
+ * Mengelola operasi CRUD (Create, Read, Update, Delete) data siswa,
+ * termasuk upload foto, relasi wali murid, dan pencarian.
+ * Semua operasi dilindungi oleh FormRequest untuk validasi otomatis.
+ *
  * @author  Umar Ulkhak
  * @date    3 Agustus 2025
+ * @updated 5 April 2025 — Tambah dokumentasi & clean code
  */
 class SiswaController extends Controller
 {
-    private string $viewPath    = 'operator.';
-    private string $routePrefix = 'siswa';
-    private string $viewIndex   = 'siswa_index';
-    private string $viewForm    = 'siswa_form';
-    private string $viewShow    = 'siswa_show';
+    /**
+     * Prefix path untuk view operator.
+     */
+    private string $viewPath = 'operator.';
 
     /**
-     * Menampilkan daftar siswa.
+     * Prefix route untuk siswa (tanpa group name prefix).
+     * Contoh: 'siswa.index', 'siswa.create', dll.
+     */
+    private string $routePrefix = 'siswa';
+
+    /**
+     * Nama view untuk halaman index.
+     */
+    private string $viewIndex = 'siswa_index';
+
+    /**
+     * Nama view untuk form tambah/edit.
+     */
+    private string $viewForm = 'siswa_form';
+
+    /**
+     * Nama view untuk halaman detail.
+     */
+    private string $viewShow = 'siswa_show';
+
+    /**
+     * Menampilkan daftar siswa dengan fitur pencarian.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        $models = $request->filled('q')
-            ? Model::search($request->q)->paginate(50)
-            : Model::with('wali', 'user')->latest()->paginate(50);
+        // Bangun query dasar dengan relasi
+        $query = Model::with('wali', 'user');
+
+        // Jika ada pencarian, gunakan searchable trait
+        if ($request->filled('q')) {
+            $query = $query->search($request->q);
+        }
+
+        // Ambil data dengan pagination
+        $models = $query->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -41,7 +76,9 @@ class SiswaController extends Controller
     }
 
     /**
-     * Menampilkan form tambah siswa.
+     * Menampilkan form tambah data siswa.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -50,36 +87,48 @@ class SiswaController extends Controller
             'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
-            'title'  => 'Form Data Siswa',
+            'title'  => 'Form Tambah Data Siswa',
             'wali'   => $this->getWaliOptions(),
         ]);
     }
 
     /**
-     * Menyimpan data siswa baru.
+     * Menyimpan data siswa baru ke database.
+     *
+     * @param  \App\Http\Requests\StoreSiswaRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(StoreSiswaRequest $request)
     {
         $validated = $request->validated();
 
+        // Handle upload foto jika ada
         if ($request->hasFile('foto')) {
             $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
         }
 
+        // Set status wali jika wali_id diisi
         if ($request->filled('wali_id')) {
             $validated['wali_status'] = 'ok';
         }
 
+        // Set user yang membuat data
         $validated['user_id'] = Auth::id();
 
-        Model::create($validated);
+        // Simpan ke database
+        $siswa = Model::create($validated);
 
-        flash('Data berhasil disimpan')->success();
+        // Flash message sukses
+        flash("✅ Data siswa '{$siswa->nama}' berhasil disimpan")->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menampilkan form edit siswa.
+     * Menampilkan form edit data siswa.
+     *
+     * @param  int  $id  ID siswa
+     * @return \Illuminate\View\View
      */
     public function edit(int $id)
     {
@@ -90,52 +139,81 @@ class SiswaController extends Controller
             'method' => 'PUT',
             'route'  => [$this->routePrefix . '.update', $siswa->id],
             'button' => 'UPDATE',
-            'title'  => 'Form Data Siswa',
+            'title'  => 'Form Edit Data Siswa',
             'wali'   => $this->getWaliOptions(),
         ]);
     }
 
     /**
-     * Memperbarui data siswa.
+     * Memperbarui data siswa di database.
+     *
+     * @param  \App\Http\Requests\UpdateSiswaRequest  $request
+     * @param  int  $id  ID siswa
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(UpdateSiswaRequest $request, int $id)
     {
         $siswa = Model::findOrFail($id);
         $validated = $request->validated();
 
+        // Simpan nilai lama untuk flash message
+        $kelasLama = $siswa->kelas;
+        $namaSiswa = $siswa->nama;
+
+        // Handle upload foto jika ada (hapus foto lama)
         if ($request->hasFile('foto')) {
             $this->deleteFotoIfExists($siswa->foto);
             $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
         }
 
-        if ($request->filled('wali_id')) {
-            $validated['wali_status'] = 'ok';
-        }
+        // Update status wali
+        $validated['wali_status'] = $request->filled('wali_id') ? 'ok' : null;
 
+        // Set/update user_id
         $validated['user_id'] = Auth::id();
 
+        // Update data siswa
         $siswa->update($validated);
 
-        flash('Data berhasil diperbarui')->success();
+        // Flash message sukses dengan detail perubahan
+        $pesan = "✅ Data siswa '{$namaSiswa}' berhasil diperbarui";
+        if ($kelasLama !== $validated['kelas']) {
+            $pesan .= " (Kelas: {$kelasLama} → {$validated['kelas']})";
+        }
+
+        flash($pesan)->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menghapus data siswa.
+     * Menghapus data siswa dari database.
+     *
+     * @param  int  $id  ID siswa
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(int $id)
     {
         $siswa = Model::findOrFail($id);
 
+        // Hapus foto jika ada
         $this->deleteFotoIfExists($siswa->foto);
+
+        // Hapus data siswa
+        $namaSiswa = $siswa->nama;
         $siswa->delete();
 
-        flash('Data berhasil dihapus')->success();
+        // Flash message sukses
+        flash("🗑️ Data siswa '{$namaSiswa}' berhasil dihapus")->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menampilkan detail siswa.
+     * Menampilkan detail data siswa.
+     *
+     * @param  int  $id  ID siswa
+     * @return \Illuminate\View\View
      */
     public function show(int $id)
     {
@@ -149,15 +227,22 @@ class SiswaController extends Controller
     }
 
     /**
-     * Ambil daftar wali murid untuk dropdown.
+     * Ambil daftar wali murid untuk dropdown select.
+     *
+     * @return \Illuminate\Support\Collection
      */
     private function getWaliOptions()
     {
-        return User::where('akses', 'wali')->pluck('name', 'id');
+        return User::where('akses', 'wali')
+                   ->orderBy('name')
+                   ->pluck('name', 'id');
     }
 
     /**
-     * Hapus foto siswa jika ada.
+     * Hapus file foto dari storage jika path-nya valid dan ada.
+     *
+     * @param  string|null  $path
+     * @return void
      */
     private function deleteFotoIfExists(?string $path): void
     {
