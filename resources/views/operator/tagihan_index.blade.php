@@ -32,34 +32,6 @@
                 @endif
 
                 {{-- Dashboard Cards --}}
-                @php
-                    $totalSiswa = $models->unique('siswa_id')->count();
-                    $totalTagihan = $models->count();
-                    $lunas = $models->where('status', 'lunas')->count();
-                    $belum = $models->where('status', 'baru')->count();
-
-                    $bulan = request('bulan') ?? now()->format('m');
-                    $tahun = request('tahun') ?? now()->format('Y');
-
-                    $prevMonth = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonth();
-                    $modelsPrev = \App\Models\Tagihan::whereMonth('tanggal_tagihan', $prevMonth->format('m'))
-                        ->whereYear('tanggal_tagihan', $prevMonth->format('Y'))
-                        ->get();
-
-                    $totalSiswaPrev = $modelsPrev->unique('siswa_id')->count();
-                    $lunasPrev = $modelsPrev->where('status', 'lunas')->count();
-                    $belumPrev = $modelsPrev->where('status', 'baru')->count();
-                    $totalTagihanPrev = $modelsPrev->count();
-
-                    $diffSiswa = $totalSiswa - $totalSiswaPrev;
-                    $diffLunas = $lunas - $lunasPrev;
-                    $diffBelum = $belum - $belumPrev;
-
-                    $persentase = $totalTagihan > 0 ? round(($lunas / $totalTagihan) * 100, 1) : 0;
-                    $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
-                    $diffPersen = $persentase - $persentasePrev;
-                @endphp
-
                 <div class="row mb-4 g-3">
                     <!-- Total Siswa -->
                     <div class="col-12 col-md-3">
@@ -69,7 +41,7 @@
                                     <h6 class="text-muted small mb-1">Total Siswa</h6>
                                     <h2 class="fw-bold mb-1">{{ $totalSiswa }}</h2>
                                     <p class="{{ $diffSiswa >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffSiswa >= 0 ? '+' : '' }}{{ $diffSiswa }} siswa dibanding bulan lalu
+                                        {{ $diffSiswa >= 0 ? '+' : '' }}{{ $diffSiswa }} siswa dibanding periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
@@ -85,9 +57,9 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="text-muted small mb-1">Tagihan Lunas</h6>
-                                    <h2 class="fw-bold mb-1">{{ $lunas }}</h2>
+                                    <h2 class="fw-bold mb-1">{{ $totalLunas }}</h2>
                                     <p class="{{ $diffLunas >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffLunas >= 0 ? '+' : '' }}{{ $diffLunas }} dari bulan lalu
+                                        {{ $diffLunas >= 0 ? '+' : '' }}{{ $diffLunas }} dari periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
@@ -103,9 +75,9 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="text-muted small mb-1">Belum Bayar</h6>
-                                    <h2 class="fw-bold mb-1">{{ $belum }}</h2>
+                                    <h2 class="fw-bold mb-1">{{ $totalBelum }}</h2>
                                     <p class="{{ $diffBelum <= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffBelum >= 0 ? '+' : '' }}{{ $diffBelum }} dari bulan lalu
+                                        {{ $diffBelum >= 0 ? '+' : '' }}{{ $diffBelum }} dari periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
@@ -123,7 +95,7 @@
                                     <h6 class="text-muted small mb-1">Tingkat Pembayaran</h6>
                                     <h2 class="fw-bold mb-1">{{ $persentase }}%</h2>
                                     <p class="{{ $diffPersen >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffPersen >= 0 ? '+' : '' }}{{ $diffPersen }}% dari bulan lalu
+                                        {{ $diffPersen >= 0 ? '+' : '' }}{{ number_format($diffPersen, 1) }}% dari periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
@@ -264,7 +236,7 @@
                                                     'bulan' => $item->tanggal_tagihan->format('m'),
                                                     'tahun' => $item->tanggal_tagihan->format('Y'),
                                                 ]) }}"
-                                                   class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                                                   class="btn btn-outline-primary btn-sm px-3"
                                                    title="Lihat detail">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
@@ -274,7 +246,7 @@
                                                       onsubmit="return confirm('⚠️ PERHATIAN!\n\nYakin ingin menghapus SEMUA tagihan siswa ini?\n\nNama: {{ $item->siswa->nama }}\nNISN: {{ $item->siswa->nisn }}\n\nTindakan ini tidak bisa dibatalkan!')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Hapus semua">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Hapus semua">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -369,9 +341,10 @@
     Dibuat oleh: Umar Ulkhak
     Diperbarui: 6 September 2025
     Fitur:
-    - Dashboard card modern dengan rumus data dinamis
+    - Dashboard card modern dengan statistik akurat (sesuai filter)
     - Warna kelas: VII (biru), VIII (hijau), IX (merah)
     - Tombol aksi rapi dengan gap-2
     - Filter & Reset sejajar di samping input pencarian
+    - Tanpa query database di view — semua data dari controller
     - Desain profesional & responsif
 --}}

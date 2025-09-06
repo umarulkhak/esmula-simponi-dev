@@ -27,6 +27,12 @@ class Tagihan extends Model
         'tanggal_jatuh_tempo',
     ];
 
+    protected $with = [
+        'user',
+        'siswa',
+        'tagihanDetails',
+    ];
+
     // Relasi ke User
     public function user(): BelongsTo
     {

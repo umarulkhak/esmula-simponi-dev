@@ -22,7 +22,7 @@ use App\Http\Requests\StoreTagihanRequest;
  *
  * @author  Umar Ulkhak
  * @date    6 September 2025
- * @updated 6 September 2025 — Tambahan notifikasi detail biaya saat hapus
+ * @updated 6 September 2025 — Optimasi query: statistik dihitung dari collection
  */
 class TagihanController extends Controller
 {
@@ -66,19 +66,57 @@ class TagihanController extends Controller
 
         $models = $query->latest()->paginate(50);
 
-        $totalSiswa = Tagihan::distinct('siswa_id')->count('siswa_id');
-        $totalLunas = Tagihan::where('status', 'lunas')->count();
-        $totalBelum = Tagihan::where('status', 'baru')->count();
-        $persentase = $totalSiswa > 0 ? round(($totalLunas / $totalSiswa) * 100, 1) : 0;
+        // ✅ Ambil semua data sebagai collection — HANYA 1 QUERY
+        $tagihanCollection = $models->getCollection();
+
+        // ✅ HITUNG STATISTIK DARI COLLECTION — 0 QUERY TAMBAHAN
+        $totalSiswa = $tagihanCollection->unique('siswa_id')->count();
+        $totalLunas = $tagihanCollection->where('status', 'lunas')->count();
+        $totalBelum = $tagihanCollection->where('status', 'baru')->count();
+        $totalTagihan = $tagihanCollection->count();
+
+        $persentase = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
+
+        // ✅ Hitung statistik bulan lalu — dengan query terpisah (wajar, karena data beda periode)
+        $bulan = $request->filled(['bulan', 'tahun']) ? $request->bulan : now()->format('m');
+        $tahun = $request->filled(['bulan', 'tahun']) ? $request->tahun : now()->format('Y');
+
+        $prevMonth = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonth();
+
+        $prevQuery = Tagihan::query();
+
+        if ($request->filled(['bulan', 'tahun'])) {
+            $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
+                      ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+        } else {
+            $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
+                      ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+        }
+
+        // ✅ Untuk statistik bulan lalu — tetap pakai query (karena data beda)
+        $statPrevQuery = clone $prevQuery;
+        $totalSiswaPrev = $statPrevQuery->distinct('siswa_id')->count('siswa_id');
+        $lunasPrev = (clone $statPrevQuery)->where('status', 'lunas')->count();
+        $belumPrev = (clone $statPrevQuery)->where('status', 'baru')->count();
+        $totalTagihanPrev = $statPrevQuery->count();
+        $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
 
         return view($this->viewPath . $this->viewIndex, [
-            'models'      => $models,
-            'routePrefix' => $this->routePrefix,
-            'title'       => 'Data Tagihan',
-            'totalSiswa'  => $totalSiswa,
-            'totalLunas'  => $totalLunas,
-            'totalBelum'  => $totalBelum,
-            'persentase'  => $persentase,
+            'models'         => $models,
+            'routePrefix'    => $this->routePrefix,
+            'title'          => 'Data Tagihan',
+            'totalSiswa'     => $totalSiswa,
+            'totalLunas'     => $totalLunas,
+            'totalBelum'     => $totalBelum,
+            'persentase'     => $persentase,
+            'totalSiswaPrev' => $totalSiswaPrev,
+            'lunasPrev'      => $lunasPrev,
+            'belumPrev'      => $belumPrev,
+            'persentasePrev' => $persentasePrev,
+            'diffSiswa'      => $totalSiswa - $totalSiswaPrev,
+            'diffLunas'      => $totalLunas - $lunasPrev,
+            'diffBelum'      => $totalBelum - $belumPrev,
+            'diffPersen'     => $persentase - $persentasePrev,
         ]);
     }
 
@@ -124,30 +162,33 @@ class TagihanController extends Controller
 
         $jumlahTersimpan = 0;
 
-        foreach ($siswaList as $siswa) {
-            foreach ($biayaList as $biaya) {
-                if ($this->cekDuplikat($siswa->id, $biaya->nama, $bulan, $tahun)) {
-                    continue;
+        // Gunakan transaction untuk konsistensi data
+        DB::transaction(function () use ($siswaList, $biayaList, $tanggalTagihan, $tanggalJatuhTempo, $bulan, $tahun, &$jumlahTersimpan) {
+            foreach ($siswaList as $siswa) {
+                foreach ($biayaList as $biaya) {
+                    if ($this->cekDuplikat($siswa->id, $biaya->nama, $bulan, $tahun)) {
+                        continue;
+                    }
+
+                    $tagihan = Tagihan::create([
+                        'siswa_id'            => $siswa->id,
+                        'angkatan'            => $siswa->angkatan,
+                        'kelas'               => $siswa->kelas,
+                        'tanggal_tagihan'     => $tanggalTagihan,
+                        'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                        'keterangan'          => $data['keterangan'] ?? null,
+                        'status'              => self::STATUS_BARU,
+                    ]);
+
+                    $tagihan->tagihanDetails()->create([
+                        'nama_biaya'   => $biaya->nama,
+                        'jumlah_biaya' => $biaya->jumlah,
+                    ]);
+
+                    $jumlahTersimpan++;
                 }
-
-                $tagihan = Tagihan::create([
-                    'siswa_id'            => $siswa->id,
-                    'angkatan'            => $siswa->angkatan,
-                    'kelas'               => $siswa->kelas,
-                    'tanggal_tagihan'     => $tanggalTagihan,
-                    'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                    'keterangan'          => $data['keterangan'] ?? null,
-                    'status'              => self::STATUS_BARU,
-                ]);
-
-                $tagihan->tagihanDetails()->create([
-                    'nama_biaya'   => $biaya->nama,
-                    'jumlah_biaya' => $biaya->jumlah,
-                ]);
-
-                $jumlahTersimpan++;
             }
-        }
+        });
 
         return redirect()
             ->route($this->routePrefix . '.index')
@@ -232,14 +273,16 @@ class TagihanController extends Controller
             $jumlahDetail = 0;
             $allBiaya = [];
 
-            foreach ($tagihans as $tagihan) {
-                $detailList = $tagihan->tagihanDetails()->pluck('nama_biaya')->toArray();
-                $jumlahDetail += count($detailList);
-                $allBiaya = array_merge($allBiaya, $detailList);
+            DB::transaction(function () use ($tagihans, &$jumlahDetail, &$allBiaya) {
+                foreach ($tagihans as $tagihan) {
+                    $detailList = $tagihan->tagihanDetails()->pluck('nama_biaya')->toArray();
+                    $jumlahDetail += count($detailList);
+                    $allBiaya = array_merge($allBiaya, $detailList);
 
-                $tagihan->tagihanDetails()->delete();
-                $tagihan->delete();
-            }
+                    $tagihan->tagihanDetails()->delete();
+                    $tagihan->delete();
+                }
+            });
 
             $biayaText = $jumlahDetail > 0 ? implode(', ', $allBiaya) : '—';
 
