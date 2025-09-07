@@ -43,6 +43,9 @@ Route::prefix('operator')
         Route::resource('biaya', BiayaController::class);
         Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
 
+
+        Route::get('/tagihan/export', [TagihanController::class, 'export'])->name('tagihan.export');
+
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
             ->name('tagihan.destroySiswa');
     });

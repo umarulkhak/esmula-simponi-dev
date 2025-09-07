@@ -329,4 +329,19 @@ class TagihanController extends Controller
             ->whereHas('tagihanDetails', fn($q) => $q->where('nama_biaya', $namaBiaya))
             ->exists();
     }
+
+    /**
+     * Export data tagihan ke format Excel/PDF
+     */
+    public function export(Request $request)
+    {
+        // Untuk sementara, redirect ke index dulu
+        flash('Fitur export akan segera tersedia')->info();
+        return redirect()->route('tagihan.index');
+
+        // Nanti bisa diisi dengan:
+        // return Excel::download(new TagihanExport, 'tagihan.xlsx');
+        // atau
+        // return PDF::loadView('tagihan.export')->download('tagihan.pdf');
+    }
 }
