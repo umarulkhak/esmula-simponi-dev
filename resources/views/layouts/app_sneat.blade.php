@@ -31,6 +31,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <meta name="description" content="Sistem Informasi Pembayaran Online (Simponi) - Dashboard Operator" />
+    <meta name="theme-color" content="#696cff"> <!-- ✅ Tambahkan theme color -->
 
     <title>@yield('title', config('app.name', 'Laravel'))</title>
 
@@ -38,8 +39,8 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/wallet.svg') }}" />
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" /> <!-- ✅ Hapus spasi ekstra -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /> <!-- ✅ Hapus spasi ekstra -->
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
 
     <!-- Icons -->
@@ -126,24 +127,27 @@
     <!-- / Layout Wrapper -->
 
     <!-- Core JS -->
-    <script src="{{ asset('sneat/assets/vendor/libs/jquery/jquery.js') }}"></script>
-    <script src="{{ asset('sneat/assets/vendor/libs/popper/popper.js') }}"></script>
-    <script src="{{ asset('sneat/assets/vendor/js/bootstrap.js') }}"></script>
-    <script src="{{ asset('sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
-    <script src="{{ asset('sneat/assets/vendor/js/menu.js') }}"></script>
+    <script src="{{ asset('sneat/assets/vendor/libs/jquery/jquery.js') }}" defer></script> <!-- ✅ Tambah defer -->
+    <script>
+        window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.6.0.min.js" defer><\/script>') <!-- ✅ Fallback CDN -->
+    </script>
+    <script src="{{ asset('sneat/assets/vendor/libs/popper/popper.js') }}" defer></script>
+    <script src="{{ asset('sneat/assets/vendor/js/bootstrap.js') }}" defer></script>
+    <script src="{{ asset('sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}" defer></script>
+    <script src="{{ asset('sneat/assets/vendor/js/menu.js') }}" defer></script>
 
     <!-- Vendors JS -->
-    <script src="{{ asset('sneat/assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
+    <script src="{{ asset('sneat/assets/vendor/libs/apex-charts/apexcharts.js') }}" defer></script>
 
     <!-- Main JS -->
-    <script src="{{ asset('sneat/assets/js/main.js') }}"></script>
+    <script src="{{ asset('sneat/assets/js/main.js') }}" defer></script>
 
     <!-- Page JS -->
-    <script src="{{ asset('sneat/assets/js/dashboards-analytics.js') }}"></script>
+    <script src="{{ asset('sneat/assets/js/dashboards-analytics.js') }}" defer></script>
 
     <!-- Third Party JS -->
-    <script src="{{ asset('js/select2.min.js') }}"></script>
-    <script src="{{ asset('js/jquery.mask.min.js') }}"></script>
+    <script src="{{ asset('js/select2.min.js') }}" defer></script> <!-- ✅ Tambah defer -->
+    <script src="{{ asset('js/jquery.mask.min.js') }}" defer></script> <!-- ✅ Tambah defer -->
 
     <!-- Custom JS -->
     <script>

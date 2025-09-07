@@ -4,38 +4,78 @@ namespace App\Http\Controllers;
 
 use App\Models\User as Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Controller untuk manajemen data pengguna (Admin & Operator).
- * Dibuat oleh Umar Ulkhak
+ *
+ * Mengatur operasi CRUD (Create, Read, Update, Delete) data user.
+ * Mengecualikan user dengan akses 'wali' di halaman index.
+ * Semua flash message menyertakan nama user untuk UX lebih baik.
+ *
+ * @author  Umar Ulkhak
+ * @date    5 April 2025
+ * @updated 5 April 2025 — Clean code & dokumentasi lengkap
  */
 class UserController extends Controller
 {
+    /**
+     * Prefix path untuk view operator.
+     */
     private string $viewPath = 'operator.';
-    private string $routePrefix = 'user';
-
-    private string $viewIndex = 'user_index';
-    private string $viewForm  = 'user_form';
-    private string $viewShow  = 'user_show'; // Disiapkan untuk kebutuhan mendatang
 
     /**
-     * Menampilkan daftar user (kecuali wali).
+     * Prefix route untuk user (tanpa group name prefix).
+     * Contoh: 'user.index', 'user.create', dll.
      */
-    public function index()
+    private string $routePrefix = 'user';
+
+    /**
+     * Nama view untuk halaman index.
+     */
+    private string $viewIndex = 'user_index';
+
+    /**
+     * Nama view untuk form tambah/edit.
+     */
+    private string $viewForm = 'user_form';
+
+    /**
+     * Nama view untuk halaman detail (placeholder untuk fitur mendatang).
+     */
+    private string $viewShow = 'user_show';
+
+    /**
+     * Menampilkan daftar user (kecuali wali) dengan fitur pencarian.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
     {
-        $users = Model::where('akses', '<>', 'wali')
-                    ->latest()
-                    ->paginate(50);
+        $query = Model::where('akses', '<>', 'wali');
+
+        // Jika ada pencarian, filter berdasarkan nama, email, atau nohp
+        if ($request->filled('q')) {
+            $query = $query->where('name', 'LIKE', '%' . $request->q . '%')
+                           ->orWhere('email', 'LIKE', '%' . $request->q . '%')
+                           ->orWhere('nohp', 'LIKE', '%' . $request->q . '%');
+        }
+
+        // Ambil data dengan pagination
+        $models = $query->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
-            'models'      => $users,
+            'models'      => $models,
             'routePrefix' => $this->routePrefix,
             'title'       => 'Data User',
         ]);
     }
 
     /**
-     * Form tambah user.
+     * Menampilkan form tambah data user.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -44,12 +84,15 @@ class UserController extends Controller
             'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
-            'title'  => 'Form Data User',
+            'title'  => 'Form Tambah Data User',
         ]);
     }
 
     /**
-     * Simpan user baru.
+     * Menyimpan data user baru ke database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -61,25 +104,24 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        $validated['password'] = bcrypt($validated['password']);
+        // Hash password & set default values
+        $validated['password'] = Hash::make($validated['password']);
         $validated['email_verified_at'] = now();
 
-        Model::create($validated);
+        // Simpan ke database
+        $user = Model::create($validated);
 
-        flash('Data berhasil disimpan')->success();
+        // Flash message sukses dengan nama user
+        flash("✅ User '{$user->name}' berhasil ditambahkan")->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * (Opsional) Detail user.
-     */
-    public function show($id)
-    {
-        // Siapkan jika ingin menampilkan detail
-    }
-
-    /**
-     * Form edit user.
+     * Menampilkan form edit data user.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
@@ -90,12 +132,16 @@ class UserController extends Controller
             'method' => 'PUT',
             'route'  => [$this->routePrefix . '.update', $user->id],
             'button' => 'UPDATE',
-            'title'  => 'Form Data User',
+            'title'  => 'Form Edit Data User',
         ]);
     }
 
     /**
-     * Update data user.
+     * Memperbarui data user di database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -109,33 +155,70 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
         ]);
 
+        // Handle password
         if (!empty($validated['password'])) {
-            $validated['password'] = bcrypt($validated['password']);
+            $validated['password'] = Hash::make($validated['password']);
         } else {
-            unset($validated['password']);
+            unset($validated['password']); // biarkan password lama
         }
 
+        // Simpan nama lama untuk flash message
+        $namaLama = $user->name;
+
+        // Update data user
         $user->update($validated);
 
-        flash('Data berhasil diperbarui')->success();
+        // Flash message sukses dengan detail perubahan
+        $pesan = "✅ User berhasil diperbarui";
+        if ($namaLama !== $validated['name']) {
+            $pesan .= " ({$namaLama} → {$validated['name']})";
+        } else {
+            $pesan .= ": {$validated['name']}";
+        }
+
+        flash($pesan)->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Hapus user (kecuali akun penting).
+     * Menghapus data user dari database.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
         $user = Model::findOrFail($id);
 
+        // Proteksi akun penting
         if ($user->email === 'alkhak24@gmail.com') {
-            flash('Akun ini tidak dapat dihapus.')->error();
+            flash('🔒 Akun ini tidak dapat dihapus karena merupakan akun penting.')->error();
             return redirect()->route($this->routePrefix . '.index');
         }
 
+        // Simpan nama user untuk flash message
+        $namaUser = $user->name;
+
+        // Hapus data user
         $user->delete();
 
-        flash('Data berhasil dihapus')->success();
+        // Flash message sukses dengan nama user
+        flash("🗑️ User '{$namaUser}' berhasil dihapus")->success();
+
         return redirect()->route($this->routePrefix . '.index');
+    }
+
+    /**
+     * Menampilkan detail user (placeholder untuk fitur mendatang).
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
+    public function show($id)
+    {
+        // Siapkan jika ingin menampilkan detail
+        // $user = Model::findOrFail($id);
+        // return view($this->viewPath . $this->viewShow, compact('user'));
     }
 }

@@ -1,52 +1,69 @@
 <?php
-/**
- * WaliController
- *
- * Controller untuk mengelola data wali murid.
- *
- * @author Umar Ulkhak
- */
 
 namespace App\Http\Controllers;
 
 use App\Models\User as Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
+/**
+ * Controller untuk manajemen data Wali Murid.
+ *
+ * Mengatur operasi CRUD (Create, Read, Update, Delete) data wali murid.
+ * Semua flash message menyertakan nama wali untuk UX lebih baik.
+ * Menggunakan scope `wali()` untuk memfilter hanya user dengan akses 'wali'.
+ *
+ * @author  Umar Ulkhak
+ * @date    5 April 2025
+ * @updated 5 April 2025 — Clean code & dokumentasi lengkap
+ */
 class WaliController extends Controller
 {
     /**
-     * Path view untuk halaman operator.
+     * Prefix path untuk view operator.
      */
     private string $viewPath = 'operator.';
 
     /**
-     * Prefix route untuk wali.
+     * Prefix route untuk wali (tanpa group name prefix).
+     * Contoh: 'wali.index', 'wali.create', dll.
      */
     private string $routePrefix = 'wali';
 
     /**
-     * Nama view untuk halaman index wali.
+     * Nama view untuk halaman index.
      */
     private string $viewIndex = 'wali_index';
 
     /**
-     * Nama view untuk form wali.
+     * Nama view untuk form tambah/edit.
+     * Catatan: Reuse view 'user_form' untuk konsistensi form.
      */
     private string $viewForm = 'user_form';
 
     /**
-     * Nama view untuk detail wali.
+     * Nama view untuk halaman detail.
      */
     private string $viewShow = 'wali_show';
 
     /**
-     * Menampilkan daftar wali murid.
+     * Menampilkan daftar wali murid dengan fitur pencarian.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        $models = Model::wali()
-            ->latest()
-            ->paginate(50);
+        $query = Model::wali();
+
+        // Jika ada pencarian, filter berdasarkan nama atau email
+        if ($request->filled('q')) {
+            $query = $query->where('name', 'LIKE', '%' . $request->q . '%')
+                           ->orWhere('email', 'LIKE', '%' . $request->q . '%');
+        }
+
+        // Ambil data dengan pagination
+        $models = $query->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -56,7 +73,9 @@ class WaliController extends Controller
     }
 
     /**
-     * Menampilkan form tambah wali murid.
+     * Menampilkan form tambah data wali murid.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -65,12 +84,15 @@ class WaliController extends Controller
             'method' => 'POST',
             'route'  => $this->routePrefix . '.store',
             'button' => 'SIMPAN',
-            'title'  => 'Form Data Wali Murid',
+            'title'  => 'Form Tambah Data Wali Murid',
         ]);
     }
 
     /**
      * Menyimpan data wali murid baru ke database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -81,79 +103,123 @@ class WaliController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        $validated['password'] = bcrypt($validated['password']);
+        // Hash password & set default values
+        $validated['password'] = Hash::make($validated['password']);
         $validated['email_verified_at'] = now();
         $validated['akses'] = 'wali';
 
-        Model::create($validated);
+        // Simpan ke database
+        $wali = Model::create($validated);
 
-        flash('Data berhasil disimpan')->success();
+        // Flash message sukses dengan nama wali
+        flash("✅ Wali '{$wali->name}' berhasil ditambahkan")->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menampilkan form edit wali murid.
+     * Menampilkan form edit data wali murid.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
-        $user = Model::wali()->findOrFail($id);
+        $wali = Model::wali()->findOrFail($id);
 
         return view($this->viewPath . $this->viewForm, [
-            'model'  => $user,
+            'model'  => $wali,
             'method' => 'PUT',
-            'route'  => [$this->routePrefix . '.update', $user->id],
+            'route'  => [$this->routePrefix . '.update', $wali->id],
             'button' => 'UPDATE',
-            'title'  => 'Form Data Wali Murid',
+            'title'  => 'Form Edit Data Wali Murid',
         ]);
     }
 
     /**
-     * Memperbarui data wali murid.
+     * Memperbarui data wali murid di database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
-        $user = Model::wali()->findOrFail($id);
+        $wali = Model::wali()->findOrFail($id);
 
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email,' . $user->id,
-            'nohp'     => 'required|string|unique:users,nohp,' . $user->id,
-            'password' => 'nullable|string|min:6',
+            'email'    => 'required|email|unique:users,email,' . $wali->id,
+            'nohp'     => 'required|string|unique:users,nohp,' . $wali->id,
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
+        // Handle password
         if (!empty($validated['password'])) {
-            $validated['password'] = bcrypt($validated['password']);
+            $validated['password'] = Hash::make($validated['password']);
         } else {
-            unset($validated['password']);
+            unset($validated['password']); // biarkan password lama
         }
 
-        $user->update($validated);
+        // Simpan nama lama untuk flash message
+        $namaLama = $wali->name;
 
-        flash('Data berhasil diperbarui')->success();
+        // Update data wali
+        $wali->update($validated);
+
+        // Flash message sukses dengan detail perubahan
+        $pesan = "✅ Wali berhasil diperbarui";
+        if ($namaLama !== $validated['name']) {
+            $pesan .= " ({$namaLama} → {$validated['name']})";
+        } else {
+            $pesan .= ": {$validated['name']}";
+        }
+
+        flash($pesan)->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menghapus wali murid berdasarkan ID.
+     * Menghapus data wali murid dari database.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
-        $user = Model::wali()->findOrFail($id);
-        $user->delete();
+        $wali = Model::wali()->findOrFail($id);
 
-        flash('Data berhasil dihapus')->success();
+        // Simpan nama wali untuk flash message
+        $namaWali = $wali->name;
+
+        // Hapus data wali
+        $wali->delete();
+
+        // Flash message sukses dengan nama wali
+        flash("🗑️ Wali '{$namaWali}' berhasil dihapus")->success();
+
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menampilkan detail wali dan daftar siswa yang belum punya wali.
+     * Menampilkan detail wali murid beserta daftar siswa yang belum punya wali.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
      */
     public function show($id)
     {
+        $wali = Model::with('siswa')->wali()->findOrFail($id);
+
+        // Ambil daftar siswa yang belum punya wali (untuk dropdown)
+        $siswa = \App\Models\Siswa::whereNull('wali_id')->pluck('nama', 'id');
+
         return view($this->viewPath . $this->viewShow, [
-            'siswa' => \App\Models\Siswa::whereNull('wali_id')->pluck('nama', 'id'),
-            'model' => Model::with('siswa')->wali()->findOrFail($id),
-            'title' => 'Detail Data Wali'
+            'model'       => $wali,
+            'siswa'       => $siswa,
+            'title'       => 'Detail Data Wali',
+            'routePrefix' => $this->routePrefix,
         ]);
     }
 }

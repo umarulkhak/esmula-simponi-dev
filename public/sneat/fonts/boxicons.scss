@@ -14,10 +14,10 @@ $boxicons-font-size-base: 16px;
   font-weight: normal;
   font-style: normal;
 
-  src: url('../fonts/#{$boxicons-font-path}/boxicons.eot');
-  src: url('../fonts/#{$boxicons-font-path}/boxicons.eot') format('embedded-opentype'),
-    url('../fonts/#{$boxicons-font-path}/boxicons.woff2') format('woff2'),
-    url('../fonts/#{$boxicons-font-path}/boxicons.woff') format('woff'),
-    url('../fonts/#{$boxicons-font-path}/boxicons.ttf') format('truetype'),
-    url('../fonts/#{$boxicons-font-path}/boxicons.svg?#boxicons') format('svg');
+  src: url('../../fonts/boxicons.eot');
+  src: url('../../fonts/boxicons.eot') format('embedded-opentype'),
+    url('../../fonts/boxicons.woff2') format('woff2'),
+    url('../../fonts/boxicons.woff') format('woff'),
+    url('../../fonts/boxicons.ttf') format('truetype'),
+    url('../../fonts/boxicons.svg?#boxicons') format('svg');
 }
