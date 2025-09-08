@@ -14,10 +14,11 @@
 |   - Clean Code: struktur blade rapi, komentar jelas
 |
 | Variabel yang diharapkan dari Controller:
-|   - $title   → Judul halaman
-|   - $siswa   → Instance model Siswa
-|   - $tagihan → Collection tagihan yang sudah difilter
-|   - $pembayaran → Collection pembayaran terkait (opsional)
+|   - $title         → Judul halaman
+|   - $siswa         → Instance model Siswa
+|   - $tagihan       → Collection tagihan yang sudah difilter
+|   - $pembayaran    → Collection pembayaran terkait
+|   - $tagihanDefault → Tagihan default (untuk hidden field)
 |
 --}}
 
@@ -110,11 +111,16 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @php $totalTagihan = 0; @endphp
+                                    @php
+                                        $totalTagihan = 0;
+                                        $jumlahDibayar = 0;
+                                    @endphp
                                     @forelse ($tagihan as $item)
                                         @if($item->tagihanDetails && $item->tagihanDetails->isNotEmpty())
                                             @foreach($item->tagihanDetails as $detail)
-                                                @php $totalTagihan += $detail->jumlah_biaya; @endphp
+                                                @php
+                                                    $totalTagihan += $detail->jumlah_biaya;
+                                                @endphp
                                                 <tr>
                                                     <td>{{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
                                                     <td>{{ $detail->nama_biaya ?? '–' }}</td>
@@ -131,6 +137,17 @@
                                         <td colspan="2">Total Tagihan</td>
                                         <td>{{ 'Rp ' . number_format($totalTagihan, 0, ',', '.') }}</td>
                                     </tr>
+
+                                    {{-- ✅ HITUNG TOTAL PEMBAYARAN --}}
+                                    @php
+                                        $jumlahDibayar = $pembayaran->sum('jumlah_dibayar');
+                                        $sisaTagihan = max(0, $totalTagihan - $jumlahDibayar);
+                                    @endphp
+
+                                    <tr class="fw-bold text-danger">
+                                        <td colspan="2">Sisa Tagihan</td>
+                                        <td>{{ 'Rp ' . number_format($sisaTagihan, 0, ',', '.') }}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -144,21 +161,36 @@
                                         <tr>
                                             <th>#</th>
                                             <th>Tanggal</th>
+                                            <th>Nama Tagihan</th>
                                             <th>Jumlah</th>
-                                            <th>Metode</th>
+                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @forelse ($pembayaran ?? [] as $p)
-                                            <tr>
-                                                <td><i class="fa fa-file-alt text-primary"></i></td>
-                                                <td>{{ $p->tanggal_pembayaran->format('d/m/Y') }}</td>
-                                                <td>{{ 'Rp ' . number_format($p->jumlah_dibayar, 0, ',', '.') }}</td>
-                                                <td>{{ ucfirst($p->metode_pembayaran) }}</td>
-                                            </tr>
+                                            @php
+                                                $tagihan = $p->tagihan;
+                                                $details = $tagihan->tagihanDetails;
+                                                $totalTagihanItem = $details->sum('jumlah_biaya');
+                                                $sisa = $totalTagihanItem - $p->jumlah_dibayar;
+                                                $status = $sisa <= 0 ? 'Lunas' : 'Belum Lunas';
+                                            @endphp
+                                            @foreach($details as $detail)
+                                                <tr>
+                                                    <td><i class="fa fa-file-alt text-primary"></i></td>
+                                                    <td>{{ $p->tanggal_bayar ? $p->tanggal_bayar->format('d/m/Y') : '–' }}</td>
+                                                    <td>{{ $detail->nama_biaya ?? '–' }}</td>
+                                                    <td>{{ 'Rp ' . number_format($p->jumlah_dibayar, 0, ',', '.') }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $status == 'Lunas' ? 'success' : 'warning' }} text-dark">
+                                                            {{ $status }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="text-center">Belum ada pembayaran</td>
+                                                <td colspan="5" class="text-center">Belum ada pembayaran</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -166,31 +198,43 @@
                             </div>
                         </div>
 
-                        {{-- === FORM PEMBAYARAN === --}}
+                        {{-- === FORM PEMBAYARAN (SIMPLE) === --}}
                         <div class="mt-4">
                             <h6 class="fw-bold mb-3">Form Pembayaran Baru</h6>
                             {!! Form::open(['route' => 'pembayaran.store', 'method' => 'POST', 'class' => 'row g-3']) !!}
                                 {!! Form::hidden('siswa_id', $siswa->id) !!}
                                 {!! Form::hidden('wali_id', $siswa->wali_id) !!}
 
+                                {{-- ✅ Kirim tagihan_id pertama sebagai acuan — DENGAN NULL-SAFE --}}
+                                @if($tagihanDefault && $tagihanDefault->id)
+                                    {!! Form::hidden('tagihan_id', $tagihanDefault->id) !!}
+                                @else
+                                    <div class="col-12">
+                                        <div class="alert alert-warning">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            Siswa ini belum memiliki tagihan. Tidak bisa melakukan pembayaran.
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="col-12 col-md-6">
-                                    <label for="tanggal_pembayaran" class="form-label fw-semibold">Tanggal Pembayaran <span class="text-danger">*</span></label>
-                                    {!! Form::date('tanggal_pembayaran', null, [
-                                        'class' => 'form-control' . ($errors->has('tanggal_pembayaran') ? ' is-invalid' : ''),
-                                        'id' => 'tanggal_pembayaran',
+                                    <label for="tanggal_bayar" class="form-label fw-semibold">Tanggal Pembayaran <span class="text-danger">*</span></label>
+                                    {!! Form::date('tanggal_bayar', old('tanggal_bayar') ?? now()->toDateString(), [
+                                        'class' => 'form-control' . ($errors->has('tanggal_bayar') ? ' is-invalid' : ''),
+                                        'id' => 'tanggal_bayar',
                                         'required'
                                     ]) !!}
-                                    @error('tanggal_pembayaran')
+                                    @error('tanggal_bayar')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
                                 <div class="col-12 col-md-6">
                                     <label for="jumlah_dibayar" class="form-label fw-semibold">Jumlah Dibayar <span class="text-danger">*</span></label>
-                                    {!! Form::text('jumlah_dibayar', null, [
+                                    {!! Form::text('jumlah_dibayar', old('jumlah_dibayar'), [
                                         'class' => 'form-control rupiah' . ($errors->has('jumlah_dibayar') ? ' is-invalid' : ''),
                                         'id' => 'jumlah_dibayar',
-                                        'placeholder' => 'Contoh: 225000',
+                                        'placeholder' => 'Contoh: 50000',
                                         'required'
                                     ]) !!}
                                     @error('jumlah_dibayar')
@@ -198,34 +242,24 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-12">
-                                    <label for="metode_pembayaran" class="form-label fw-semibold">Metode Pembayaran <span class="text-danger">*</span></label>
-                                    {!! Form::select('metode_pembayaran', [
-                                        '' => '-- Pilih Metode --',
-                                        'transfer' => 'Transfer Bank',
-                                        'cash' => 'Tunai',
-                                        'qris' => 'QRIS',
-                                        'lainnya' => 'Lainnya'
-                                    ], null, [
-                                        'class' => 'form-select' . ($errors->has('metode_pembayaran') ? ' is-invalid' : ''),
-                                        'id' => 'metode_pembayaran',
-                                        'required'
-                                    ]) !!}
-                                    @error('metode_pembayaran')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa fa-save me-1"></i> Simpan Pembayaran
-                                    </button>
-                                </div>
+                                @if($tagihanDefault && $tagihanDefault->id)
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-save me-1"></i> Simpan Pembayaran
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="col-12">
+                                        <button type="button" class="btn btn-secondary" disabled>
+                                            <i class="fa fa-ban me-1"></i> Tidak Ada Tagihan
+                                        </button>
+                                    </div>
+                                @endif
                             {!! Form::close() !!}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </div> {{-- .mt-4 --}}
+                    </div> {{-- .card-body --}}
+                </div> {{-- .card --}}
+            </div> {{-- .col-md-6 (KOLOM KIRI SELESAI) --}}
 
             {{-- === KOLOM KANAN: KARTU SPP + BUTTON CETAK === --}}
             <div class="col-md-6">
@@ -264,47 +298,35 @@
                                         <thead>
                                             <tr>
                                                 <th>Tanggal</th>
+                                                <th>Nama Tagihan</th>
                                                 <th>Jumlah</th>
-                                                <th>Metode</th>
+                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach($pembayaran as $p)
-                                                <tr>
-                                                    <td>{{ $p->tanggal_pembayaran->format('d M Y') }}</td>
-                                                    <td class="text-end">{{ 'Rp ' . number_format($p->jumlah_dibayar, 0, ',', '.') }}</td>
-                                                    <td>{{ ucfirst($p->metode_pembayaran) }}</td>
-                                                </tr>
+                                                @php
+                                                    $tagihan = $p->tagihan;
+                                                    $details = $tagihan->tagihanDetails;
+                                                    $totalTagihanItem = $details->sum('jumlah_biaya');
+                                                    $sisa = $totalTagihanItem - $p->jumlah_dibayar;
+                                                    $status = $sisa <= 0 ? 'Lunas' : 'Belum Lunas';
+                                                @endphp
+                                                @foreach($details as $detail)
+                                                    <tr>
+                                                        <td>{{ $p->tanggal_bayar ? $p->tanggal_bayar->format('d M Y') : '–' }}</td>
+                                                        <td>{{ $detail->nama_biaya ?? '–' }}</td>
+                                                        <td class="text-end">{{ 'Rp ' . number_format($p->jumlah_dibayar, 0, ',', '.') }}</td>
+                                                        <td>
+                                                            <span class="badge bg-{{ $status == 'Lunas' ? 'success' : 'warning' }} text-dark">
+                                                                {{ $status }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
                                             @endforeach
                                         </tbody>
                                     </table>
-                                </div>
-
-                                {{-- === STATUS PER BULAN === --}}
-                                @php
-                                    $bulanDibayar = [];
-                                    $nominalSPPPerBulan = 250000; // Sesuaikan dengan kebijakan sekolah
-                                    foreach($pembayaran as $p) {
-                                        if ($p->jumlah_dibayar >= $nominalSPPPerBulan) {
-                                            $bulanDibayar[] = $p->tanggal_pembayaran->format('F Y');
-                                        }
-                                    }
-                                    $bulanDibayar = array_unique($bulanDibayar);
-                                @endphp
-
-                                <div class="mb-3">
-                                    <h6 class="fw-semibold">Status Bulanan:</h6>
-                                    @if(count($bulanDibayar) > 0)
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @foreach($bulanDibayar as $bulan)
-                                                <span class="badge bg-success rounded-pill px-3 py-2">
-                                                    {{ $bulan }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="badge bg-warning text-dark">Belum ada pembayaran SPP</span>
-                                    @endif
                                 </div>
                             @else
                                 <div class="text-center py-3">
@@ -323,7 +345,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> {{-- .col-md-6 (KOLOM KANAN SELESAI) --}}
 
         </div> {{-- END ROW BAWAH --}}
 
@@ -369,9 +391,6 @@
             padding: 20px;
             font-size: 14px;
         }
-        .no-print {
-            display: none !important;
-        }
     }
 </style>
 @endpush
@@ -386,19 +405,30 @@
     });
 
     function cetakKartuSPP() {
-        // Tambahkan gaya khusus sebelum cetak
         const printContent = document.getElementById('kartu-spp-content').innerHTML;
         const originalContent = document.body.innerHTML;
 
         document.body.innerHTML = `
-            <div style="padding: 20px; font-family: Arial, sans-serif;">
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Cetak Kartu SPP</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                    td, th { border: 1px solid #ddd; padding: 8px; }
+                    .text-end { text-align: right; }
+                </style>
+            </head>
+            <body>
                 ${printContent}
-            </div>
+            </body>
+            </html>
         `;
 
         window.print();
         document.body.innerHTML = originalContent;
-        location.reload(); // reload agar event listener & script kembali aktif
+        location.reload(); // Reload agar event listener kembali aktif
     }
 </script>
 @endpush

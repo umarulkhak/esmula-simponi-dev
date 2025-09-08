@@ -14,6 +14,7 @@ class TagihanDetail extends Model
         'nama_biaya',
         'jumlah_biaya',
     ];
+    protected $table = 'tagihan_details';
 
     // Relasi ke Tagihan
     public function tagihan()

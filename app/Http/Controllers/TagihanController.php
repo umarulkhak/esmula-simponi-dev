@@ -10,6 +10,7 @@ use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreTagihanRequest;
+use App\Models\Pembayaran;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -23,7 +24,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * @author  Umar Ulkhak
  * @date    6 September 2025
- * @updated 6 September 2025 — Optimasi query: statistik dihitung dari collection
+ * @updated 9 September 2025 — Tambah statistik status 'angsur', clean code, siap produksi
  */
 class TagihanController extends Controller
 {
@@ -47,20 +48,26 @@ class TagihanController extends Controller
      *
      * Jika ada filter bulan & tahun → tampilkan semua tagihan sesuai periode.
      * Jika tanpa filter → tampilkan hanya TAGIHAN TERBARU PER SISWA.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
         $query = Tagihan::with(['user', 'siswa', 'tagihanDetails']);
 
+        // Filter berdasarkan bulan & tahun
         if ($request->filled(['bulan', 'tahun'])) {
             $query->whereMonth('tanggal_tagihan', $request->bulan)
                   ->whereYear('tanggal_tagihan', $request->tahun);
         } else {
+            // Ambil tagihan terbaru per siswa
             $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
                 ->groupBy('siswa_id');
             $query->whereIn('id', $latestPerSiswa->pluck('latest_id'));
         }
 
+        // Pencarian global
         if ($request->filled('q')) {
             $query->search($request->q);
         }
@@ -74,7 +81,8 @@ class TagihanController extends Controller
         // ✅ HITUNG STATISTIK DARI COLLECTION — 0 QUERY TAMBAHAN
         $totalSiswa = $tagihanCollection->unique('siswa_id')->count();
         $totalLunas = $tagihanCollection->where('status', 'lunas')->count();
-        $totalBelum = $tagihanCollection->where('status', 'baru')->count();
+        $totalAngsur = $tagihanCollection->where('status', 'angsur')->count(); // ✅ Status angsur
+        $totalBaru = $tagihanCollection->where('status', 'baru')->count();     // ✅ Status baru
         $totalTagihan = $tagihanCollection->count();
 
         $persentase = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
@@ -99,7 +107,8 @@ class TagihanController extends Controller
         $statPrevQuery = clone $prevQuery;
         $totalSiswaPrev = $statPrevQuery->distinct('siswa_id')->count('siswa_id');
         $lunasPrev = (clone $statPrevQuery)->where('status', 'lunas')->count();
-        $belumPrev = (clone $statPrevQuery)->where('status', 'baru')->count();
+        $angsurPrev = (clone $statPrevQuery)->where('status', 'angsur')->count(); // ✅
+        $baruPrev = (clone $statPrevQuery)->where('status', 'baru')->count();     // ✅
         $totalTagihanPrev = $statPrevQuery->count();
         $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
 
@@ -109,15 +118,18 @@ class TagihanController extends Controller
             'title'          => 'Data Tagihan',
             'totalSiswa'     => $totalSiswa,
             'totalLunas'     => $totalLunas,
-            'totalBelum'     => $totalBelum,
+            'totalAngsur'    => $totalAngsur,    // ✅ Kirim ke view
+            'totalBaru'      => $totalBaru,      // ✅
             'persentase'     => $persentase,
             'totalSiswaPrev' => $totalSiswaPrev,
             'lunasPrev'      => $lunasPrev,
-            'belumPrev'      => $belumPrev,
+            'angsurPrev'     => $angsurPrev,     // ✅
+            'baruPrev'       => $baruPrev,       // ✅
             'persentasePrev' => $persentasePrev,
             'diffSiswa'      => $totalSiswa - $totalSiswaPrev,
             'diffLunas'      => $totalLunas - $lunasPrev,
-            'diffBelum'      => $totalBelum - $belumPrev,
+            'diffAngsur'     => $totalAngsur - $angsurPrev, // ✅
+            'diffBaru'       => $totalBaru - $baruPrev,     // ✅
             'diffPersen'     => $persentase - $persentasePrev,
         ]);
     }
@@ -127,6 +139,8 @@ class TagihanController extends Controller
     // =======================
     /**
      * Menampilkan form pembuatan tagihan.
+     *
+     * @return \Illuminate\View\View
      */
     public function create()
     {
@@ -149,6 +163,9 @@ class TagihanController extends Controller
     // =======================
     /**
      * Menyimpan tagihan baru (massal per siswa & biaya).
+     *
+     * @param  \App\Http\Requests\StoreTagihanRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(StoreTagihanRequest $request)
     {
@@ -202,6 +219,10 @@ class TagihanController extends Controller
     // =======================
     /**
      * Menampilkan detail tagihan per siswa.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\View\View
      */
     public function show(Request $request, int $id)
     {
@@ -219,10 +240,22 @@ class TagihanController extends Controller
             $query->whereYear('tanggal_tagihan', $tahun);
         }
 
+        $tagihan = $query->orderBy('tanggal_tagihan', 'desc')->get();
+
+        // ✅ Ambil tagihan default: pertama yang belum lunas, atau ambil yang pertama
+        $tagihanDefault = $tagihan->firstWhere('status', '!=', 'lunas') ?? $tagihan->first();
+
+        $pembayaran = Pembayaran::whereIn('tagihan_id', $tagihan->pluck('id'))
+            ->with('user')
+            ->orderBy('tanggal_bayar', 'desc')
+            ->get();
+
         return view($this->viewPath . $this->viewShow, [
-            'siswa'   => $siswa,
-            'tagihan' => $query->orderBy('tanggal_tagihan', 'desc')->get(),
-            'title'   => "Daftar Tagihan {$siswa->nama}",
+            'siswa'          => $siswa,
+            'tagihan'        => $tagihan,
+            'tagihanDefault' => $tagihanDefault,
+            'pembayaran'     => $pembayaran,
+            'title'          => "Daftar Tagihan {$siswa->nama}",
         ]);
     }
 
@@ -232,7 +265,8 @@ class TagihanController extends Controller
     /**
      * Menghapus satu tagihan beserta detailnya.
      *
-     * Pesan notifikasi mencantumkan nama siswa, NISN, jumlah detail, dan daftar biaya.
+     * @param  \App\Models\Tagihan  $tagihan
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Tagihan $tagihan)
     {
@@ -264,7 +298,8 @@ class TagihanController extends Controller
     /**
      * Menghapus SEMUA tagihan seorang siswa beserta detailnya.
      *
-     * Pesan notifikasi mencantumkan nama siswa, NISN, jumlah detail, dan daftar biaya.
+     * @param  int  $siswaId
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroySiswa(int $siswaId)
     {
@@ -306,6 +341,9 @@ class TagihanController extends Controller
     // =======================
     /**
      * Memfilter siswa berdasarkan kelas dan/atau angkatan.
+     *
+     * @param  array  $data
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     private function filterSiswa(array $data): \Illuminate\Database\Eloquent\Collection
     {
@@ -320,6 +358,12 @@ class TagihanController extends Controller
      * - Siswa
      * - Nama biaya
      * - Bulan & Tahun tagihan
+     *
+     * @param  int  $siswaId
+     * @param  string  $namaBiaya
+     * @param  string  $bulan
+     * @param  string  $tahun
+     * @return bool
      */
     private function cekDuplikat(int $siswaId, string $namaBiaya, string $bulan, string $tahun): bool
     {
@@ -332,16 +376,13 @@ class TagihanController extends Controller
 
     /**
      * Export data tagihan ke format Excel/PDF
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function export(Request $request)
     {
-        // Untuk sementara, redirect ke index dulu
         flash('Fitur export akan segera tersedia')->info();
         return redirect()->route('tagihan.index');
-
-        // Nanti bisa diisi dengan:
-        // return Excel::download(new TagihanExport, 'tagihan.xlsx');
-        // atau
-        // return PDF::loadView('tagihan.export')->download('tagihan.pdf');
     }
 }

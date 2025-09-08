@@ -49,6 +49,23 @@ Route::prefix('operator')
 
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
             ->name('tagihan.destroySiswa');
+
+
+            // DEBUG ROUTE — CEK MODEL TAGIHAN
+Route::get('/debug-tagihan', function () {
+    $model = new \App\Models\Tagihan();
+    $tableName = $model->getTable();
+    $firstRecord = $model->first();
+
+    return response()->json([
+        'message' => 'Debug Model Tagihan',
+        'expected_table' => 'tagihans',
+        'actual_table' => $tableName,
+        'table_correct' => $tableName === 'tagihans',
+        'has_records' => $firstRecord !== null,
+        'first_record_id' => $firstRecord?->id,
+    ]);
+});
     });
 
 // ============================

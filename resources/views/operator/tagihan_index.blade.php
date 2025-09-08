@@ -56,7 +56,7 @@
                         <div class="card border rounded-3 p-3 h-100">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="text-muted small mb-1">Tagihan Lunas</h6>
+                                    <h6 class="text-muted small mb-1">Lunas</h6>
                                     <h2 class="fw-bold mb-1">{{ $totalLunas }}</h2>
                                     <p class="{{ $diffLunas >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
                                         {{ $diffLunas >= 0 ? '+' : '' }}{{ $diffLunas }} dari periode sebelumnya
@@ -69,37 +69,37 @@
                         </div>
                     </div>
 
-                    <!-- Tagihan Belum Bayar -->
+                    <!-- Tagihan Angsur -->
                     <div class="col-12 col-md-3">
                         <div class="card border rounded-3 p-3 h-100">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="text-muted small mb-1">Belum Bayar</h6>
-                                    <h2 class="fw-bold mb-1">{{ $totalBelum }}</h2>
-                                    <p class="{{ $diffBelum <= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffBelum >= 0 ? '+' : '' }}{{ $diffBelum }} dari periode sebelumnya
+                                    <h6 class="text-muted small mb-1">Angsur</h6>
+                                    <h2 class="fw-bold mb-1">{{ $totalAngsur }}</h2>
+                                    <p class="{{ $diffAngsur >= 0 ? 'text-warning' : 'text-danger' }} small mb-0">
+                                        {{ $diffAngsur >= 0 ? '+' : '' }}{{ $diffAngsur }} dari periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
-                                    <i class="fa fa-clock text-warning fs-4"></i>
+                                    <i class="fa fa-coins text-warning fs-4"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tingkat Pembayaran -->
+                    <!-- Tagihan Baru -->
                     <div class="col-12 col-md-3">
                         <div class="card border rounded-3 p-3 h-100">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="text-muted small mb-1">Tingkat Pembayaran</h6>
-                                    <h2 class="fw-bold mb-1">{{ $persentase }}%</h2>
-                                    <p class="{{ $diffPersen >= 0 ? 'text-success' : 'text-danger' }} small mb-0">
-                                        {{ $diffPersen >= 0 ? '+' : '' }}{{ number_format($diffPersen, 1) }}% dari periode sebelumnya
+                                    <h6 class="text-muted small mb-1">Baru</h6>
+                                    <h2 class="fw-bold mb-1">{{ $totalBaru }}</h2>
+                                    <p class="{{ $diffBaru >= 0 ? 'text-secondary' : 'text-danger' }} small mb-0">
+                                        {{ $diffBaru >= 0 ? '+' : '' }}{{ $diffBaru }} dari periode sebelumnya
                                     </p>
                                 </div>
                                 <div class="bg-light rounded-2 p-2">
-                                    <i class="fa fa-chart-line text-purple fs-4"></i>
+                                    <i class="fa fa-file-invoice text-secondary fs-4"></i>
                                 </div>
                             </div>
                         </div>
@@ -216,15 +216,19 @@
                                         </td>
                                         <td class="text-center">
                                             @if($item->status == 'baru')
-                                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                                    <i class="fa fa-clock me-1"></i> BARU
+                                                <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                                                    <i class="fa fa-file me-1"></i> BARU
                                                 </span>
                                             @elseif($item->status == 'lunas')
                                                 <span class="badge bg-success text-white px-3 py-2 rounded-pill">
                                                     <i class="fa fa-check-circle me-1"></i> LUNAS
                                                 </span>
+                                            @elseif($item->status == 'angsur')
+                                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                                    <i class="fa fa-money-bill-wave me-1"></i> ANGSUR
+                                                </span>
                                             @else
-                                                <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                                                <span class="badge bg-info text-white px-3 py-2 rounded-pill">
                                                     <i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status) }}
                                                 </span>
                                             @endif
@@ -319,7 +323,7 @@
     }
 
     /* Teks Tambahan */
-    .text-success, .text-danger {
+    .text-success, .text-danger, .text-warning, .text-secondary {
         font-size: 0.85rem;
     }
 
@@ -339,12 +343,11 @@
 
 {{--
     Dibuat oleh: Umar Ulkhak
-    Diperbarui: 6 September 2025
+    Diperbarui: 9 September 2025
     Fitur:
-    - Dashboard card modern dengan statistik akurat (sesuai filter)
-    - Warna kelas: VII (biru), VIII (hijau), IX (merah)
-    - Tombol aksi rapi dengan gap-2
-    - Filter & Reset sejajar di samping input pencarian
+    - Dashboard card modern dengan statistik: LUNAS, ANGSUR, BARU
+    - Warna & ikon disesuaikan: Angsur (kuning), Baru (abu-abu)
+    - Status tagihan di tabel: LUNAS (hijau), ANGSUR (kuning), BARU (abu)
     - Tanpa query database di view — semua data dari controller
     - Desain profesional & responsif
 --}}
