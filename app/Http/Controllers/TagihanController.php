@@ -24,7 +24,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * @author  Umar Ulkhak
  * @date    6 September 2025
- * @updated 9 September 2025 — Tambah statistik status 'angsur', clean code, siap produksi
+ * @updated 9 September 2025 — Dokumentasi lengkap, clean code, siap produksi
  */
 class TagihanController extends Controller
 {
@@ -81,8 +81,7 @@ class TagihanController extends Controller
         // ✅ HITUNG STATISTIK DARI COLLECTION — 0 QUERY TAMBAHAN
         $totalSiswa = $tagihanCollection->unique('siswa_id')->count();
         $totalLunas = $tagihanCollection->where('status', 'lunas')->count();
-        $totalAngsur = $tagihanCollection->where('status', 'angsur')->count(); // ✅ Status angsur
-        $totalBaru = $tagihanCollection->where('status', 'baru')->count();     // ✅ Status baru
+        $totalBelum = $tagihanCollection->where('status', 'baru')->count();
         $totalTagihan = $tagihanCollection->count();
 
         $persentase = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
@@ -107,8 +106,7 @@ class TagihanController extends Controller
         $statPrevQuery = clone $prevQuery;
         $totalSiswaPrev = $statPrevQuery->distinct('siswa_id')->count('siswa_id');
         $lunasPrev = (clone $statPrevQuery)->where('status', 'lunas')->count();
-        $angsurPrev = (clone $statPrevQuery)->where('status', 'angsur')->count(); // ✅
-        $baruPrev = (clone $statPrevQuery)->where('status', 'baru')->count();     // ✅
+        $belumPrev = (clone $statPrevQuery)->where('status', 'baru')->count();
         $totalTagihanPrev = $statPrevQuery->count();
         $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
 
@@ -118,18 +116,15 @@ class TagihanController extends Controller
             'title'          => 'Data Tagihan',
             'totalSiswa'     => $totalSiswa,
             'totalLunas'     => $totalLunas,
-            'totalAngsur'    => $totalAngsur,    // ✅ Kirim ke view
-            'totalBaru'      => $totalBaru,      // ✅
+            'totalBelum'     => $totalBelum,
             'persentase'     => $persentase,
             'totalSiswaPrev' => $totalSiswaPrev,
             'lunasPrev'      => $lunasPrev,
-            'angsurPrev'     => $angsurPrev,     // ✅
-            'baruPrev'       => $baruPrev,       // ✅
+            'belumPrev'      => $belumPrev,
             'persentasePrev' => $persentasePrev,
             'diffSiswa'      => $totalSiswa - $totalSiswaPrev,
             'diffLunas'      => $totalLunas - $lunasPrev,
-            'diffAngsur'     => $totalAngsur - $angsurPrev, // ✅
-            'diffBaru'       => $totalBaru - $baruPrev,     // ✅
+            'diffBelum'      => $totalBelum - $belumPrev,
             'diffPersen'     => $persentase - $persentasePrev,
         ]);
     }
@@ -253,7 +248,7 @@ class TagihanController extends Controller
         return view($this->viewPath . $this->viewShow, [
             'siswa'          => $siswa,
             'tagihan'        => $tagihan,
-            'tagihanDefault' => $tagihanDefault,
+            'tagihanDefault' => $tagihanDefault, // ✅ Hanya kirim tagihan default (untuk hidden field)
             'pembayaran'     => $pembayaran,
             'title'          => "Daftar Tagihan {$siswa->nama}",
         ]);
@@ -382,7 +377,13 @@ class TagihanController extends Controller
      */
     public function export(Request $request)
     {
+        // Untuk sementara, redirect ke index dulu
         flash('Fitur export akan segera tersedia')->info();
         return redirect()->route('tagihan.index');
+
+        // Nanti bisa diisi dengan:
+        // return Excel::download(new TagihanExport, 'tagihan.xlsx');
+        // atau
+        // return PDF::loadView('tagihan.export')->download('tagihan.pdf');
     }
 }
