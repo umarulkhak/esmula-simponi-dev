@@ -39,6 +39,20 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
     }
 
+        /**
+     * Show the application's login form.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showLoginForm()
+    {
+        return view('auth.login_sneat');
+    }
+    public function showLoginFormWali()
+    {
+        return view('auth.login_sneat_wali');
+    }
+
     public function authenticated(Request $request, $user)
         {
             if ($user->akses == 'operator' || $user->akses == 'admin') {

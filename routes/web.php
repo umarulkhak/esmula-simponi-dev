@@ -5,13 +5,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WaliController;
+use App\Http\Controllers\BiayaController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\TagihanController;
 use App\Http\Controllers\WaliSiswaController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
-use App\Http\Controllers\BiayaController;
-use App\Http\Controllers\PembayaranController;
-use App\Http\Controllers\TagihanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,7 +51,6 @@ Route::prefix('operator')
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
             ->name('tagihan.destroySiswa');
 
-
             // DEBUG ROUTE — CEK MODEL TAGIHAN
 Route::get('/debug-tagihan', function () {
     $model = new \App\Models\Tagihan();
@@ -68,6 +68,9 @@ Route::get('/debug-tagihan', function () {
 });
     });
 
+// Rute login untuk wali (bisa diakses publik)
+Route::get('login-wali', [LoginController::class, 'showLoginFormWali'])->name('login.wali');
+
 // ============================
 // Rute untuk Wali
 // ============================
@@ -76,6 +79,7 @@ Route::prefix('wali')
     ->group(function () {
         Route::get('beranda', [BerandaWaliController::class, 'index'])->name('wali.beranda');
     });
+
 
 // ============================
 // Rute untuk Admin (belum diisi)
