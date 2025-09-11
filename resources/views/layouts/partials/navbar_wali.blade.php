@@ -23,7 +23,7 @@
         <ul class="navbar-nav flex-row align-items-center ms-auto">
             <!-- User Display -->
             <li class="nav-item lh-1 me-3">
-                <span class="fw-semibold">Administrator</span>
+                <span class="fw-semibold">Wali Murid</span>
             </li>
 
             <!-- User Dropdown -->
@@ -43,8 +43,8 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <span class="fw-semibold d-block">Umar Ulkhak</span>
-                                    <small class="text-muted">Admin</small>
+                                    <span class="fw-semibold d-block">Wali Murid</span>
+                                    <small class="text-muted">Wali Murid</small>
                                 </div>
                             </div>
                         </a>

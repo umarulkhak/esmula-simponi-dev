@@ -77,12 +77,11 @@
                 />
 
                 <!-- Teks Branding -->
-                <h5 class="fw-bold mt-3 mb-2">Simponi SMP Muhammadiyah Larangan</h5>
+                <h5 class="fw-bold mt-3 mb-1">Sistem Pembayaran Online</h5>
+                <h5 class="fw-bold">SMP Muhammadiyah Larangan</h5>
               </div>
               <!-- /Logo -->
-
-              <h6 class="text-center mb-3">Selamat Datang Wali Murid!</h6>
-              <p class="text-center mb-4">Silakan login untuk melihat tagihan</p>
+              <p class="text-center mb-3">Akses seluruh layanan pembayaran sekolah dengan mudah dan cepat</p>
 
               <!-- Form Login -->
               <form id="formAuthentication" class="mb-3" method="POST" action="{{ route('login') }}">
