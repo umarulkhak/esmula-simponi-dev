@@ -1,7 +1,7 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <!-- ✅ Tambahkan mb-4 di sini untuk jarak ke menu -->
     <div class="app-brand demo mb-4">
-        <a href="{{ route('operator.beranda') }}" class="app-brand-link d-flex align-items-start">
+        <a href="{{ route('wali.beranda') }}" class="app-brand-link d-flex align-items-start">
             <!-- Logo -->
             <span class="app-brand-logo demo">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" id="Wallet">
@@ -26,22 +26,22 @@
 
     <ul class="menu-inner py-1">
         <!-- Dashboard -->
-        <li class="menu-item {{ \Route::is('operator.beranda') ? 'active' : '' }}">
-            <a href="{{ route('operator.beranda') }}" class="menu-link">
+        <li class="menu-item {{ \Route::is('wali.beranda') ? 'active' : '' }}">
+            <a href="{{ route('wali.beranda') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div>Beranda</div>
             </a>
         </li>
         <!-- Data Anak -->
-        <li class="menu-item {{ \Route::is('operator.beranda') ? 'active' : '' }}">
-            <a href="{{ route('operator.beranda') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-home-circle"></i>
+        <li class="menu-item {{ \Route::is('wali.siswa.*') ? 'active' : '' }}">
+            <a href="{{ route('wali.siswa.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-group"></i>
                 <div>Data Anak</div>
             </a>
         </li>
         <!-- Logout -->
         <li class="menu-item">
-            <a href="{{ route('logout') }}" class="menu-link">
+            <a href="{{ route('logoutwali') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-power-off me-2"></i>
                 <div>Logout</div>
             </a>
