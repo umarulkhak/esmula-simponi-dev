@@ -39,6 +39,13 @@
                 <div>Data Anak</div>
             </a>
         </li>
+        <!-- Data Tagihan Anak-->
+        <li class="menu-item {{ \Route::is('wali.tagihan.*') ? 'active' : '' }}">
+            <a href="{{ route('wali.tagihan.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                <div>Data Tagihan</div>
+            </a>
+        </li>
         <!-- Logout -->
         <li class="menu-item">
             <a href="{{ route('logoutwali') }}" class="menu-link">
