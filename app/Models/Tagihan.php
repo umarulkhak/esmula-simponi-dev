@@ -11,8 +11,7 @@ class Tagihan extends Model
 {
     use HasFactory;
 
-    // ✅ WAJIB: Tambahkan ini!
-    protected $table = 'tagihans'; // ← Sesuaikan dengan nama tabel di database
+    protected $table = 'tagihans';
 
     protected $fillable = [
         'user_id',
@@ -51,5 +50,23 @@ class Tagihan extends Model
     public function tagihanDetails(): HasMany
     {
         return $this->hasMany(TagihanDetail::class);
+    }
+
+    public function pembayaran(): HasMany
+    {
+        return $this->hasMany(Pembayaran::class);
+    }
+
+    /**
+     * Accessor: Tampilkan status tagihan dalam bahasa yang ramah untuk wali murid.
+     * Contoh: "lunas" → "Sudah dibayar"
+     */
+    public function getStatusTagihanWaliAttribute(): string
+    {
+        return match ($this->status) {
+            'baru'  => 'Belum dibayar',
+            'lunas' => 'Sudah dibayar',
+            default => ucfirst($this->status),
+        };
     }
 }

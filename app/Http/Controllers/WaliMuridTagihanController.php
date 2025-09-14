@@ -10,11 +10,16 @@ class WaliMuridTagihanController extends Controller
 {
     public function index()
     {
-        $siswald = Auth::user()->siswa->pluck('id');
-        $tagihan = Tagihan::whereIn('siswa_id', $siswald)->get();
-        dd($tagihan);
+        // Ambil semua ID siswa milik wali murid yang login
+        $siswaIds = Auth::user()->siswa->pluck('id');
 
+        // Ambil tagihan dengan pagination (10 per halaman)
+        $tagihan = Tagihan::whereIn('siswa_id', $siswaIds)
+            ->orderBy('tanggal_tagihan', 'desc') // bisa diubah sesuai kebutuhan
+            ->paginate(10);
 
+        return view('wali.tagihan_index', [
+            'tagihan' => $tagihan
+        ]);
     }
-
 }
