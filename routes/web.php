@@ -12,6 +12,7 @@ use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\TagihanController;
 use App\Http\Controllers\WaliSiswaController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BankSekolahController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
@@ -57,6 +58,7 @@ Route::prefix('operator')
         Route::resource('biaya', BiayaController::class);
         Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
         Route::resource('pembayaran', PembayaranController::class);
+        Route::resource('banksekolah', BankSekolahController::class);
 
         // Tambahan rute khusus
         Route::get('/tagihan/export', [TagihanController::class, 'export'])->name('tagihan.export');

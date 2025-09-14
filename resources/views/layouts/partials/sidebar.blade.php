@@ -41,6 +41,14 @@
             </a>
         </li>
 
+        <!-- Data Rekening -->
+        <li class="menu-item {{ \Route::is('banksekolah.*') ? 'active' : '' }}">
+            <a href="{{ route('banksekolah.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-building"></i>
+                <div>Rekening Sekolah</div>
+            </a>
+        </li>
+
         <!-- Data Wali -->
         <li class="menu-item {{ \Route::is('wali.*') ? 'active' : '' }}">
             <a href="{{ route('wali.index') }}" class="menu-link">
