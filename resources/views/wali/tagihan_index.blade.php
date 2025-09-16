@@ -1,14 +1,16 @@
 {{--
 |--------------------------------------------------------------------------
-| VIEW: Wali - Daftar Tagihan Sekolah (Tanpa Accordion)
+| VIEW: Wali - Daftar Tagihan Sekolah (Card Per Siswa)
 |--------------------------------------------------------------------------
 | Penulis     : Umar Ulkhak + AI Assistant
-| Tujuan      : Menampilkan daftar tagihan per siswa tanpa accordion
+| Tujuan      : Tampilan card siswa minimalis dengan icon status & jumlah tagihan
 | Fitur       :
-|   - Tampilan sederhana & rapi
-|   - Nama, kelas, jumlah tagihan, status, tombol aksi
-|   - Tombol "Bayar" → arahkan ke halaman show semua tagihan siswa
-|   - Tombol "Lihat Riwayat" jika sudah lunas semua
+|   - Avatar lingkaran hitam
+|   - Nama & kelas di samping avatar
+|   - Jumlah tagihan: icon + teks, kotak kecil, warna soft
+|   - Status: icon + teks, warna soft (hijau/merah)
+|   - Tombol Bayar di bawah, warna biru
+|   - Animasi hover & transisi smooth
 |
 | Variabel dari Controller:
 |   - $tagihanGrouped → \Illuminate\Support\Collection (groupBy siswa_id)
@@ -21,12 +23,9 @@
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
                 {{-- Header Card --}}
-                <div class="card-header bg-white d-flex justify-content-between align-items-center px-5 py-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="mb-0 fw-bold">
-                            Tagihan Sekolah
-                        </h4>
-                        <small class="text-muted">Klik tombol untuk melihat atau bayar tagihan</small>
+                        <h4 class="mb-0 fw-bold">Tagihan Sekolah</h4>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <i class="bx bx-info-circle fs-5 text-muted"></i>
@@ -42,7 +41,7 @@
                             <p class="text-muted small">Silakan cek kembali nanti atau hubungi operator sekolah.</p>
                         </div>
                     @else
-                        <div class="list-group list-group-flush">
+                        <div class="row g-3 px-3 py-3">
                             @foreach ($tagihanGrouped as $siswaId => $tagihanList)
                                 @php
                                     $siswa = $tagihanList->first()->siswa;
@@ -60,55 +59,65 @@
                                     $statusColor = $sudahDibayar == $totalTagihan ? 'success' : ($sudahDibayar > 0 ? 'warning' : 'danger');
                                 @endphp
 
-                                {{-- ITEM PER SISWA --}}
-                                <div class="list-group-item px-4 py-4 d-flex justify-content-between align-items-center"
-                                     style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                                    <div class="d-flex align-items-center gap-3">
-                                        {{-- Icon User --}}
-                                        <div class="rounded-circle bg-white border p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-color: {{ $accentColor }};">
-                                            <i class="fas fa-user" style="color: {{ $accentColor }};"></i>
+                                {{-- CARD PER SISWA (MINIMALIS + ICON + ANIMASI) --}}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card siswa-card shadow-sm border-0 rounded-3 p-4" style="background-color: #fafafa;">
+                                        <!-- Header: Jumlah Tagihan & Status -->
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <!-- Jumlah Tagihan -->
+                                            <span class="badge rounded-pill bg-light text-dark small">
+                                                <i class="bx bx-exclamation-circle me-1"></i> {{ $totalTagihan }} tagihan
+                                            </span>
+
+                                            <!-- Status -->
+                                            <span class="badge rounded-pill bg-light text-dark small">
+                                                @if ($statusColor == 'success')
+                                                    <i class="bx bx-check-circle" style="color: rgba(40, 167, 69, 0.6);"></i> {{ $statusPembayaran }}
+                                                @elseif ($statusColor == 'warning')
+                                                    <i class="bx bx-history" style="color: rgba(255, 193, 7, 0.5);"></i> {{ $statusPembayaran }}
+                                                @else
+                                                    <i class="bx bx-error-circle" style="color: rgba(220, 53, 69, 0.5);"></i> {{ $statusPembayaran }}
+                                                @endif
+                                            </span>
                                         </div>
-                                        <div>
-                                            <div class="fw-semibold">{{ $siswa->nama ?? 'Tanpa Nama' }}</div>
-                                            <small class="text-muted">
-                                                <span class="badge rounded-pill" style="background: {{ $accentColor }}; color: white; font-size: 0.75rem; font-weight: 500;">
-                                                    Kelas {{ $kelas }}
-                                                </span>
-                                            </small>
+
+                                        <!-- Avatar + Nama & Kelas -->
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="rounded-full bg-black" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ $siswa->nama ?? 'Tanpa Nama' }}</div>
+                                                <small class="text-muted">{{ $kelas }}</small>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="d-flex align-items-center gap-3 ms-auto">
-                                        {{-- STATUS --}}
-                                        <span class="badge badge-status bg-{{ $statusColor }} text-white">
-                                            <i class="bx bx-{{ $statusColor == 'success' ? 'check-circle' : ($statusColor == 'warning' ? 'history' : 'error-circle') }}"></i>
-                                            {{ $statusPembayaran }}
-                                        </span>
-
-                                        {{-- JUMLAH TAGIHAN --}}
-                                        <span class="text-muted small">
-                                            {{ $totalTagihan }} tagihan
-                                        </span>
-
-                                        {{-- TOMBOL AKSI --}}
-                                        @if ($sudahDibayar == $totalTagihan)
-                                            <a href="{{ route('wali.tagihan.show', $siswaId) }}"
-                                               class="btn btn-sm px-3 py-1"
-                                               style="background: #6c757d; color: white; border-radius: 50px; font-weight: 500;"
-                                               title="Lihat riwayat pembayaran {{ $siswa->nama ?? 'siswa ini' }}">
-                                                <i class="bx bx-history me-1"></i> Lihat
-                                            </a>
-                                        @else
-                                            <a href="{{ route('wali.tagihan.show', $siswaId) }}"
-                                               class="btn btn-sm px-3 py-1"
-                                               style="background: {{ $accentColor }}; color: white; border-radius: 50px; font-weight: 500;"
-                                               title="Bayar tagihan untuk {{ $siswa->nama ?? 'siswa ini' }}">
-                                                <i class="bx bx-credit-card me-1"></i> Bayar
-                                            </a>
-                                        @endif
+                                        <!-- Tombol Bayar -->
+                                        <div class="mt-3 text-center">
+                                            @if ($sudahDibayar == $totalTagihan)
+                                                <a href="{{ route('wali.tagihan.show', $siswaId) }}"
+                                                   class="btn btn-sm w-100 tombol-status"
+                                                   style="background: #6c757d; color: white; font-weight: 500;"
+                                                   title="Lihat riwayat pembayaran {{ $siswa->nama ?? 'siswa ini' }}">
+                                                    <i class="bx bx-history me-1"></i> Lihat Riwayat
+                                                </a>
+                                            @else
+                                                <a href="{{ route('wali.tagihan.show', $siswaId) }}"
+                                                   class="btn btn-sm w-100 tombol-bayar"
+                                                   style="background: #696cff; color: white; font-weight: 500;"
+                                                   title="Bayar tagihan untuk {{ $siswa->nama ?? 'siswa ini' }}">
+                                                    <i class="bx bx-credit-card me-1"></i> Bayar
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
+                        </div>
+
+                        {{-- PINDAHKAN INFO KE SINI --}}
+                        <div class="px-4 pb-3">
+                            <small class="text-muted fst-italic">* Klik tombol untuk melihat atau bayar tagihan</small>
                         </div>
                     @endif
                 </div>
@@ -119,55 +128,90 @@
 
 @push('styles')
 <style>
-    /* Status Badge - Rapi & Simetris */
-    .badge-status {
-        font-size: 0.85rem;
-        font-weight: 600;
-        padding: 0.45rem 1.2rem;
-        border-radius: 20px;
-        min-width: 130px;
-        text-align: center;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
+    /* Badge Soft */
+    .badge.rounded-pill.bg-light {
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+        font-weight: 500;
         transition: all 0.2s ease;
     }
 
-    .badge-status.success {
-        background-color: #28a745 !important;
-        color: white !important;
+    /* Status Icons */
+    .text-success {
+        color: #28a745 !important;
     }
-    .badge-status.warning {
-        background-color: #fd7e14 !important;
-        color: white !important;
+    .text-warning {
+        color: #ffc107 !important;
     }
-    .badge-status.danger {
-        background-color: #dc3545 !important;
-        color: white !important;
+    .text-danger {
+        color: #dc3545 !important;
     }
 
-    .badge-status:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    /* Card */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
     }
 
-    .badge-status i {
-        font-size: 0.9rem;
-        margin-right: 0.2rem;
+    /* Animasi Hover Card Siswa */
+    .siswa-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
-    /* Tombol */
-    .list-group-item .btn {
-        white-space: nowrap;
+    .siswa-card:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        background-color: #f5f5f5 !important;
     }
 
-    /* Spacing */
-    .list-group-item {
-        transition: background-color 0.2s ease;
+    /* Tombol Bayar Hover */
+    .tombol-bayar {
+        transition: all 0.25s ease;
     }
-    .list-group-item:hover {
-        background-color: rgba(0,0,0,0.02);
+
+    .tombol-bayar:hover {
+        background: #5a5cff !important;
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    }
+
+    /* Tombol Status (Lihat Riwayat) Hover */
+    .tombol-status {
+        transition: all 0.25s ease;
+    }
+
+    .tombol-status:hover {
+        background: #5a6268 !important;
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+    /* Layout */
+    .row.g-3 {
+        gap: 1rem;
+    }
+
+    /* Mobile Optimization */
+    @media (max-width: 576px) {
+        .col-md-6 {
+            width: 100%;
+        }
+
+        .siswa-card:hover {
+            transform: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+    }
+
+    /* Avatar */
+    .rounded-full {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
     }
 </style>
 @endpush

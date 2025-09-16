@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankSekolah;
 use App\Models\Tagihan;
 use App\Models\Pembayaran; // Tambahkan ini jika ingin tampilkan riwayat pembayaran
 use Illuminate\Http\Request;
@@ -40,13 +41,9 @@ class WaliMuridTagihanController extends Controller
     /**
      * Menampilkan detail tagihan beserta rincian biaya dan riwayat pembayaran.
      */
-    /**
- * Menampilkan semua tagihan untuk satu siswa (bukan satu tagihan)
- */
     public function show($siswaId)
     {
         try {
-            // Verifikasi: Pastikan siswa ini milik wali yang login
             $userSiswaIds = Auth::user()->siswa->pluck('id');
             if (!$userSiswaIds->contains($siswaId)) {
                 abort(403, 'Anda tidak memiliki akses ke data ini.');
@@ -59,25 +56,46 @@ class WaliMuridTagihanController extends Controller
                 ->get();
 
             $siswa = $tagihanList->first()?->siswa;
-
             if (!$siswa) {
-                return redirect()->route('wali.tagihan.index')->with('error', 'Siswa tidak ditemukan.');
+                return redirect()->route('wali.tagihan.index')
+                    ->with('error', 'Siswa tidak ditemukan.');
             }
 
-            // Opsional: Ambil riwayat pembayaran semua tagihan siswa ini
+            // Ambil riwayat pembayaran
             $pembayaran = Pembayaran::whereIn('tagihan_id', $tagihanList->pluck('id'))
                 ->orderBy('tanggal_bayar', 'desc')
                 ->get();
 
+            $banksekolah = BankSekolah::all();
+
+            // Hitung grand total & total dibayar — pastikan nama kolom BENAR
+            $grandTotal = $tagihanList->sum(fn($t) => $t->tagihanDetails->sum('jumlah_biaya'));
+            $totalDibayar = $pembayaran->sum('jumlah_dibayar');
+
+            // Tentukan status global: 'lunas', 'angsur', 'belum_bayar'
+            if ($totalDibayar >= $grandTotal) {
+                $statusGlobal = 'lunas';
+            } elseif ($totalDibayar > 0) {
+                $statusGlobal = 'angsur';
+            } else {
+                $statusGlobal = 'belum_bayar';
+            }
+
             return view('wali.tagihan_show', [
-                'tagihanList' => $tagihanList, // <-- sekarang LIST, bukan single
-                'siswa'       => $siswa,
-                'pembayaran'  => $pembayaran,
+                'tagihanList'  => $tagihanList,
+                'siswa'        => $siswa,
+                'pembayaran'   => $pembayaran,
+                'banksekolah'  => $banksekolah,
+                'grandTotal'   => $grandTotal,
+                'totalDibayar' => $totalDibayar,
+                'statusGlobal' => $statusGlobal,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error loading tagihan siswa: ' . $e->getMessage());
-            return redirect()->route('wali.tagihan.index')->with('error', 'Terjadi kesalahan saat memuat data.');
+            return redirect()->route('wali.tagihan.index')
+                ->with('error', 'Terjadi kesalahan saat memuat data.');
         }
     }
+
 }
