@@ -2,7 +2,7 @@
 |--------------------------------------------------------------------------
 | VIEW: Wali - Daftar Tagihan Sekolah (Card Per Siswa)
 |--------------------------------------------------------------------------
-| Penulis     : Umar Ulkhak + AI Assistant
+| Penulis     : Umar Ulkhak
 | Tujuan      : Tampilan card siswa minimalis dengan icon status & jumlah tagihan
 | Fitur       :
 |   - Avatar lingkaran hitam

@@ -8,7 +8,7 @@
 |   - Form dinamis (create & edit)
 |   - Validasi error dengan feedback visual
 |   - Input wajib bertanda bintang merah
-|   - Dropdown bank menggunakan Select2
+|   - Dropdown bank menggunakan Select2 (hanya di create)
 |   - Nomor rekening: numeric input + font monospace
 |   - Tombol aksi: Simpan & Batal
 |   - Responsif & mobile-friendly
@@ -20,7 +20,7 @@
 |   - $method      → HTTP method ('POST'/'PUT')
 |   - $route       → Route tujuan
 |   - $button      → Teks tombol submit
-|   - $listbank    → Array [id => nama] untuk dropdown bank (WAJIB)
+|   - $listbank    → Array [id => nama] untuk dropdown bank (hanya dibutuhkan di create)
 |
 --}}
 
@@ -51,17 +51,24 @@
                                 <label for="bank_id" class="form-label fw-semibold">
                                     Nama Bank <span class="text-danger">*</span>
                                 </label>
-                                {!! Form::select('bank_id', $listbank ?? [], null, [
-                                    'class'        => 'form-control select2' . ($errors->has('bank_id') ? ' is-invalid' : ''),
-                                    'id'           => 'bank_id',
-                                    'placeholder'  => 'Pilih Bank...',
-                                    'required',
-                                    'data-allow-clear' => 'true',
-                                ]) !!}
-                                @error('bank_id')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <div class="form-text">Pilih bank dari daftar yang tersedia.</div>
+
+                                @if($method === 'POST')
+                                    {!! Form::select('bank_id', $listbank ?? [], null, [
+                                        'class'        => 'form-control select2' . ($errors->has('bank_id') ? ' is-invalid' : ''),
+                                        'id'           => 'bank_id',
+                                        'placeholder'  => 'Pilih Bank...',
+                                        'required',
+                                        'data-allow-clear' => 'true',
+                                    ]) !!}
+                                    @error('bank_id')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Pilih bank dari daftar yang tersedia.</div>
+                                @else
+                                    {{-- Mode Edit: Tampilkan sebagai teks biasa --}}
+                                    <input type="text" class="form-control" value="{{ $model->nama_bank }}" readonly>
+                                    {!! Form::hidden('bank_id', $model->bank_id) !!} {{-- Tetap kirim bank_id lama --}}
+                                @endif
                             </div>
 
                             {{-- Atas Nama Rekening --}}
@@ -138,7 +145,7 @@
                 }, false);
             });
 
-            // Inisialisasi Select2
+            // Inisialisasi Select2 (hanya jika ada)
             if (typeof $ !== 'undefined' && $.fn.select2) {
                 $('.select2').each(function () {
                     $(this).select2({

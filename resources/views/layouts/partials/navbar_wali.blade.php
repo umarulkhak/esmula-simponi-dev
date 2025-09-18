@@ -6,19 +6,6 @@
     </div>
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-        <!-- Search -->
-        <div class="navbar-nav align-items-center" role="search">
-            <div class="nav-item d-flex align-items-center">
-                <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                <input
-                    type="text"
-                    class="form-control border-0 shadow-none"
-                    placeholder="Cari..."
-                    aria-label="Search..."
-                />
-            </div>
-        </div>
-        <!-- /Search -->
 
         <ul class="navbar-nav flex-row align-items-center ms-auto">
             <!-- User Display -->

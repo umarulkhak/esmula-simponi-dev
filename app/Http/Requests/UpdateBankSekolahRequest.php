@@ -6,25 +6,16 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBankSekolahRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
+    public function authorize(): bool
     {
-        return false;
+        return true; // ✅ izinkan update
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, mixed>
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
-            //
+            'nama_rekening'  => ['required', 'string', 'max:255'],
+            'nomor_rekening' => ['required', 'numeric'],
         ];
     }
 }

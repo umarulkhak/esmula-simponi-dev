@@ -4,63 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBankSekolahRequest;
 use App\Http\Requests\UpdateBankSekolahRequest;
-use App\Models\BankSekolah as Model;
+use App\Models\BankSekolah;
 use Illuminate\Http\Request;
 
-/**
- * Controller untuk manajemen data Bank Sekolah.
- *
- * Mengatur operasi CRUD (Create, Read, Update, Delete) data rekening bank sekolah.
- * Menggunakan implicit model binding untuk validasi & keamanan otomatis.
- * Semua flash message menyertakan konteks (nama bank) untuk UX lebih baik.
- *
- * @author  Umar Ulkhak
- * @date    27 Agustus 2025
- * @updated 5 April 2025 — Tambah dokumentasi & UX improvement
- */
 class BankSekolahController extends Controller
 {
-    /**
-     * Prefix path untuk view operator.
-     */
-    private string $viewPath = 'operator.';
-
-    /**
-     * Prefix route untuk bank sekolah (tanpa group name prefix).
-     * Contoh: 'bank-sekolah.index', 'bank-sekolah.create', dll.
-     */
+    private string $viewPath    = 'operator.';
     private string $routePrefix = 'banksekolah';
+    private string $viewIndex   = 'banksekolah_index';
+    private string $viewForm    = 'banksekolah_form';
+    private string $viewShow    = 'banksekolah_show';
 
-    /**
-     * Nama view untuk halaman index.
-     */
-    private string $viewIndex = 'banksekolah_index';
-
-    /**
-     * Nama view untuk form tambah/edit.
-     */
-    private string $viewForm = 'banksekolah_form';
-
-    /**
-     * Nama view untuk halaman detail.
-     */
-    private string $viewShow = 'banksekolah_show';
-
-    /**
-     * Menampilkan daftar bank sekolah dengan fitur pencarian.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\View\View
-     */
     public function index(Request $request)
     {
-        $query = Model::query();
+        $query = BankSekolah::query();
 
         if ($request->filled('q')) {
             $query->where('nama_rekening', 'like', '%' . $request->q . '%');
         }
 
-        $models = $query->latest()->paginate(50);
+        $models = $query->orderBy('id', 'desc')->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
@@ -69,15 +32,10 @@ class BankSekolahController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan form tambah data bank sekolah.
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
         return view($this->viewPath . $this->viewForm, [
-            'model'    => new Model(),
+            'model'    => new BankSekolah(),
             'method'   => 'POST',
             'route'    => $this->routePrefix . '.store',
             'button'   => 'SIMPAN',
@@ -86,74 +44,51 @@ class BankSekolahController extends Controller
         ]);
     }
 
-    /**
-     * Menyimpan data bank sekolah baru ke database.
-     *
-     * @param  \App\Http\Requests\StoreBankSekolahRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(StoreBankSekolahRequest $request)
     {
-        $requestData = $request->validated();
+        $data = $request->validated();
 
-        // Ambil data bank yang dipilih
-        $bank = \App\Models\Bank::find($requestData['bank_id']);
+        $bank = \App\Models\Bank::find($data['bank_id']);
+        if (!$bank) {
+            return back()->withErrors(['bank_id' => 'Bank tidak ditemukan']);
+        }
 
-        // Hapus bank_id dari requestData agar tidak disimpan ke tabel bank_sekolahs
-        unset($requestData['bank_id']);
+        unset($data['bank_id']);
+        $data['kode']      = $bank->sandi_bank;
+        $data['nama_bank'] = $bank->nama_bank;
 
-        // Isi field tambahan dari relasi bank
-        $requestData['kode']       = $bank->sandi_bank;
-        $requestData['nama_bank']  = $bank->nama_bank;
+        BankSekolah::create($data);
 
-        // Simpan data ke tabel bank_sekolahs
-        Model::create($requestData);
+        flash('✅ Data rekening sekolah berhasil disimpan')->success();
 
-        flash('Data berhasil disimpan');
-
-        return back();
+        return redirect()->route($this->routePrefix . '.index');
     }
 
-    /**
-     * Menampilkan form edit data bank sekolah.
-     *
-     * @param  \App\Models\BankSekolah  $bankSekolah
-     * @return \Illuminate\View\View
-     */
-    public function edit(Model $bankSekolah)
+    public function edit(BankSekolah $banksekolah)
     {
         return view($this->viewPath . $this->viewForm, [
-            'model'  => $bankSekolah,
-            'method' => 'PUT',
-            'route'  => [$this->routePrefix . '.update', $bankSekolah->id],
-            'button' => 'UPDATE',
-            'title'  => 'Form Edit Data Rekening Sekolah',
+            'model'    => $banksekolah,
+            'method'   => 'PUT',
+            'route'    => [$this->routePrefix . '.update', $banksekolah->id],
+            'button'   => 'UPDATE',
+            'title'    => 'Form Edit Data Rekening Sekolah',
+            'listbank' => \App\Models\Bank::pluck('nama_bank', 'id'),
         ]);
     }
 
-    /**
-     * Memperbarui data bank sekolah di database.
-     *
-     * @param  \App\Http\Requests\UpdateBankSekolahRequest  $request
-     * @param  \App\Models\BankSekolah  $bankSekolah
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(UpdateBankSekolahRequest $request, Model $bankSekolah)
+    public function update(UpdateBankSekolahRequest $request, BankSekolah $banksekolah)
     {
         $validated = $request->validated();
 
-        // Simpan nama lama untuk flash message
-        $namaLama = $bankSekolah->nama_bank;
+        $namaLama = $banksekolah->nama_rekening;
 
-        // Update data bank
-        $bankSekolah->update($validated);
+        $banksekolah->update($validated);
 
-        // Flash message sukses dengan detail perubahan
-        $pesan = "✅ Bank berhasil diperbarui";
-        if ($namaLama !== $validated['nama_bank']) {
-            $pesan .= " ({$namaLama} → {$validated['nama_bank']})";
+        $pesan = "✅ Data rekening sekolah berhasil diperbarui";
+        if ($banksekolah->wasChanged('nama_rekening')) {
+            $pesan .= " — Atas nama rekening: {$namaLama} → {$banksekolah->nama_rekening}";
         } else {
-            $pesan .= ": {$validated['nama_bank']}";
+            $pesan .= " — Bank: {$banksekolah->nama_bank}";
         }
 
         flash($pesan)->success();
@@ -161,38 +96,26 @@ class BankSekolahController extends Controller
         return redirect()->route($this->routePrefix . '.index');
     }
 
-    /**
-     * Menghapus data bank sekolah dari database.
-     *
-     * @param  \App\Models\BankSekolah  $bankSekolah
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy(Model $bankSekolah)
-    {
-        // Simpan nama bank untuk flash message
-        $namaBank = $bankSekolah->nama_bank;
+   public function destroy(BankSekolah $banksekolah)
+{
+    $namaBank = $banksekolah->nama_bank;
+    $page     = request()->get('page', 1); // ambil halaman saat ini
 
-        // Hapus data bank
-        $bankSekolah->delete();
-
-        // Flash message sukses dengan nama bank
+    try {
+        $banksekolah->delete();
         flash("🗑️ Bank '{$namaBank}' berhasil dihapus")->success();
-
-        return redirect()->route($this->routePrefix . '.index');
+    } catch (\Exception $e) {
+        flash("❌ Gagal menghapus bank '{$namaBank}': " . $e->getMessage())->error();
+        return redirect()->route($this->routePrefix . '.index', ['page' => $page]);
     }
 
-    /**
-     * Menampilkan detail data bank sekolah.
-     *
-     * @param  \App\Models\BankSekolah  $bankSekolah
-     * @return \Illuminate\View\View
-     */
-    public function show(Model $bankSekolah)
-    {
-        return view($this->viewPath . $this->viewShow, [
-            'model'       => $bankSekolah,
-            'title'       => 'Detail Bank Sekolah',
-            'routePrefix' => $this->routePrefix,
-        ]);
+    // cek apakah halaman saat ini masih ada data
+    $models = BankSekolah::orderBy('id', 'desc')->paginate(50, ['*'], 'page', $page);
+    if ($models->isEmpty() && $page > 1) {
+        $page--; // pindah ke halaman sebelumnya jika kosong
     }
+
+    return redirect()->route($this->routePrefix . '.index', ['page' => $page]);
+}
+
 }
