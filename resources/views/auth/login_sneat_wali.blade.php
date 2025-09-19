@@ -26,11 +26,11 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Login Wali Murid - Simponi SMP Muhammadiyah Larangan</title>
+    <title>Login | SIMPONI - SMP Muhammadiyah Larangan</title>
     <meta name="description" content="Sistem Informasi Pembayaran Online SMP Muhammadiyah Larangan" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/wallet.svg') }}" />
+    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/logo-fav.png') }}" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -57,6 +57,9 @@
     <!-- Helpers -->
     <script src="{{ asset('sneat/assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('sneat/assets/js/config.js') }}"></script>
+
+
+
   </head>
 
   <body>
@@ -71,9 +74,9 @@
               <div class="text-center mb-4">
                 <!-- Gambar Logo Sekolah -->
                 <img
-                  src="{{ asset('sneat/assets/img/logo.jpg') }}"
+                  src="{{ asset('sneat/assets/img/logo-esmula.png') }}"
                   alt="Logo SMP Muhammadiyah Larangan"
-                  style="width: 100px; height: auto; border-radius: 10px;"
+                  style="width: 72px; height: auto; border-radius: 10px;"
                 />
 
                 <!-- Teks Branding -->
@@ -167,20 +170,5 @@
     <script src="{{ asset('sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
     <script src="{{ asset('sneat/assets/vendor/js/menu.js') }}"></script>
     <script src="{{ asset('sneat/assets/js/main.js') }}"></script>
-
-    {{-- <!-- Toggle Password Visibility -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const togglePassword = document.querySelector('#togglePassword');
-        const password = document.querySelector('#password');
-
-        togglePassword.addEventListener('click', function () {
-          const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-          password.setAttribute('type', type);
-          this.querySelector('i').classList.toggle('bx-hide');
-          this.querySelector('i').classList.toggle('bx-show');
-        });
-      });
-    </script> --}}
   </body>
 </html>

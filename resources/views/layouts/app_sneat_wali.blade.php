@@ -12,6 +12,7 @@
    - Flash message & error handling
    - Integrasi Select2, Masking Rupiah, Font Awesome
    - Footer & copyright otomatis
+   - ✅ WARNA PRIMARY DIUBAH KE DARK (#1A1A1A)
 ==========================================================
 -->
 <html
@@ -22,16 +23,17 @@
   data-assets-path="{{ asset('sneat/assets/') }}"
   data-template="vertical-menu-template-free"
 >
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <meta name="description" content="Sistem Informasi Pembayaran Online (Simponi) - Dashboard Wali" />
-    <meta name="theme-color" content="#696cff">
+    <meta name="theme-color" content="#1A1A1A">
 
     <title>@yield('title', config('app.name', 'Laravel'))</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/wallet.svg') }}" />
+    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/logo-fav.png') }}" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,12 +60,151 @@
     <script src="{{ asset('sneat/assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('sneat/assets/js/config.js') }}"></script>
 
-    <!-- Custom CSS -->
-    <style>
-        .avatar.bg-primary {
-            background-color: #696cff !important;
-        }
-    </style>
+<!-- Custom CSS -->
+<style>
+    /* === OVERRIDE WARNA PRIMARY UNTUK USER WALI === */
+    :root {
+        --bs-primary: #2A363B;
+        --bs-primary-rgb: 42, 54, 59;
+        --bs-primary-text: #ffffff;
+        --bs-primary-border: #444444;
+        --bs-primary-hover: #334045;
+        --bs-primary-active: #1E2C2F;
+        --bs-primary-focus: #3A4D52;
+
+        /* Override Sidebar */
+        --bs-sidebar-bg: #f8f9fa;
+        --bs-sidebar-text: #000000;
+        --bs-sidebar-active: #2A363B;
+        --bs-sidebar-hover: #e9ecef;
+        --bs-sidebar-border: #ddd;
+
+        /* Override ikon sidebar di mobile */
+        --bs-icon-color: #000000;
+        --bs-icon-hover-color: #2A363B;
+    }
+
+    /* Override elemen yang pakai warna primary */
+    .btn-primary {
+        background-color: var(--bs-primary) !important;
+        border-color: var(--bs-primary-border) !important;
+        color: var(--bs-primary-text) !important;
+    }
+    .btn-primary:hover {
+        background-color: var(--bs-primary-hover) !important;
+        border-color: var(--bs-primary-border) !important;
+    }
+    .btn-primary:focus {
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.5) !important;
+    }
+    .btn-primary:active,
+    .btn-primary.active {
+        background-color: var(--bs-primary-active) !important;
+        border-color: var(--bs-primary-border) !important;
+    }
+
+    /* Badge */
+    .badge.bg-primary {
+        background-color: var(--bs-primary) !important;
+        color: var(--bs-primary-text) !important;
+    }
+
+    /* Alert */
+    .alert.alert-primary {
+        background-color: var(--bs-primary) !important;
+        color: var(--bs-primary-text) !important;
+        border-color: var(--bs-primary-border) !important;
+    }
+
+    /* Navbar & Sidebar */
+    .navbar-brand,
+    .navbar-nav .nav-link,
+    .menu-inner .menu-item .menu-link {
+        color: var(--bs-primary-text) !important;
+    }
+    .navbar-nav .nav-link:hover,
+    .menu-inner .menu-item .menu-link:hover {
+        color: var(--bs-primary-text) !important;
+    }
+
+    /* Avatar */
+    .avatar.bg-primary {
+        background-color: var(--bs-primary) !important;
+    }
+
+    /* Progress Bar */
+    .progress-bar.bg-primary {
+        background-color: var(--bs-primary) !important;
+    }
+
+    /* Form Control Focus */
+    .form-control:focus {
+        border-color: var(--bs-primary-border) !important;
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25) !important;
+    }
+
+    /* === OVERRIDE SIDEBAR === */
+    .layout-menu {
+        background-color: var(--bs-sidebar-bg) !important;
+        color: var(--bs-sidebar-text) !important;
+        border-right: 1px solid var(--bs-sidebar-border) !important;
+    }
+    .layout-menu .menu-inner {
+        padding: 1rem 0 !important;
+    }
+    .layout-menu .menu-inner .menu-item {
+        margin-bottom: 0.5rem !important;
+    }
+    .layout-menu .menu-inner .menu-item .menu-link {
+        color: var(--bs-sidebar-text) !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 0.375rem;
+        transition: all 0.2s ease;
+    }
+    .layout-menu .menu-inner .menu-item .menu-link:hover {
+        background-color: var(--bs-sidebar-hover) !important;
+        color: var(--bs-primary-hover) !important;
+    }
+    .layout-menu .menu-inner .menu-item.active .menu-link {
+        background-color: var(--bs-primary) !important;
+        color: var(--bs-primary-text) !important;
+        border-left: 4px solid var(--bs-primary) !important;
+    }
+    .layout-menu .menu-inner .menu-item.active .menu-link i {
+        color: var(--bs-primary-text) !important;
+    }
+
+    /* === OVERRIDE IKON DI MOBILE === */
+    .menu-inner .menu-item .menu-link i {
+        color: var(--bs-icon-color) !important;
+        font-size: 1.2rem;
+    }
+    .menu-inner .menu-item .menu-link:hover i {
+        color: var(--bs-icon-hover-color) !important;
+    }
+
+    /* === OVERRIDE ICON MENU DI NAVBAR === */
+    .layout-navbar .bx-menu {
+        color: #2A363B !important;
+        font-size: 1.5rem;
+    }
+
+    /* === OVERRIDE ICON USER DI AVATAR === */
+    .layout-navbar .dropdown-user .avatar i {
+        color: #ffffff !important;
+    }
+
+    /* === OVERRIDE ACTIVE MENU ITEM (HAPUS WARNA UNGU) === */
+    .bg-menu-theme .menu-inner > .menu-item.active:before {
+        background: var(--bs-primary) !important; /* Ganti dari #696cff */
+    }
+
+    /* === OVERRIDE TEXT COLOR DI ACTIVE MENU === */
+    .menu-inner .menu-item.active .menu-link {
+        color: var(--bs-primary-text) !important;
+    }
+
+</style>
 </head>
 
 <body>
@@ -129,7 +270,7 @@
         }
     </script>
     <script src="{{ asset('sneat/assets/vendor/libs/popper/popper.js') }}" defer></script>
-    <script src="{{ asset('sneat/assets/vendor/js/bootstrap.bundle.min.js') }}" defer></script> <!-- ✅ Hanya ini yang dipakai -->
+    <script src="{{ asset('sneat/assets/vendor/js/bootstrap.bundle.min.js') }}" defer></script>
     <script src="{{ asset('sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}" defer></script>
     <script src="{{ asset('sneat/assets/vendor/js/menu.js') }}" defer></script>
 

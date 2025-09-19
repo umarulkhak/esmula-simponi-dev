@@ -9,7 +9,7 @@
 |   - Nama & kelas di samping avatar
 |   - Jumlah tagihan: icon + teks, kotak kecil, warna soft
 |   - Status: icon + teks, warna soft (hijau/merah)
-|   - Tombol Bayar di bawah, warna biru
+|   - Tombol Bayar di bawah, warna dark theme (#2A363B)
 |   - Animasi hover & transisi smooth
 |
 | Variabel dari Controller:
@@ -61,7 +61,7 @@
 
                                 {{-- CARD PER SISWA (MINIMALIS + ICON + ANIMASI) --}}
                                 <div class="col-md-6 mb-3">
-                                    <div class="card siswa-card shadow-sm border-0 rounded-3 p-4" style="background-color: #fafafa;">
+                                    <div class="card siswa-card shadow-sm border-0 rounded-3 p-4" style="background-color: #ffffff;">
                                         <!-- Header: Jumlah Tagihan & Status -->
                                         <div class="d-flex justify-content-between mb-3">
                                             <!-- Jumlah Tagihan -->
@@ -97,14 +97,14 @@
                                             @if ($sudahDibayar == $totalTagihan)
                                                 <a href="{{ route('wali.tagihan.show', $siswaId) }}"
                                                    class="btn btn-sm w-100 tombol-status"
-                                                   style="background: #6c757d; color: white; font-weight: 500;"
+                                                   style="background: #495057; color: white; font-weight: 500;"
                                                    title="Lihat riwayat pembayaran {{ $siswa->nama ?? 'siswa ini' }}">
                                                     <i class="bx bx-history me-1"></i> Lihat Riwayat
                                                 </a>
                                             @else
                                                 <a href="{{ route('wali.tagihan.show', $siswaId) }}"
                                                    class="btn btn-sm w-100 tombol-bayar"
-                                                   style="background: #696cff; color: white; font-weight: 500;"
+                                                   style="background: #2A363B; color: white; font-weight: 500;"
                                                    title="Bayar tagihan untuk {{ $siswa->nama ?? 'siswa ini' }}">
                                                     <i class="bx bx-credit-card me-1"></i> Bayar
                                                 </a>
@@ -165,7 +165,7 @@
     .siswa-card:hover {
         transform: translateY(-2px) scale(1.01);
         box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-        background-color: #f5f5f5 !important;
+        background-color: #f8f9fa !important;
     }
 
     /* Tombol Bayar Hover */
@@ -174,9 +174,9 @@
     }
 
     .tombol-bayar:hover {
-        background: #5a5cff !important;
+        background: #1E2C2F !important;
         transform: translateY(-1px) scale(1.02);
-        box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(42, 54, 59, 0.3);
     }
 
     /* Tombol Status (Lihat Riwayat) Hover */
@@ -185,9 +185,9 @@
     }
 
     .tombol-status:hover {
-        background: #5a6268 !important;
+        background: #343a40 !important;
         transform: translateY(-1px) scale(1.02);
-        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        box-shadow: 0 4px 12px rgba(52, 58, 64, 0.3);
     }
 
     /* Layout */

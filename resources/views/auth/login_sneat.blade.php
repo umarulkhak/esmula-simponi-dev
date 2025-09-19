@@ -30,7 +30,7 @@
     <meta name="description" content="Sistem Informasi Pembayaran Online SMP Muhammadiyah Larangan" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/wallet.svg') }}" />
+    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/logo-fav.png') }}" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -71,7 +71,7 @@
               <div class="text-center mb-4">
                 <!-- Gambar Logo Sekolah -->
                 <img
-                  src="{{ asset('sneat/assets/img/logo.jpg') }}"
+                  src="{{ asset('sneat/assets/img/logo-esmula.png') }}"
                   alt="Logo SMP Muhammadiyah Larangan"
                   style="width: 100px; height: auto; border-radius: 10px;"
                 />

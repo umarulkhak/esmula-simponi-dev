@@ -10,6 +10,7 @@
 |   - Tombol cetak invoice muncul full-width jika lunas
 |   - Padding & font size disesuaikan untuk HP
 |   - Semua card dan tombol mobile-friendly
+|   - ✅ TEMA DARK: warna primary #2A363B
 |
 | Variabel dari Controller:
 |   - $siswa → object siswa
@@ -144,7 +145,8 @@
                                         @endforelse
                                     </ul>
                                 </td>
-                                <td class="text-end fw-medium text-success align-middle">{{ formatRupiah($subtotal) }}</td>
+                                {{-- ✅ WARNA MERAH JIKA BELUM LUNAS --}}
+                                <td class="text-end fw-medium {{ $tagihan->status == 'lunas' ? 'text-success' : 'text-danger' }} align-middle">{{ formatRupiah($subtotal) }}</td>
                                 <td class="text-center align-middle">
                                     <span class="badge bg-{{ $tagihan->status == 'lunas' ? 'success' : 'danger' }} px-2 py-1 rounded-pill fs-7">
                                         {{ $tagihan->status_tagihan_wali }}
@@ -172,7 +174,7 @@
                 {{-- Tombol Cetak Invoice — Full width di HP --}}
                 <div class="text-center my-3 mx-3 mx-md-4">
                     <button type="button" class="btn btn-dark w-100 w-md-auto px-4 py-2 fs-6" onclick="cetakInvoice()">
-                        <i class="bx bx-printer me-2"></i> Cetak Invoice Pembayaran
+                        <i class="bx bx-printer me-2"></i> Cetak Invoice
                     </button>
                 </div>
 
@@ -199,7 +201,7 @@
                                         <strong class="text-muted fs-7">Atas Nama</strong>
                                         <p class="mb-0 fs-6">{{ $bank->nama_rekening }}</p>
                                     </div>
-                                    <a href="#" class="btn btn-primary w-100 fs-6">
+                                    <a href="#" class="btn btn-dark w-100 fs-6">
                                         Konfirmasi Pembayaran
                                     </a>
                                 </div>
@@ -270,6 +272,18 @@
     /* Tombol cetak */
     .btn-success {
         font-weight: 500;
+    }
+
+    /* Tombol dark (primary theme) */
+    .btn-dark {
+        background-color: #2A363B;
+        border-color: #2A363B;
+        color: #ffffff;
+    }
+
+    .btn-dark:hover {
+        background-color: #1E2C2F;
+        border-color: #1E2C2F;
     }
 
     /* Mobile First Typography */

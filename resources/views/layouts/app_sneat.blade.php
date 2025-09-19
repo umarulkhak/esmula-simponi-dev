@@ -36,7 +36,7 @@
     <title>@yield('title', config('app.name', 'Laravel'))</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/wallet.svg') }}" />
+    <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/logo-fav.png') }}" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" /> <!-- ✅ Hapus spasi ekstra -->

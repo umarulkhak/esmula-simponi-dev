@@ -44,17 +44,10 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="#">
-                            <i class="fa fa-cog me-2"></i>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('wali.tagihan.index') }}">
                             <span class="d-flex align-items-center">
                                 <i class="fa fa-credit-card me-2"></i>
                                 <span>Billing</span>
-                                <span class="badge bg-danger ms-2">4</span>
                             </span>
                         </a>
                     </li>
