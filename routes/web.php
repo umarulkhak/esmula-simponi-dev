@@ -16,6 +16,7 @@ use App\Http\Controllers\BankSekolahController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
+use App\Http\Controllers\WaliMuridPembayaranController;
 use App\Http\Controllers\WaliMuridSiswaController;
 use App\Http\Controllers\WaliMuridTagihanController;
 
@@ -93,6 +94,7 @@ Route::prefix('wali')
         Route::get('beranda', [BerandaWaliController::class, 'index'])->name('beranda');
         Route::resource('siswa', WaliMuridSiswaController::class);
         Route::resource('tagihan', WaliMuridTagihanController::class);
+        Route::resource('pembayaran', WaliMuridPembayaranController::class);
     });
 
 // ============================================================================

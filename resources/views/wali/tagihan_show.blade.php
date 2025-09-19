@@ -5,38 +5,50 @@
 | Penulis     : Umar Ulkhak
 | Tujuan      : Menampilkan daftar tagihan per siswa dengan desain mobile-first
 | Fitur       :
-|   - Header info siswa responsif (foto di atas, info di bawah di HP)
-|   - Tabel tagihan auto-scroll horizontal di HP
-|   - Tombol cetak invoice muncul full-width jika lunas
-|   - Padding & font size disesuaikan untuk HP
-|   - Semua card dan tombol mobile-friendly
+|   - Header info siswa responsif
+|   - Tabel tagihan horizontal scrollable di mobile
+|   - Tombol cetak invoice jika lunas
+|   - Rekening bank + modal konfirmasi pembayaran
 |   - ✅ TEMA DARK: warna primary #2A363B
 |
 | Variabel dari Controller:
 |   - $siswa → object siswa
 |   - $tagihanList → \Illuminate\Support\Collection tagihan
 |   - $banksekolah → \Illuminate\Support\Collection rekening bank
+|   - $grandTotal → total tagihan keseluruhan
+|   - $totalDibayar → total pembayaran yang sudah dilakukan
+|   - $statusGlobal → 'lunas', 'angsur', atau 'belum_bayar'
 --}}
 
 @extends('layouts.app_sneat_wali')
 
 @section('content')
+
 @include('wali.modals.modal_cara_bayar_atm')
+
+{{-- Modal Pembayaran --}}
+@include('wali.modals.modal_pembayaran', [
+    'model' => new \App\Models\Pembayaran,
+    'route' => 'wali.pembayaran.store',
+    'method' => 'POST',
+    'listBank' => $banksekolah->pluck('nama_bank', 'id') // ✅ Kirim data bank untuk dropdown
+])
+
 <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
 
-        {{-- Header Info Siswa Mirip Operator — Mobile Optimized --}}
+        {{-- Header Info Siswa --}}
         <div class="card-body p-3 p-md-4">
             <div class="d-flex flex-column flex-md-row align-items-start gap-4 position-relative">
 
-                {{-- Tombol Kembali — Tetap di pojok kanan atas --}}
+                {{-- Tombol Kembali --}}
                 <div class="position-absolute top-0 end-0 me-2 mt-1 me-md-3 mt-md-2">
                     <a href="{{ route('wali.tagihan.index') }}" class="btn btn-outline-secondary btn-sm px-3">
                         <i class="bx bx-arrow-back"></i>
                     </a>
                 </div>
 
-                {{-- Foto Siswa — Ukuran lebih kecil di HP --}}
+                {{-- Foto Siswa --}}
                 <div class="flex-shrink-0 text-center mb-3 mb-md-0">
                     @php
                         $fotoPath = ($siswa->foto && \Storage::exists($siswa->foto))
@@ -47,15 +59,14 @@
                         src="{{ $fotoPath }}"
                         alt="Foto {{ $siswa->nama }}"
                         class="rounded shadow-sm border"
-                        style="width: 100px; height: 120px; object-fit: cover; object-position: center;"
+                        style="width: 100px; height: 120px; object-fit: cover;"
                         onerror="this.src='{{ asset('images/no-image.png') }}'">
                 </div>
 
-                {{-- Detail Siswa — Full width di HP --}}
+                {{-- Detail Siswa --}}
                 <div class="flex-grow-1 w-100">
                     <h6 class="fw-bold mb-2 fs-6 fs-md-5">
-                        <i class="bx bx-user-circle me-1"></i>
-                        Informasi Siswa
+                        <i class="bx bx-user-circle me-1"></i> Informasi Siswa
                     </h6>
                     <div class="table-responsive">
                         <table class="table table-borderless mb-0 fs-7 fs-md-6">
@@ -87,6 +98,7 @@
             </div>
         </div>
 
+        {{-- Jika tidak ada tagihan --}}
         @if ($tagihanList->isEmpty())
             <div class="text-center py-5 px-3">
                 <i class="bx bx-empty fs-1 text-muted mb-3"></i>
@@ -94,15 +106,7 @@
                 <p class="text-muted small">Silakan cek kembali nanti atau hubungi operator sekolah.</p>
             </div>
         @else
-            @php
-                // Hitung status global
-                $lunasCount = $tagihanList->where('status', 'lunas')->count();
-                $totalTagihan = $tagihanList->count();
-                $grandTotal = $tagihanList->sum(fn($t) => $t->tagihanDetails->sum('jumlah_biaya'));
-                $statusGlobal = $lunasCount == $totalTagihan ? 'lunas' : ($lunasCount > 0 ? 'angsur' : 'belum_bayar');
-            @endphp
-
-            {{-- Status Global — Padding disesuaikan --}}
+            {{-- Status Global --}}
             <div class="alert alert-{{ $statusGlobal == 'lunas' ? 'success' : ($statusGlobal == 'angsur' ? 'warning' : 'danger') }} d-flex align-items-center mb-3 mx-3 mx-md-4 p-3" role="alert">
                 <i class="bx bx-{{ $statusGlobal == 'lunas' ? 'check-circle' : ($statusGlobal == 'angsur' ? 'history' : 'error-circle') }} fs-4 me-2 me-md-3"></i>
                 <div class="fs-7 fs-md-6">
@@ -117,7 +121,7 @@
                 </div>
             </div>
 
-            {{-- Tabel Tagihan — Scrollable di HP --}}
+            {{-- Tabel Tagihan --}}
             <div class="table-responsive mx-3 mx-md-4 mb-3">
                 <table class="table table-hover align-middle mb-0 fs-7">
                     <thead class="table-light">
@@ -146,8 +150,9 @@
                                         @endforelse
                                     </ul>
                                 </td>
-                                {{-- ✅ WARNA MERAH JIKA BELUM LUNAS --}}
-                                <td class="text-end fw-medium {{ $tagihan->status == 'lunas' ? 'text-success' : 'text-danger' }} align-middle">{{ formatRupiah($subtotal) }}</td>
+                                <td class="text-end fw-medium {{ $tagihan->status == 'lunas' ? 'text-success' : 'text-danger' }} align-middle">
+                                    {{ formatRupiah($subtotal) }}
+                                </td>
                                 <td class="text-center align-middle">
                                     <span class="badge bg-{{ $tagihan->status == 'lunas' ? 'success' : 'danger' }} px-2 py-1 rounded-pill fs-7">
                                         {{ $tagihan->status_tagihan_wali }}
@@ -159,7 +164,7 @@
                 </table>
             </div>
 
-            {{-- JIKA LUNAS — UCAPAN + TOMBOL CETAK INVOICE --}}
+            {{-- Jika Lunas — Tampilkan ucapan & tombol cetak --}}
             @if ($statusGlobal == 'lunas')
                 <div class="bg-success-light text-dark rounded-3 p-3 p-md-4 mt-3 mx-3 mx-md-4 d-flex align-items-start">
                     <i class="bx bx-check-circle fs-4 me-2 me-md-3 text-success flex-shrink-0"></i>
@@ -172,15 +177,13 @@
                     </div>
                 </div>
 
-                {{-- Tombol Cetak Invoice — Full width di HP --}}
                 <div class="text-center my-3 mx-3 mx-md-4">
                     <button type="button" class="btn btn-dark w-100 w-md-auto px-4 py-2 fs-6" onclick="cetakInvoice()">
                         <i class="bx bx-printer me-2"></i> Cetak Invoice
                     </button>
                 </div>
-
             @else
-                {{-- REKENING BANK — CARD RESPONSIF --}}
+                {{-- Rekening Bank --}}
                 <div class="bg-light border border-info rounded-3 p-3 p-md-4 mt-3 mx-3 mx-md-4 mb-4">
                     <p class="mb-3 text-muted fs-7">
                         Pembayaran bisa dilakukan langsung ke sekolah atau transfer ke rekening di bawah ini.
@@ -202,7 +205,13 @@
                                         <strong class="text-muted fs-7">Atas Nama</strong>
                                         <p class="mb-0 fs-6">{{ $bank->nama_rekening }}</p>
                                     </div>
-                                    <a href="#" class="btn btn-dark w-100 fs-6">
+                                    {{-- ✅ Perbaikan: Ambil tagihan pertama untuk data-tagihan-id --}}
+                                    <a href="#"
+                                       class="btn btn-dark w-100 fs-6"
+                                       data-bs-toggle="modal"
+                                       data-bs-target="#pembayaranModal"
+                                       data-tagihan-id="{{ $tagihanList->first()->id }}"
+                                       data-bank-id="{{ $bank->id }}">
                                         Konfirmasi Pembayaran
                                     </a>
                                 </div>
@@ -213,13 +222,13 @@
                     <div class="mt-3">
                         <ul class="mb-2 small">
                             <li>
-                            <a href="#" class="text-decoration-none text-primary fs-7"
-                                data-bs-toggle="modal" data-bs-target="#modalCaraBayarATM">
-                                Cara Bayar via ATM
-                            </a>
+                                <a href="#" class="text-decoration-none text-primary fs-7" data-bs-toggle="modal" data-bs-target="#modalCaraBayarATM">
+                                    Cara Bayar via ATM
+                                </a>
                             </li>
-
-                            <li><a href="#" class="text-decoration-none text-primary fs-7">Cara Bayar via Internet Banking</a></li>
+                            <li>
+                                <a href="#" class="text-decoration-none text-primary fs-7">Cara Bayar via Internet Banking</a>
+                            </li>
                         </ul>
                         <p class="text-muted small fs-7">
                             Upload bukti pembayaran setelah transfer.
@@ -230,6 +239,7 @@
         @endif
     </div>
 </div>
+
 @endsection
 
 @push('styles')
@@ -243,7 +253,6 @@
         margin: 0 auto;
     }
 
-    /* Tabel */
     .table thead th {
         font-weight: 500;
         font-size: 0.85rem;
@@ -255,7 +264,6 @@
         vertical-align: middle;
     }
 
-    /* Tombol outline */
     .btn-outline-secondary {
         border-color: #6c757d;
         color: #6c757d;
@@ -267,7 +275,6 @@
         color: white;
     }
 
-    /* Soft green card */
     .bg-success-light {
         background-color: #e8f5e8 !important;
         border: 1px solid #c8e6c9 !important;
@@ -276,12 +283,6 @@
         transition: all 0.2s ease;
     }
 
-    /* Tombol cetak */
-    .btn-success {
-        font-weight: 500;
-    }
-
-    /* Tombol dark (primary theme) */
     .btn-dark {
         background-color: #2A363B;
         border-color: #2A363B;
@@ -293,7 +294,6 @@
         border-color: #1E2C2F;
     }
 
-    /* Mobile First Typography */
     .fs-5 { font-size: 1.1rem; }
     .fs-6 { font-size: 1rem; }
     .fs-7 { font-size: 0.9rem; }
@@ -313,14 +313,9 @@
         .badge { font-size: 0.75rem; padding: 0.35em 0.5em; }
     }
 
-    /* Print Styles */
     @media print {
-        body * {
-            visibility: hidden;
-        }
-        #print-area, #print-area * {
-            visibility: visible;
-        }
+        body * { visibility: hidden; }
+        #print-area, #print-area * { visibility: visible; }
         #print-area {
             position: absolute;
             left: 0;
@@ -329,118 +324,113 @@
             padding: 20px;
             font-family: Arial, sans-serif;
         }
-        .no-print {
-            display: none !important;
-        }
-        table {
-            page-break-inside: avoid;
-        }
-        tr {
-            page-break-inside: avoid;
-        }
+        .no-print { display: none !important; }
+        table { page-break-inside: avoid; }
+        tr { page-break-inside: avoid; }
     }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-function cetakInvoice() {
-    const namaSiswa = "{{ $siswa->nama }}";
-    const nisn = "{{ $siswa->nisn ?? '–' }}";
-    const kelas = "{{ $siswa->kelas ?? '–' }}";
-    const angkatan = "{{ $siswa->angkatan ?? '–' }}";
-    const tanggalCetak = new Date().toLocaleDateString('id-ID', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+    function cetakInvoice() {
+        const namaSiswa = "{{ $siswa->nama }}";
+        const nisn = "{{ $siswa->nisn ?? '–' }}";
+        const kelas = "{{ $siswa->kelas ?? '–' }}";
+        const angkatan = "{{ $siswa->angkatan ?? '–' }}";
+        const tanggalCetak = new Date().toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        let detailTagihan = '';
+        let grandTotal = {{ $grandTotal }}; // ✅ Ambil dari controller, bukan hitung ulang
+
+        @foreach ($tagihanList as $tagihan)
+            @php
+                $subtotal = $tagihan->tagihanDetails->sum('jumlah_biaya');
+            @endphp
+            detailTagihan += `
+            <tr>
+                <td>{{ \Carbon\Carbon::parse($tagihan->tanggal_tagihan)->translatedFormat('d F Y') }}</td>
+                <td>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+                        @foreach ($tagihan->tagihanDetails as $detail)
+                            <li>{{ $detail->nama_biaya ?? '–' }}</li>
+                        @endforeach
+                    </ul>
+                </td>
+                <td class="text-end">{{ formatRupiah($subtotal) }}</td>
+            </tr>`;
+        @endforeach
+
+        const printContent = `
+            <div id="print-area">
+                <div class="text-center mb-4">
+                    <h2 style="font-size: 22px; margin-bottom: 4px;">INVOICE PEMBAYARAN</h2>
+                    <p style="margin: 0; font-size: 16px;">Sekolah Menengah Pertama Negeri 1 Contoh</p>
+                    <p style="margin: 0; font-size: 14px; color: #666;">Dicetak pada: ${tanggalCetak}</p>
+                </div>
+
+                <div class="mb-4">
+                    <h5 style="font-size: 18px; margin-bottom: 12px;">Informasi Siswa</h5>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 30%; padding: 6px 0;"><strong>Nama</strong></td><td style="padding: 6px 0;">: ${namaSiswa}</td></tr>
+                        <tr><td style="padding: 6px 0;"><strong>NISN</strong></td><td style="padding: 6px 0;">: ${nisn}</td></tr>
+                        <tr><td style="padding: 6px 0;"><strong>Kelas</strong></td><td style="padding: 6px 0;">: ${kelas}</td></tr>
+                        <tr><td style="padding: 6px 0;"><strong>Angkatan</strong></td><td style="padding: 6px 0;">: ${angkatan}</td></tr>
+                    </table>
+                </div>
+
+                <div class="mb-4">
+                    <h5 style="font-size: 18px; margin-bottom: 12px;">Detail Tagihan</h5>
+                    <table style="width: 100%; border: 1px solid #ddd; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Tanggal Tagihan</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Rincian Biaya</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${detailTagihan}
+                            <tr style="font-weight: bold;">
+                                <td colspan="2" style="border: 1px solid #ddd; padding: 8px; text-align: right;">TOTAL PEMBAYARAN</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">{{ formatRupiah($grandTotal) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="text-center mt-5">
+                    <p style="margin: 0; font-size: 14px;">Hormat Kami,</p>
+                    <p style="margin-top: 40px; margin-bottom: 4px; font-size: 14px;">_______________________</p>
+                    <p style="margin: 0; font-weight: 600; font-size: 14px;">Bendahara Sekolah</p>
+                </div>
+            </div>
+        `;
+
+        const originalContent = document.body.innerHTML;
+        document.body.innerHTML = printContent;
+        window.print();
+        document.body.innerHTML = originalContent;
+        setTimeout(() => window.location.reload(), 100);
+    }
+
+    // Modal handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const pembayaranModal = document.getElementById('pembayaranModal');
+
+        pembayaranModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const tagihanId = button.getAttribute('data-tagihan-id');
+            const bankId = button.getAttribute('data-bank-id');
+
+            pembayaranModal.querySelector('#modal_tagihan_id').value = tagihanId;
+            pembayaranModal.querySelector('#modal_bank_id').value = bankId;
+        });
     });
-
-    let detailTagihan = '';
-    let grandTotal = 0;
-
-    @foreach ($tagihanList as $tagihan)
-        @php
-            $subtotal = $tagihan->tagihanDetails->sum('jumlah_biaya');
-            $grandTotal += $subtotal;
-        @endphp
-        detailTagihan += `
-        <tr>
-            <td>{{ \Carbon\Carbon::parse($tagihan->tanggal_tagihan)->translatedFormat('d F Y') }}</td>
-            <td>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                    @foreach ($tagihan->tagihanDetails as $detail)
-                        <li>{{ $detail->nama_biaya ?? '–' }}</li>
-                    @endforeach
-                </ul>
-            </td>
-            <td class="text-end">{{ formatRupiah($subtotal) }}</td>
-        </tr>`;
-    @endforeach
-
-    const printContent = `
-        <div id="print-area">
-            <div class="text-center mb-4">
-                <h2 style="font-size: 22px; margin-bottom: 4px;">INVOICE PEMBAYARAN</h2>
-                <p style="margin: 0; font-size: 16px;">Sekolah Menengah Pertama Negeri 1 Contoh</p>
-                <p style="margin: 0; font-size: 14px; color: #666;">Dicetak pada: ${tanggalCetak}</p>
-            </div>
-
-            <div class="mb-4">
-                <h5 style="font-size: 18px; margin-bottom: 12px;">Informasi Siswa</h5>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <tr>
-                        <td style="width: 30%; padding: 6px 0;"><strong>Nama</strong></td>
-                        <td style="padding: 6px 0;">: ${namaSiswa}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px 0;"><strong>NISN</strong></td>
-                        <td style="padding: 6px 0;">: ${nisn}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px 0;"><strong>Kelas</strong></td>
-                        <td style="padding: 6px 0;">: ${kelas}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px 0;"><strong>Angkatan</strong></td>
-                        <td style="padding: 6px 0;">: ${angkatan}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="mb-4">
-                <h5 style="font-size: 18px; margin-bottom: 12px;">Detail Tagihan</h5>
-                <table style="width: 100%; border: 1px solid #ddd; border-collapse: collapse; font-size: 14px;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa;">
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Tanggal Tagihan</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Rincian Biaya</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Jumlah</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${detailTagihan}
-                        <tr style="font-weight: bold;">
-                            <td colspan="2" style="border: 1px solid #ddd; padding: 8px; text-align: right;">TOTAL PEMBAYARAN</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">{{ formatRupiah($grandTotal) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="text-center mt-5">
-                <p style="margin: 0; font-size: 14px;">Hormat Kami,</p>
-                <p style="margin-top: 40px; margin-bottom: 4px; font-size: 14px;">_______________________</p>
-                <p style="margin: 0; font-weight: 600; font-size: 14px;">Bendahara Sekolah</p>
-            </div>
-        </div>
-    `;
-
-    const originalContent = document.body.innerHTML;
-    document.body.innerHTML = printContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-    setTimeout(() => window.location.reload(), 100);
-}
 </script>
 @endpush
