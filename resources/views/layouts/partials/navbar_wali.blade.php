@@ -10,7 +10,9 @@
         <ul class="navbar-nav flex-row align-items-center ms-auto">
             <!-- User Display -->
             <li class="nav-item lh-1 me-3">
-                <span class="fw-semibold">Wali Murid</span>
+                <span class="fw-semibold">
+                    {{ Auth::check() ? Auth::user()->name : 'Wali Murid' }}
+                </span>
             </li>
 
             <!-- User Dropdown -->
@@ -30,7 +32,9 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <span class="fw-semibold d-block">Wali Murid</span>
+                                    <span class="fw-semibold d-block">
+                                        {{ Auth::check() ? Auth::user()->name : 'Wali Murid' }}
+                                    </span>
                                     <small class="text-muted">Wali Murid</small>
                                 </div>
                             </div>
@@ -53,10 +57,13 @@
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="{{ route('logout') }}">
+                        <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             <i class="fa fa-power-off me-2"></i>
                             <span>Log Out</span>
                         </a>
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                            @csrf
+                        </form>
                     </li>
                 </ul>
             </li>

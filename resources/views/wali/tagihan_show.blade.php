@@ -21,6 +21,7 @@
 @extends('layouts.app_sneat_wali')
 
 @section('content')
+@include('wali.modals.modal_cara_bayar_atm')
 <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
 
@@ -211,7 +212,13 @@
 
                     <div class="mt-3">
                         <ul class="mb-2 small">
-                            <li><a href="#" class="text-decoration-none text-primary fs-7">Cara Bayar via ATM</a></li>
+                            <li>
+                            <a href="#" class="text-decoration-none text-primary fs-7"
+                                data-bs-toggle="modal" data-bs-target="#modalCaraBayarATM">
+                                Cara Bayar via ATM
+                            </a>
+                            </li>
+
                             <li><a href="#" class="text-decoration-none text-primary fs-7">Cara Bayar via Internet Banking</a></li>
                         </ul>
                         <p class="text-muted small fs-7">
