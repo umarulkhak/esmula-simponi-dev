@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BankSekolah;
 use App\Models\Tagihan;
+use App\Models\WaliBank;
 use App\Models\Pembayaran;
+use App\Models\BankSekolah;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Controller untuk manajemen tagihan SPP wali murid.
@@ -92,6 +93,8 @@ class WaliMuridTagihanController extends Controller
 
             // 💰 Ambil daftar rekening bank sekolah (untuk BANK TUJUAN)
             $banksekolah = BankSekolah::all();
+            $waliBanks = WaliBank::where('wali_id', Auth::user()->id)->get();
+
 
             // 💳 Ambil daftar bank umum (untuk BANK PENGIRIM di form pembayaran)
             $listbank = \App\Models\Bank::pluck('nama_bank', 'id');
@@ -112,7 +115,8 @@ class WaliMuridTagihanController extends Controller
                 'grandTotal',
                 'totalDibayar',
                 'statusGlobal',
-                'listbank' // 👈 Dikirim ke view untuk dropdown bank pengirim
+                'listbank',
+                'waliBanks',
             ));
 
         } catch (\Exception $e) {

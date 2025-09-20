@@ -25,13 +25,13 @@
     - Laravel Collective Form
 
     @author   Umar Ulkhak
-    @version  1.7 — Tambah Icon Info di Divider
+    @version  1.9 — MODIFIKASI LOGIKA FIELD BANK BERDASARKAN DATA TERSIMPAN
     @updated  20 September 2025
 --}}
 <div class="modal fade" id="pembayaranModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3 border-0 shadow">
-            {{-- HEADER MODAL — BISA DIHAPUS JIKA INGIN FULL MINIMALIS --}}
+            {{-- HEADER MODAL --}}
             <div class="modal-header bg-light border-bottom-0 pb-3">
                 <h5 class="modal-title fw-bold">Konfirmasi Pembayaran</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -52,45 +52,83 @@
                 <div class="mb-4">
                     <div class="divider divider-dark">
                         <div class="divider-text">
-                            <i class="fa-solid fa-circle-info me-1"></i> </i> Rekening Pengirim
+                            <i class="fa-solid fa-circle-info me-1"></i> Rekening Pengirim
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nama Bank Pengirim',
-                            'name' => 'bank_pengirim_id',
-                            'type' => 'select',
-                            'options' => $listbank ?? [],
-                            'icon' => 'bi-bank2',
-                            'placeholder' => 'Pilih bank pengirim...',
-                            'required' => true,
-                            'class' => 'select2 col-md-12'
-                        ])
-                    </div>
+                    {{-- ✅ FIELD BARU: PILIH DATA BANK TERSIMPAN (JIKA ADA) --}}
+                    @if(isset($waliBanks) && $waliBanks->isNotEmpty())
+                        <div class="form-group mb-3">
+                            <label for="bank_tersimpan_id" class="form-label fw-medium">
+                                <i class="bi bi-collection me-1"></i> Gunakan Data Bank Tersimpan
+                            </label>
+                            <select name="bank_tersimpan_id" id="bank_tersimpan_id" class="form-control select2" data-placeholder="Pilih data bank tersimpan...">
+                                <option value=""></option>
+                                @foreach($waliBanks as $bank)
+                                    <option value="{{ $bank->id }}"
+                                            data-nama-bank="{{ $bank->nama_bank_full }}"
+                                            data-nama-pemilik="{{ $bank->nama_pemilik }}"
+                                            data-no-rekening="{{ $bank->no_rekening }}">
+                                        {{ $bank->nama_bank_full }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Pilih untuk mengisi otomatis form di bawah.
+                            </div>
+                        </div>
 
-                    <div class="row mb-3">
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nama Pemilik Rekening',
-                            'name' => 'nama_pengirim',
-                            'type' => 'text',
-                            'icon' => 'bi-person',
-                            'placeholder' => 'Nama sesuai buku tabungan',
-                            'required' => true,
-                            'class' => 'col-md-12'
-                        ])
-                    </div>
+                        {{-- 🔹 BARU: Checkbox "Gunakan bank baru?" — awalnya HIDDEN --}}
+                        <div class="form-check mb-3" id="chkGunakanBankBaru" style="display: none;">
+                            <input class="form-check-input" type="checkbox" id="chkBaru" name="gunakan_bank_baru">
+                            <label class="form-check-label" for="chkBaru">
+                                Gunakan bank baru? (abaikan data tersimpan)
+                            </label>
+                        </div>
+                    @endif
 
-                    <div class="row mb-3">
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nomor Rekening',
-                            'name' => 'no_rekening_pengirim',
-                            'type' => 'text',
-                            'icon' => 'bi-credit-card',
-                            'placeholder' => 'Contoh: 1234567890',
-                            'required' => true,
-                            'class' => 'col-md-12'
-                        ])
+                    {{-- 🔹 WRAPPER: Field-field bank baru — awalnya bisa hidden/tampil tergantung kondisi --}}
+                    <div id="formBankBaru">
+                        {{-- FIELD ASLI: NAMA BANK PENGIRIM --}}
+                        <div class="row mb-3">
+                            @include('wali.partials.form_field', [
+                                'label' => 'Nama Bank Pengirim',
+                                'name' => 'bank_pengirim_id',
+                                'type' => 'select',
+                                'options' => $listbank ?? [],
+                                'icon' => 'bi-bank2',
+                                'placeholder' => 'Pilih bank pengirim...',
+                                'required' => true,
+                                'class' => 'select2 col-md-12'
+                            ])
+                        </div>
+
+                        {{-- NAMA PEMILIK REKENING --}}
+                        <div class="row mb-3">
+                            @include('wali.partials.form_field', [
+                                'label' => 'Nama Pemilik Rekening',
+                                'name' => 'nama_pengirim',
+                                'type' => 'text',
+                                'icon' => 'bi-person',
+                                'placeholder' => 'Nama sesuai buku tabungan',
+                                'required' => true,
+                                'class' => 'col-md-12'
+                            ])
+                        </div>
+
+                        {{-- NOMOR REKENING --}}
+                        <div class="row mb-3">
+                            @include('wali.partials.form_field', [
+                                'label' => 'Nomor Rekening',
+                                'name' => 'no_rekening_pengirim',
+                                'type' => 'text',
+                                'icon' => 'bi-credit-card',
+                                'placeholder' => 'Contoh: 1234567890',
+                                'required' => true,
+                                'class' => 'col-md-12'
+                            ])
+                        </div>
                     </div>
 
                     {{-- Checkbox Simpan Data --}}
@@ -140,7 +178,7 @@
                         'required' => true
                     ])
 
-                    {{-- === SECTION: JUMLAH DIBAYAR === --}}
+                    {{-- JUMLAH DIBAYAR --}}
                     @include('wali.partials.form_field', [
                         'label' => 'Jumlah Dibayar',
                         'name' => 'jumlah_dibayar',
@@ -276,13 +314,18 @@
         padding: 0;
         line-height: 1;
     }
+
+    /* Animasi smooth toggle */
+    #formBankBaru {
+        transition: all 0.3s ease;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi Select2
+        // Inisialisasi Select2 untuk SEMUA select2 termasuk yang baru
         $('.select2').select2({
             theme: 'bootstrap-5',
             width: '100%',
@@ -315,6 +358,84 @@
         const buktiBayarEl       = document.getElementById('bukti_bayar');
         const previewContainer   = document.getElementById('previewContainer');
 
+        // 🔹 BARU: Elemen untuk kontrol tampil/sembunyi field bank
+        const bankTersimpanEl    = document.getElementById('bank_tersimpan_id');
+        const namaPengirimEl     = document.querySelector('input[name="nama_pengirim"]');
+        const noRekeningEl       = document.querySelector('input[name="no_rekening_pengirim"]');
+        const chkGunakanBankBaru = document.getElementById('chkGunakanBankBaru');
+        const chkBaru            = document.getElementById('chkBaru');
+        const formBankBaru       = document.getElementById('formBankBaru');
+
+        // 🔹 BARU: Fungsi untuk mengatur tampil/sembunyi field bank
+        function updateBankFormVisibility() {
+            const hasSavedBank = bankTersimpanEl && bankTersimpanEl.value;
+
+            if (hasSavedBank) {
+                // Ada data tersimpan → sembunyikan form bank baru
+                formBankBaru.style.display = 'none';
+                // Tampilkan checkbox "Gunakan bank baru?"
+                if (chkGunakanBankBaru) chkGunakanBankBaru.style.display = 'block';
+            } else {
+                // Tidak ada data tersimpan → langsung tampilkan form bank baru
+                formBankBaru.style.display = 'block';
+                // Sembunyikan checkbox
+                if (chkGunakanBankBaru) chkGunakanBankBaru.style.display = 'none';
+            }
+        }
+
+        // 🔹 Event: Saat pilih data bank tersimpan, isi otomatis field lainnya
+        if (bankTersimpanEl) {
+            bankTersimpanEl.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (!selectedOption.value) {
+                    updateBankFormVisibility();
+                    return;
+                }
+
+                const namaBank = selectedOption.getAttribute('data-nama-bank');
+                const namaPemilik = selectedOption.getAttribute('data-nama-pemilik');
+                const noRekening = selectedOption.getAttribute('data-no-rekening');
+
+                // Cari select2 bank_pengirim_id dan set valuenya
+                const bankSelect2 = $('#bank_pengirim_id');
+                if (bankSelect2.length) {
+                    let bankId = null;
+                    bankSelect2.find('option').each(function() {
+                        if ($(this).text().trim() === namaBank) {
+                            bankId = $(this).val();
+                            return false;
+                        }
+                    });
+
+                    if (bankId !== null) {
+                        bankSelect2.val(bankId).trigger('change');
+                    } else {
+                        bankSelect2.val('').trigger('change');
+                    }
+                }
+
+                // Isi field nama dan no rekening
+                if (namaPengirimEl) namaPengirimEl.value = namaPemilik;
+                if (noRekeningEl) noRekeningEl.value = noRekening;
+
+                // Update tampilan setelah pilih bank tersimpan
+                updateBankFormVisibility();
+            });
+        }
+
+        // 🔹 Event: Saat checkbox "Gunakan bank baru?" diubah
+        if (chkBaru) {
+            chkBaru.addEventListener('change', function() {
+                formBankBaru.style.display = this.checked ? 'block' : 'none';
+                if (this.checked) {
+                    // Reset field jika ingin mulai fresh
+                    $('#bank_pengirim_id').val('').trigger('change');
+                    if (namaPengirimEl) namaPengirimEl.value = '';
+                    if (noRekeningEl) noRekeningEl.value = '';
+                }
+            });
+        }
+
         // Event: Saat modal dibuka
         modal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
@@ -341,8 +462,16 @@
                 bankInfo.innerHTML = '<small class="text-muted">Informasi bank tidak tersedia</small>';
             }
 
-            // Auto-focus ke field bank pengirim
-            setTimeout(() => bankPengirimEl?.focus(), 300);
+            // Auto-focus ke field bank pengirim (atau ke bank tersimpan jika ada)
+            setTimeout(() => {
+                updateBankFormVisibility(); // 🔹 PENTING: panggil di sini!
+
+                if (bankTersimpanEl && bankTersimpanEl.options.length > 1) {
+                    bankTersimpanEl.focus();
+                } else {
+                    bankPengirimEl?.focus();
+                }
+            }, 300);
         });
 
         // 🔹 PREVIEW GAMBAR/FILE — DENGAN TOMBOL HAPUS
@@ -420,40 +549,27 @@
             btnText.textContent = 'Menyimpan...';
         });
 
-        // Format Rupiah - DIPERBAIKI
+        // Format Rupiah
         document.querySelectorAll('.rupiah').forEach(input => {
-            // Format saat diketik
             input.addEventListener('keyup', function(e) {
-                // Jangan format jika tombol khusus (Backspace, Delete, Arrow, dll)
-                if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                    return;
-                }
-
-                let value = this.value.replace(/\D/g, ''); // Ambil hanya angka
-                if (value) {
-                    // Format ke Rupiah
-                    this.value = new Intl.NumberFormat('id-ID').format(value);
-                } else {
-                    this.value = '';
-                }
+                if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+                let value = this.value.replace(/\D/g, '');
+                if (value) this.value = new Intl.NumberFormat('id-ID').format(value);
             });
 
-            // Format ulang saat kehilangan fokus (blur), jangan hapus format!
             input.addEventListener('blur', function() {
                 let value = this.value.replace(/\D/g, '');
-                if (value) {
-                    this.value = new Intl.NumberFormat('id-ID').format(value);
-                } else {
-                    this.value = '';
-                }
+                if (value) this.value = new Intl.NumberFormat('id-ID').format(value);
             });
 
-            // Sebelum submit form, ubah ke angka murni
             input.form.addEventListener('submit', function() {
                 let rawValue = input.value.replace(/\D/g, '');
-                input.value = rawValue; // Kirim angka murni ke server
+                input.value = rawValue;
             });
         });
+
+        // 🔹 Panggil saat halaman pertama kali dimuat
+        updateBankFormVisibility();
     });
 </script>
 @endpush
