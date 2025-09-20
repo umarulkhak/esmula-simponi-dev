@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,10 @@ class Tagihan extends Model
         'siswa',
         'tagihanDetails',
     ];
+    public function scopeWaliSiswa($q)
+    {
+        return $q->whereIn('siswa_id', Auth::user()->getAllSiswaId());
+    }
 
     public function user(): BelongsTo
     {

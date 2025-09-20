@@ -11,12 +11,20 @@ use Illuminate\Support\Facades\DB;
 
 class WaliMuridPembayaranController extends Controller
 {
-    // Simpan pembayaran dari modal via AJAX
+    /**
+     * Simpan pembayaran dari modal via AJAX.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'tagihan_id' => 'required|exists:tagihans,id',
             'bank_id' => 'required|exists:bank_sekolahs,id',
+            'bank_pengirim_id' => 'required|exists:banks,id', // 👈 validasi bank pengirim
+            'no_rekening_pengirim' => 'required|string|max:50', // 👈 validasi no rekening
+            'nama_pengirim' => 'required|string|max:100',       // 👈 validasi nama pengirim
             'tanggal_bayar' => 'required|date',
             'jumlah_dibayar' => 'required|numeric|min:1',
             'bukti_bayar' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
@@ -31,10 +39,13 @@ class WaliMuridPembayaranController extends Controller
             // Upload file bukti bayar
             $buktiPath = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
 
-            // Simpan data pembayaran
+            // Simpan data pembayaran — termasuk field baru
             $pembayaran = Pembayaran::create([
                 'tagihan_id' => $request->tagihan_id,
                 'bank_id' => $request->bank_id,
+                'bank_pengirim_id' => $request->bank_pengirim_id,     // 👈 simpan
+                'no_rekening_pengirim' => $request->no_rekening_pengirim, // 👈 simpan
+                'nama_pengirim' => $request->nama_pengirim,             // 👈 simpan
                 'tanggal_bayar' => $request->tanggal_bayar,
                 'jumlah_dibayar' => $request->jumlah_dibayar,
                 'bukti_bayar' => $buktiPath,
@@ -54,6 +65,7 @@ class WaliMuridPembayaranController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Gagal menyimpan pembayaran: ' . $e->getMessage());
             return response()->json(['error' => 'Gagal menyimpan pembayaran.'], 500);
         }
     }

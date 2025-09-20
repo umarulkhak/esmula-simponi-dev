@@ -9,10 +9,24 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Controller untuk manajemen tagihan SPP wali murid.
+ *
+ * Menampilkan daftar tagihan per siswa dan detail pembayaran.
+ * Dilengkapi proteksi akses: wali hanya bisa melihat data siswa yang dimilikinya.
+ * Memanfaatkan scope `waliSiswa()` dari model Tagihan untuk konsistensi query.
+ * Menyediakan daftar bank umum (\App\Models\Bank) untuk pilihan "Bank Pengirim".
+ *
+ * @author  Umar Ulkhak
+ * @date    3 Agustus 2025
+ * @updated 5 April 2025 — Tambah support bank pengirim dari model Bank, clean code, dokumentasi
+ */
 class WaliMuridTagihanController extends Controller
 {
     /**
      * Menampilkan daftar tagihan SPP untuk semua siswa milik wali yang login.
+     *
+     * Menggunakan scope `waliSiswa()` untuk memastikan hanya menampilkan tagihan siswa milik user.
      *
      * @return \Illuminate\View\View
      */
@@ -20,19 +34,15 @@ class WaliMuridTagihanController extends Controller
     {
         $user = Auth::user();
 
-        // Pastikan wali memiliki siswa
+        // Cek apakah wali memiliki siswa terdaftar
         if (!$user->siswa || $user->siswa->isEmpty()) {
             return view('wali.tagihan_index', [
                 'tagihanGrouped' => collect(),
             ])->with('info', 'Anda belum memiliki siswa terdaftar.');
         }
 
-        // Ambil ID siswa yang dimiliki wali
-        $siswaIds = $user->siswa->pluck('id');
-
-        // Load tagihan beserta relasi siswa dan rincian biaya
-        $tagihan = Tagihan::with(['siswa', 'tagihanDetails'])
-            ->whereIn('siswa_id', $siswaIds)
+        // Gunakan scope `waliSiswa()` untuk ambil tagihan milik siswa user
+        $tagihan = Tagihan::waliSiswa()
             ->orderBy('tanggal_tagihan', 'desc')
             ->get();
 
@@ -43,51 +53,57 @@ class WaliMuridTagihanController extends Controller
     }
 
     /**
-     * Menampilkan detail tagihan beserta rincian biaya dan riwayat pembayaran untuk satu siswa.
+     * Menampilkan detail tagihan dan riwayat pembayaran untuk satu siswa.
      *
-     * @param  int  $siswaId
+     * Memvalidasi bahwa siswa yang diakses benar-benar dimiliki oleh wali yang sedang login.
+     * Menyediakan data bank umum untuk dropdown "Bank Pengirim" di form pembayaran.
+     *
+     * @param  int  $siswaId  ID siswa yang ingin dilihat tagihannya
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show($siswaId)
     {
         try {
             $user = Auth::user();
-            $userSiswaIds = $user->siswa->pluck('id');
+            $userSiswaIds = $user->getAllSiswaId();
 
-            // Verifikasi akses: pastikan siswa milik wali
-            if (!$userSiswaIds->contains($siswaId)) {
+            // 🔒 Proteksi akses: cegah manipulasi URL
+            if (!in_array($siswaId, $userSiswaIds)) {
                 abort(403, 'Anda tidak memiliki akses ke data ini.');
             }
 
-            // Ambil semua tagihan untuk siswa ini beserta relasi
-            $tagihanList = Tagihan::with(['siswa', 'tagihanDetails'])
+            // Ambil tagihan siswa ini
+            $tagihanList = Tagihan::waliSiswa()
                 ->where('siswa_id', $siswaId)
                 ->orderBy('tanggal_tagihan', 'desc')
                 ->get();
 
-            // Pastikan siswa ditemukan
+            // Pastikan data siswa tersedia
             $siswa = $tagihanList->first()?->siswa;
             if (!$siswa) {
                 return redirect()->route('wali.tagihan.index')
                     ->with('error', 'Siswa tidak ditemukan.');
             }
 
-            // Ambil riwayat pembayaran untuk tagihan siswa ini
+            // Ambil riwayat pembayaran
             $pembayaran = Pembayaran::whereIn('tagihan_id', $tagihanList->pluck('id'))
                 ->orderBy('tanggal_bayar', 'desc')
                 ->get();
 
-            // Ambil daftar rekening bank sekolah
+            // 💰 Ambil daftar rekening bank sekolah (untuk BANK TUJUAN)
             $banksekolah = BankSekolah::all();
 
-            // Hitung total tagihan & total yang sudah dibayar
+            // 💳 Ambil daftar bank umum (untuk BANK PENGIRIM di form pembayaran)
+            $listbank = \App\Models\Bank::pluck('nama_bank', 'id');
+
+            // Hitung total tagihan dan total pembayaran
             $grandTotal = $tagihanList->sum(fn($tagihan) => $tagihan->tagihanDetails->sum('jumlah_biaya'));
             $totalDibayar = $pembayaran->sum('jumlah_dibayar');
 
-            // Tentukan status global pembayaran
+            // Tentukan status pembayaran global
             $statusGlobal = $this->determinePaymentStatus($grandTotal, $totalDibayar);
 
-            // Kirim data ke view
+            // Kirim semua data ke view
             return view('wali.tagihan_show', compact(
                 'tagihanList',
                 'siswa',
@@ -95,7 +111,8 @@ class WaliMuridTagihanController extends Controller
                 'banksekolah',
                 'grandTotal',
                 'totalDibayar',
-                'statusGlobal'
+                'statusGlobal',
+                'listbank' // 👈 Dikirim ke view untuk dropdown bank pengirim
             ));
 
         } catch (\Exception $e) {
@@ -113,9 +130,9 @@ class WaliMuridTagihanController extends Controller
     /**
      * Menentukan status pembayaran global berdasarkan total tagihan dan pembayaran.
      *
-     * @param  float  $grandTotal
-     * @param  float  $totalDibayar
-     * @return string
+     * @param  float  $grandTotal    Total seluruh tagihan
+     * @param  float  $totalDibayar  Total yang sudah dibayar
+     * @return string                Status: 'lunas', 'angsur', atau 'belum_bayar'
      */
     private function determinePaymentStatus(float $grandTotal, float $totalDibayar): string
     {
