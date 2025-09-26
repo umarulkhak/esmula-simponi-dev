@@ -26,13 +26,6 @@
 
 @include('wali.modals.modal_cara_bayar_atm')
 
-{{-- Modal Pembayaran --}}
-@include('wali.modals.modal_pembayaran', [
-    'model' => new \App\Models\Pembayaran,
-    'route' => 'wali.pembayaran.store',
-    'method' => 'POST',
-    'listBank' => $banksekolah->pluck('nama_bank', 'id') // ✅ Kirim data bank untuk dropdown
-])
 
 <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -206,12 +199,11 @@
                                         <p class="mb-0 fs-6">{{ $bank->nama_rekening }}</p>
                                     </div>
                                     {{-- ✅ Perbaikan: Ambil tagihan pertama untuk data-tagihan-id --}}
-                                    <a href="#"
-                                       class="btn btn-dark w-100 fs-6"
-                                       data-bs-toggle="modal"
-                                       data-bs-target="#pembayaranModal"
-                                       data-tagihan-id="{{ $tagihanList->first()->id }}"
-                                       data-bank-id="{{ $bank->id }}">
+                                    <a href="{{ route('wali.pembayaran.create', [
+                                            'tagihan_id' => $tagihanList->first()->id,
+                                            'bank_id' => $bank->id
+                                        ]) }}"
+                                    class="btn btn-dark w-100 fs-6">
                                         Konfirmasi Pembayaran
                                     </a>
                                 </div>
