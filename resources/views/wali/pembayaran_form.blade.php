@@ -1,20 +1,5 @@
 @extends('layouts.app_sneat_wali')
 
-{{--
-Form Konfirmasi Pembayaran SPP oleh Wali Murid
-
-Fitur:
-- Sembunyikan "Bank Tersimpan" jika user belum pernah menyimpan rekening
-- Toggle rekening baru pakai checkbox (dengan animasi)
-- Redirect otomatis jika bank tujuan dipilih
-- Preview file upload (gambar / PDF)
-- Format Rupiah otomatis
-- Loading state saat submit
-
-@author Umar
-@version 3.1
---}}
-
 @section('content')
 <div class="row justify-content-center">
     <div class="col-12">
@@ -53,7 +38,7 @@ Fitur:
                         </div>
                     </div>
 
-                    {{-- Tampilkan dropdown hanya jika user sudah punya rekening tersimpan --}}
+                    {{-- Dropdown hanya jika sudah ada rekening tersimpan --}}
                     @if($listWaliBank && count($listWaliBank) > 0)
                         <div class="form-group" id="formGroupBankTersimpan">
                             <label class="form-label" for="bank_id_pengirim">Bank Tersimpan</label>
@@ -73,7 +58,7 @@ Fitur:
                         </div>
                     @endif
 
-                    <!-- Info -->
+                    <!-- Info rekening baru -->
                     <div id="infoRekeningBaru" class="alert alert-info mt-2 {{ ($listWaliBank && count($listWaliBank) > 0) ? 'd-none' : '' }}">
                         Isi data rekening baru agar operator dapat verifikasi transfer Anda.
                     </div>
@@ -125,7 +110,7 @@ Fitur:
                         <div class="divider-text"><i class="fa-solid fa-circle-info me-1"></i> Rekening Tujuan</div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group mb-2">
                         <label for="bank_sekolah_id">Bank Tujuan Pembayaran</label>
                         {!! Form::select('bank_sekolah_id', $listBankSekolah, request('bank_sekolah_id'), [
                             'class'=>'form-control',
@@ -135,17 +120,13 @@ Fitur:
                         <span class="text-danger">{{ $errors->first('bank_sekolah_id') }}</span>
                     </div>
 
-                    @if (request('bank_sekolah_id'))
-                        <div class="alert alert-primary mt-2">
-                            <table class="table table-sm mb-0">
-                                <tbody>
-                                    <tr><td>Bank</td><td>{{ $bankYangDipilih->nama_bank }}</td></tr>
-                                    <tr><td>No. Rekening</td><td>{{ $bankYangDipilih->nomor_rekening }}</td></tr>
-                                    <tr><td>Atas Nama</td><td>{{ $bankYangDipilih->nama_rekening }}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+                    <div class="alert alert-primary mt-2">
+                        <ul class="list-unstyled mb-0">
+                            <li><strong>Bank:</strong> {{ request('bank_sekolah_id') ? $bankYangDipilih->nama_bank : '-' }}</li>
+                            <li><strong>No. Rekening:</strong> {{ request('bank_sekolah_id') ? $bankYangDipilih->nomor_rekening : '-' }}</li>
+                            <li><strong>Atas Nama:</strong> {{ request('bank_sekolah_id') ? $bankYangDipilih->nama_rekening : '-' }}</li>
+                        </ul>
+                    </div>
                 </section>
 
                 <input type="hidden" name="tagihan_id" value="{{ $tagihan->id }}">
@@ -202,7 +183,11 @@ Fitur:
 document.addEventListener('DOMContentLoaded', () => {
     const isFirstPayment = {{ ($listWaliBank && count($listWaliBank) > 0) ? 'false' : 'true' }};
 
-    // ==== SLIDE UTILITY ====
+    const formBankBaru = document.getElementById('formBankBaru');
+    const chkGunakanBankBaru = document.getElementById('chkGunakanBankBaru');
+    const infoRekeningBaru = document.getElementById('infoRekeningBaru');
+
+    // Animasi slide sederhana
     const slideToggle = (el, show) => {
         if (show) {
             el.style.display = 'block';
@@ -229,37 +214,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const formBankBaru = document.getElementById('formBankBaru');
-    const chkGunakanBankBaru = document.getElementById('chkGunakanBankBaru');
-    const infoRekeningBaru = document.getElementById('infoRekeningBaru');
-
     function toggleFormBankBaru() {
         slideToggle(formBankBaru, chkGunakanBankBaru.checked);
         infoRekeningBaru.classList.toggle('d-none', !chkGunakanBankBaru.checked);
-        if (!chkGunakanBankBaru.checked) {
-            formBankBaru.querySelectorAll('input, select').forEach(el => el.value = '');
-        }
     }
 
     if (!isFirstPayment && chkGunakanBankBaru) {
         chkGunakanBankBaru.addEventListener('change', toggleFormBankBaru);
     }
 
-    // ==== REDIRECT BANK TUJUAN ====
+    // Redirect saat pilih bank tujuan
     const bankSekolahSelect = document.getElementById('bank_sekolah_id');
     bankSekolahSelect?.addEventListener('change', function () {
         const bankId = this.value;
-        if (bankId) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('bank_sekolah_id', bankId);
-            window.location.href = url.toString();
-        }
+        const url = new URL(window.location.href);
+        if (bankId) url.searchParams.set('bank_sekolah_id', bankId);
+        else url.searchParams.delete('bank_sekolah_id');
+        window.location.href = url.toString();
     });
 
-    // ==== FILE PREVIEW ====
+    // Preview bukti bayar
     const buktiBayarEl = document.getElementById('bukti_bayar');
     const previewContainer = document.getElementById('previewContainer');
-
     function createCloseButton() {
         const btn = document.createElement('button');
         btn.className = 'btn-close';
@@ -270,12 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return btn;
     }
-
     buktiBayarEl?.addEventListener('change', function () {
         const file = this.files[0];
         previewContainer.innerHTML = '';
         if (!file) return previewContainer.classList.add('d-none');
-
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = e => {
@@ -298,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ==== FORMAT RUPIAH ====
+    // Format rupiah
     document.querySelectorAll('.rupiah').forEach(input => {
         input.addEventListener('keyup', () => {
             let value = input.value.replace(/\D/g, '');
@@ -309,12 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ==== LOADING STATE ====
+    // Loading state submit
     const form = document.getElementById('formPembayaran');
     const btnSimpan = document.getElementById('btnSimpan');
     const btnText = document.getElementById('btnText');
     const spinner = document.getElementById('loadingSpinner');
-
     form?.addEventListener('submit', () => {
         btnSimpan.disabled = true;
         spinner.classList.remove('d-none');
