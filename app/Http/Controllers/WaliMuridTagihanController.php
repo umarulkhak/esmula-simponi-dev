@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tagihan;
-use App\Models\WaliBank;
 use App\Models\Pembayaran;
 use App\Models\BankSekolah;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +18,7 @@ use Illuminate\Support\Facades\Auth;
  *
  * @author  Umar Ulkhak
  * @date    3 Agustus 2025
- * @updated 5 April 2025 — Tambah support bank pengirim dari model Bank, clean code, dokumentasi
+ * @updated 5 April 2025 — Tambah support bank pengirim dari model Bank
  */
 class WaliMuridTagihanController extends Controller
 {
@@ -93,7 +91,6 @@ class WaliMuridTagihanController extends Controller
 
             // 💰 Ambil daftar rekening bank sekolah (untuk BANK TUJUAN)
             $banksekolah = BankSekolah::all();
-            $waliBanks = WaliBank::where('wali_id', Auth::user()->id)->get();
 
 
             // 💳 Ambil daftar bank umum (untuk BANK PENGIRIM di form pembayaran)
@@ -116,7 +113,6 @@ class WaliMuridTagihanController extends Controller
                 'totalDibayar',
                 'statusGlobal',
                 'listbank',
-                'waliBanks',
             ));
 
         } catch (\Exception $e) {

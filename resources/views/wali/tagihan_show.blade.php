@@ -183,25 +183,25 @@
                     </p>
 
                     <div class="row g-3">
-                        @foreach ($banksekolah as $bank)
+                        @foreach ($banksekolah as $itemBank)
                             <div class="col-12">
                                 <div class="bg-white border rounded-3 p-3 shadow-sm">
                                     <div class="mb-2">
                                         <strong class="text-muted fs-7">Bank Tujuan</strong>
-                                        <p class="mb-0 fs-6">{{ $bank->nama_bank }}</p>
+                                        <p class="mb-0 fs-6">{{ $itemBank->nama_bank }}</p>
                                     </div>
                                     <div class="mb-2">
                                         <strong class="text-muted fs-7">Nomor Rekening</strong>
-                                        <p class="mb-0 fs-6">{{ $bank->nomor_rekening }}</p>
+                                        <p class="mb-0 fs-6">{{ $itemBank->nomor_rekening }}</p>
                                     </div>
                                     <div class="mb-3">
                                         <strong class="text-muted fs-7">Atas Nama</strong>
-                                        <p class="mb-0 fs-6">{{ $bank->nama_rekening }}</p>
+                                        <p class="mb-0 fs-6">{{ $itemBank->nama_rekening }}</p>
                                     </div>
                                     {{-- ✅ Perbaikan: Ambil tagihan pertama untuk data-tagihan-id --}}
                                     <a href="{{ route('wali.pembayaran.create', [
-                                            'tagihan_id' => $tagihanList->first()->id,
-                                            'bank_id' => $bank->id
+                                            'tagihan_id' => $tagihan->id,
+                                            'bank_sekolah_id' => $itemBank->id
                                         ]) }}"
                                     class="btn btn-dark w-100 fs-6">
                                         Konfirmasi Pembayaran

@@ -64,17 +64,17 @@ Dependencies:
                         </div>
                     </div>
                     <div class="bg-light p-3 rounded border">
-                        <div class="fw-medium">{{ $bankTujuan->nama_bank }}</div>
-                        <div class="small">{{ $bankTujuan->nomor_rekening }}</div>
-                        <div class="small text-muted">a.n. {{ $bankTujuan->nama_rekening }}</div>
+                        <div class="fw-medium">{{ $bankSekolah->nama_bank }}</div>
+                        <div class="small">{{ $bankSekolah->nomor_rekening }}</div>
+                        <div class="small text-muted">a.n. {{ $bankSekolah->nama_rekening }}</div>
                     </div>
                 </section>
 
                 <!-- Hidden Inputs -->
                 <input type="hidden" name="tagihan_id" value="{{ $tagihan->id }}">
-                <input type="hidden" name="bank_id" value="{{ $bankTujuan->id }}">
+                <input type="hidden" name="bank_id" value="{{ $bankSekolah->id }}">
 
-                <!-- Rekening Pengirim -->
+                {{-- <!-- Rekening Pengirim -->
                 <section class="mb-4">
                     <div class="divider divider-dark">
                         <div class="divider-text">
@@ -110,7 +110,7 @@ Dependencies:
                                 Gunakan bank baru? (abaikan data tersimpan)
                             </label>
                         </div>
-                    @endif
+                    @endif --}}
 
                     <div id="formBankBaru">
                         @include('wali.partials.form_field', [
