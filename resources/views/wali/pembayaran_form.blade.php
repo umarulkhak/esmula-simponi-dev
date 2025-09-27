@@ -63,11 +63,35 @@ Dependencies:
                             <i class="fa-solid fa-circle-info me-1"></i> Rekening Tujuan
                         </div>
                     </div>
-                    <div class="bg-light p-3 rounded border">
-                        <div class="fw-medium">{{ $bankSekolah->nama_bank }}</div>
-                        <div class="small">{{ $bankSekolah->nomor_rekening }}</div>
-                        <div class="small text-muted">a.n. {{ $bankSekolah->nama_rekening }}</div>
+                    <div class="form-group">
+                        <label for="bank_id">Bank Tujuan Pembayaran</label>
+                        {!! Form::select('bank_sekolah_id', $listBank, request('bank_sekolah_id'), [
+                            'class' => 'form-control',
+                            'placeholder' => 'Pilih Bank Tujuan Transfer',
+                        ]) !!}
+                        <span class="text-danger">{{ $errors->first('bank_sekolah_id') }}</span>
                     </div>
+
+                    @if (request('bank_sekolah_id') != "")
+                        <div class="alert alert-primary mt-2" role="alert">
+                            <table width="100%">
+                                <tbody>
+                                    <tr>
+                                        <td width="10%">Bank Tujuan</td>
+                                        <td>: {{ $bankYangDipilih->nama_bank }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Nomor Rekening</td>
+                                        <td>: {{ $bankYangDipilih->nomor_rekening }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Atas Nama</td>
+                                        <td>: {{ $bankYangDipilih->nama_rekening }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </section>
 
                 <!-- Hidden Inputs -->
