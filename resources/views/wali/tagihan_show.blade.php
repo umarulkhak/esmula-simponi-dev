@@ -411,18 +411,20 @@
         setTimeout(() => window.location.reload(), 100);
     }
 
-    // Modal handler
     document.addEventListener('DOMContentLoaded', function() {
-        const pembayaranModal = document.getElementById('pembayaranModal');
+    const pembayaranModal = document.getElementById('pembayaranModal');
 
-        pembayaranModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const tagihanId = button.getAttribute('data-tagihan-id');
-            const bankId = button.getAttribute('data-bank-id');
+            if (pembayaranModal) {
+                pembayaranModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const tagihanId = button.getAttribute('data-tagihan-id');
+                    const bankId = button.getAttribute('data-bank-id');
 
-            pembayaranModal.querySelector('#modal_tagihan_id').value = tagihanId;
-            pembayaranModal.querySelector('#modal_bank_id').value = bankId;
+                    pembayaranModal.querySelector('#modal_tagihan_id').value = tagihanId;
+                    pembayaranModal.querySelector('#modal_bank_id').value = bankId;
+                });
+            }
         });
-    });
+
 </script>
 @endpush

@@ -37,9 +37,11 @@ class Tagihan extends Model
         'siswa',
         'tagihanDetails',
     ];
-    public function scopeWaliSiswa($q)
+
+    public function scopeWaliSiswa($query)
     {
-        return $q->whereIn('siswa_id', Auth::user()->getAllSiswaId());
+        // Filter hanya data yang terkait dengan semua siswa yang dimiliki oleh user yang login
+        return $query->whereIn('siswa_id', Auth::user()->getAllSiswaId());
     }
 
     public function user(): BelongsTo

@@ -1,24 +1,18 @@
 @extends('layouts.app_sneat_wali')
 
 {{--
-Form Konfirmasi Pembayaran SPP oleh Wali Murid (Halaman Penuh)
+Form Konfirmasi Pembayaran SPP oleh Wali Murid
 
-Fitur Utama:
-- Preview file (gambar/PDF) sebelum upload
-- Pilihan antara data bank tersimpan atau input manual
-- Format otomatis untuk jumlah pembayaran (Rupiah)
-- Validasi Laravel + UX loading state saat submit
-- Responsif & kompatibel Bootstrap 5
+Fitur:
+- Sembunyikan "Bank Tersimpan" jika user belum pernah menyimpan rekening
+- Toggle rekening baru pakai checkbox (dengan animasi)
+- Redirect otomatis jika bank tujuan dipilih
+- Preview file upload (gambar / PDF)
+- Format Rupiah otomatis
+- Loading state saat submit
 
-Dependencies:
-- Bootstrap 5 + Bootstrap Icons
-- Select2 (untuk dropdown)
-- jQuery
-- Laravel Collective Form
-
-@author Umar Ulkhak
-@version 2.1 — Full Page (Non-Modal)
-@updated {{ now()->format('d F Y') }}
+@author Umar
+@version 3.1
 --}}
 
 @section('content')
@@ -36,69 +30,22 @@ Dependencies:
 
             <div class="card-body p-4">
                 @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show">
                         {{ session('success') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div class="alert alert-danger alert-dismissible fade show">
                         {{ session('error') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
 
-                {!! Form::model($model, [
-                    'route' => $route,
-                    'method' => $method,
-                    'files' => true,
-                    'id' => 'formPembayaran'
-                ]) !!}
+                {!! Form::model($model, ['route'=>$route, 'method'=>$method, 'files'=>true, 'id'=>'formPembayaran']) !!}
 
-                <!-- Rekening Tujuan -->
-                <section class="mb-4">
-                    <div class="divider divider-dark">
-                        <div class="divider-text">
-                            <i class="fa-solid fa-circle-info me-1"></i> Rekening Tujuan
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="bank_id">Bank Tujuan Pembayaran</label>
-                        {!! Form::select('bank_sekolah_id', $listBank, request('bank_sekolah_id'), [
-                            'class' => 'form-control',
-                            'placeholder' => 'Pilih Bank Tujuan Transfer',
-                        ]) !!}
-                        <span class="text-danger">{{ $errors->first('bank_sekolah_id') }}</span>
-                    </div>
-
-                    @if (request('bank_sekolah_id') != "")
-                        <div class="alert alert-primary mt-2" role="alert">
-                            <table width="100%">
-                                <tbody>
-                                    <tr>
-                                        <td width="10%">Bank Tujuan</td>
-                                        <td>: {{ $bankYangDipilih->nama_bank }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Nomor Rekening</td>
-                                        <td>: {{ $bankYangDipilih->nomor_rekening }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Atas Nama</td>
-                                        <td>: {{ $bankYangDipilih->nama_rekening }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </section>
-
-                <!-- Hidden Inputs -->
-                <input type="hidden" name="tagihan_id" value="{{ $tagihan->id }}">
-                <input type="hidden" name="bank_id" value="{{ $bankSekolah->id }}">
-
-                {{-- <!-- Rekening Pengirim -->
+                <!-- REKENING PENGIRIM -->
                 <section class="mb-4">
                     <div class="divider divider-dark">
                         <div class="divider-text">
@@ -106,129 +53,139 @@ Dependencies:
                         </div>
                     </div>
 
-                    @if(isset($waliBanks) && $waliBanks->isNotEmpty())
-                        <div class="form-group mb-3">
-                            <label for="bank_tersimpan_id" class="form-label fw-medium">
-                                <i class="bi bi-collection me-1"></i> Gunakan Data Bank Tersimpan
-                            </label>
-                            <select name="bank_tersimpan_id" id="bank_tersimpan_id" class="form-control select2" data-placeholder="Pilih data bank tersimpan...">
-                                <option value=""></option>
-                                @foreach($waliBanks as $bank)
-                                    <option value="{{ $bank->id }}"
-                                        data-nama-bank="{{ $bank->nama_bank_full }}"
-                                        data-nama-pemilik="{{ $bank->nama_pemilik }}"
-                                        data-no-rekening="{{ $bank->no_rekening }}">
-                                        {{ $bank->nama_bank_full }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="form-text text-muted small">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Pilih untuk mengisi otomatis form di bawah.
-                            </div>
+                    {{-- Tampilkan dropdown hanya jika user sudah punya rekening tersimpan --}}
+                    @if($listWaliBank && count($listWaliBank) > 0)
+                        <div class="form-group" id="formGroupBankTersimpan">
+                            <label class="form-label" for="bank_id_pengirim">Bank Tersimpan</label>
+                            {!! Form::select('bank_id_pengirim', $listWaliBank, null, [
+                                'class'=>'form-control select2',
+                                'placeholder'=>'Pilih Bank Pengirim',
+                                'id'=>'bank_id_pengirim'
+                            ]) !!}
+                            <span class="text-danger">{{ $errors->first('bank_id_pengirim') }}</span>
                         </div>
 
-                        <div class="form-check mb-3" id="chkGunakanBankBaru" style="display: none;">
-                            <input class="form-check-input" type="checkbox" id="chkBaru" name="gunakan_bank_baru">
-                            <label class="form-check-label" for="chkBaru">
-                                Gunakan bank baru? (abaikan data tersimpan)
+                        <div class="form-check mt-2" id="checkboxRekeningBaruWrapper">
+                            <input type="checkbox" class="form-check-input" id="chkGunakanBankBaru">
+                            <label for="chkGunakanBankBaru" class="form-check-label">
+                                Saya punya rekening baru
                             </label>
                         </div>
-                    @endif --}}
+                    @endif
 
-                    <div id="formBankBaru">
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nama Bank Pengirim',
-                            'name' => 'bank_pengirim_id',
-                            'type' => 'select',
-                            'options' => $listbank ?? [],
-                            'icon' => 'bi-bank2',
-                            'placeholder' => 'Pilih bank pengirim...',
-                            'required' => true,
-                            'class' => 'select2 col-md-12'
-                        ])
-
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nama Pemilik Rekening',
-                            'name' => 'nama_pengirim',
-                            'type' => 'text',
-                            'icon' => 'bi-person',
-                            'placeholder' => 'Nama sesuai buku tabungan',
-                            'required' => true,
-                            'class' => 'col-md-12'
-                        ])
-
-                        @include('wali.partials.form_field', [
-                            'label' => 'Nomor Rekening',
-                            'name' => 'no_rekening_pengirim',
-                            'type' => 'text',
-                            'icon' => 'bi-credit-card',
-                            'placeholder' => 'Contoh: 1234567890',
-                            'required' => true,
-                            'class' => 'col-md-12'
-                        ])
+                    <!-- Info -->
+                    <div id="infoRekeningBaru" class="alert alert-info mt-2 {{ ($listWaliBank && count($listWaliBank) > 0) ? 'd-none' : '' }}">
+                        Isi data rekening baru agar operator dapat verifikasi transfer Anda.
                     </div>
 
-                    <div class="form-check mt-3">
-                        {!! Form::checkbox('simpan_data_rekening', 1, true, ['class' => 'form-check-input', 'id' => 'defaultCheck3']) !!}
-                        <label class="form-check-label" for="defaultCheck3">
-                            <small>Simpan data ini untuk pembayaran selanjutnya.</small>
-                        </label>
+                    <!-- Form Input Manual -->
+                    <div id="formBankBaru" class="mt-3" style="{{ ($listWaliBank && count($listWaliBank) > 0) ? 'display:none; overflow:hidden;' : '' }}">
+                        <div class="form-group mb-3">
+                            <label for="bank_pengirim_id" class="form-label">Nama Bank Pengirim</label>
+                            {!! Form::select('bank_pengirim_id', $listBank ?? [], null, [
+                                'class'=>'form-control select2',
+                                'placeholder'=>'Pilih bank pengirim...',
+                                'id'=>'bank_pengirim_id'
+                            ]) !!}
+                            <span class="text-danger">{{ $errors->first('bank_pengirim_id') }}</span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label" for="nama_pengirim">Nama Pemilik Rekening</label>
+                            {!! Form::text('nama_pengirim', null, [
+                                'class'=>'form-control',
+                                'placeholder'=>'Nama sesuai buku tabungan',
+                                'id'=>'nama_pengirim'
+                            ]) !!}
+                            <span class="text-danger">{{ $errors->first('nama_pengirim') }}</span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label" for="no_rekening_pengirim">Nomor Rekening</label>
+                            {!! Form::text('no_rekening_pengirim', null, [
+                                'class'=>'form-control',
+                                'placeholder'=>'Contoh: 1234567890',
+                                'id'=>'no_rekening_pengirim'
+                            ]) !!}
+                            <span class="text-danger">{{ $errors->first('no_rekening_pengirim') }}</span>
+                        </div>
+
+                        <div class="form-check">
+                            {!! Form::checkbox('simpan_data_rekening', 1, true, ['class'=>'form-check-input','id'=>'defaultCheck3']) !!}
+                            <label for="defaultCheck3" class="form-check-label">
+                                <small>Simpan data ini untuk pembayaran berikutnya</small>
+                            </label>
+                        </div>
                     </div>
                 </section>
 
-                <!-- Info Pembayaran -->
+                <!-- REKENING TUJUAN -->
                 <section class="mb-4">
                     <div class="divider divider-dark">
-                        <div class="divider-text">
-                            <i class="fa-solid fa-circle-info me-1"></i> Info Pembayaran
-                        </div>
+                        <div class="divider-text"><i class="fa-solid fa-circle-info me-1"></i> Rekening Tujuan</div>
                     </div>
 
-                    @include('wali.partials.form_field', [
-                        'label' => 'Tanggal Bayar',
-                        'name' => 'tanggal_bayar',
-                        'type' => 'date',
-                        'icon' => 'bi-calendar',
-                        'value' => $model->tanggal_bayar ?? date('Y-m-d'),
-                        'required' => true
-                    ])
+                    <div class="form-group">
+                        <label for="bank_sekolah_id">Bank Tujuan Pembayaran</label>
+                        {!! Form::select('bank_sekolah_id', $listBankSekolah, request('bank_sekolah_id'), [
+                            'class'=>'form-control',
+                            'placeholder'=>'Pilih Bank Tujuan Transfer',
+                            'id'=>'bank_sekolah_id'
+                        ]) !!}
+                        <span class="text-danger">{{ $errors->first('bank_sekolah_id') }}</span>
+                    </div>
 
-                    @include('wali.partials.form_field', [
-                        'label' => 'Jumlah Dibayar',
-                        'name' => 'jumlah_dibayar',
-                        'type' => 'text',
-                        'icon' => 'bi-cash',
-                        'placeholder' => 'Contoh: 500.000',
-                        'required' => true,
-                        'class' => 'rupiah'
-                    ])
+                    @if (request('bank_sekolah_id'))
+                        <div class="alert alert-primary mt-2">
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr><td>Bank</td><td>{{ $bankYangDipilih->nama_bank }}</td></tr>
+                                    <tr><td>No. Rekening</td><td>{{ $bankYangDipilih->nomor_rekening }}</td></tr>
+                                    <tr><td>Atas Nama</td><td>{{ $bankYangDipilih->nama_rekening }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </section>
+
+                <input type="hidden" name="tagihan_id" value="{{ $tagihan->id }}">
+
+                <!-- INFO PEMBAYARAN -->
+                <section class="mb-4">
+                    <div class="divider divider-dark">
+                        <div class="divider-text"><i class="fa-solid fa-circle-info me-1"></i> Info Pembayaran</div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="tanggal_bayar" class="form-label">Tanggal Bayar</label>
+                        {!! Form::date('tanggal_bayar', $model->tanggal_bayar ?? date('Y-m-d'), [
+                            'class'=>'form-control','required'=>true
+                        ]) !!}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="jumlah_dibayar" class="form-label">Jumlah Dibayar</label>
+                        {!! Form::text('jumlah_dibayar', null, [
+                            'class'=>'form-control rupiah',
+                            'placeholder'=>'Contoh: 500.000',
+                            'id'=>'jumlah_dibayar'
+                        ]) !!}
+                    </div>
 
                     <div class="mb-3">
                         <label for="bukti_bayar" class="form-label fw-medium">
                             <i class="bi bi-upload me-1"></i> Upload Bukti (JPG/PNG/PDF) <span class="text-danger">*</span>
                         </label>
-                        {!! Form::file('bukti_bayar', [
-                            'class' => 'form-control' . ($errors->has('bukti_bayar') ? ' is-invalid' : ''),
-                            'accept' => 'image/*,.pdf',
-                            'required',
-                            'id' => 'bukti_bayar'
-                        ]) !!}
-                        @error('bukti_bayar')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
-                        <div class="form-text text-muted small">Maks. 2MB</div>
+                        {!! Form::file('bukti_bayar', ['class'=>'form-control','accept'=>'image/*,.pdf','id'=>'bukti_bayar']) !!}
+                        <div class="form-text small">Maks. 2MB</div>
                         <div id="previewContainer" class="mt-2 d-none"></div>
                     </div>
                 </section>
 
-                <!-- Action Buttons -->
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary px-4 rounded-2">
-                        Batal
-                    </a>
-                    <button type="submit" class="btn btn-dark px-4 rounded-2" id="btnSimpan">
-                        <span class="spinner-border spinner-border-sm d-none me-2" role="status" id="loadingSpinner"></span>
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary me-2">Batal</a>
+                    <button type="submit" class="btn btn-dark" id="btnSimpan">
+                        <span class="spinner-border spinner-border-sm d-none me-2" id="loadingSpinner"></span>
                         <span id="btnText">Simpan</span>
                     </button>
                 </div>
@@ -240,200 +197,72 @@ Dependencies:
 </div>
 @endsection
 
-@push('styles')
-<style>
-    .divider {
-        position: relative;
-        height: 1px;
-        background-color: #adb5bd;
-        margin: 1.5rem 0;
-    }
-    .divider-text {
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #fff;
-        padding: 0 1rem;
-        font-size: 0.875rem;
-        color: #495057;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-radius: 0.25rem;
-        z-index: 1;
-        box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-    #previewContainer {
-        margin-top: 0.75rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border: 1px dashed #dee2e6;
-        border-radius: 0.5rem;
-        background: #f8f9fa;
-        padding: 0.5rem;
-        display: none;
-        max-width: 100%;
-        overflow: hidden;
-        position: relative;
-    }
-    #previewContainer img {
-        width: 120px;
-        height: 120px;
-        object-fit: cover;
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        display: block;
-    }
-    #previewContainer .embed {
-        text-align: center;
-        padding: 0.75rem;
-        font-size: 0.875rem;
-        border: 1px dashed #adb5bd;
-        border-radius: 0.375rem;
-        background: #f8f9fa;
-        max-width: 100%;
-        word-break: break-all;
-    }
-    #previewContainer .btn-close {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        background: #fff;
-        border: 1px solid #dee2e6;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        font-size: 0.75rem;
-        cursor: pointer;
-        z-index: 10;
-        padding: 0;
-        line-height: 1;
-    }
-    #formBankBaru {
-        transition: all 0.3s ease;
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Inisialisasi Select2
-    $('.select2').select2({
-        theme: 'bootstrap-5',
-        width: '100%',
-        placeholder: function () {
-            return $(this).data('placeholder') || 'Pilih...';
-        },
-        allowClear: true
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    const isFirstPayment = {{ ($listWaliBank && count($listWaliBank) > 0) ? 'false' : 'true' }};
 
-    // DOM Elements
-    const bankTersimpanEl = document.getElementById('bank_tersimpan_id');
+    // ==== SLIDE UTILITY ====
+    const slideToggle = (el, show) => {
+        if (show) {
+            el.style.display = 'block';
+            el.style.height = '0px';
+            let fullHeight = el.scrollHeight + 'px';
+            requestAnimationFrame(() => {
+                el.style.transition = 'height 0.3s ease';
+                el.style.height = fullHeight;
+            });
+            el.addEventListener('transitionend', () => {
+                el.style.height = 'auto';
+                el.style.transition = '';
+            }, {once:true});
+        } else {
+            el.style.height = el.scrollHeight + 'px';
+            requestAnimationFrame(() => {
+                el.style.transition = 'height 0.3s ease';
+                el.style.height = '0px';
+            });
+            el.addEventListener('transitionend', () => {
+                el.style.display = 'none';
+                el.style.transition = '';
+            }, {once:true});
+        }
+    };
+
     const formBankBaru = document.getElementById('formBankBaru');
     const chkGunakanBankBaru = document.getElementById('chkGunakanBankBaru');
-    const chkBaru = document.getElementById('chkBaru');
-    const namaPengirimEl = document.querySelector('input[name="nama_pengirim"]');
-    const noRekeningEl = document.querySelector('input[name="no_rekening_pengirim"]');
-    const buktiBayarEl = document.getElementById('bukti_bayar');
-    const previewContainer = document.getElementById('previewContainer');
-    const form = document.getElementById('formPembayaran');
-    const btnSimpan = document.getElementById('btnSimpan');
-    const btnText = document.getElementById('btnText');
-    const loadingSpinner = document.getElementById('loadingSpinner');
+    const infoRekeningBaru = document.getElementById('infoRekeningBaru');
 
-    // Toggle form bank baru berdasarkan pilihan bank tersimpan
-    function updateBankFormVisibility() {
-        const hasSavedBank = bankTersimpanEl?.value;
-        if (hasSavedBank) {
-            formBankBaru.style.display = 'none';
-            if (chkGunakanBankBaru) chkGunakanBankBaru.style.display = 'block';
-        } else {
-            formBankBaru.style.display = 'block';
-            if (chkGunakanBankBaru) chkGunakanBankBaru.style.display = 'none';
+    function toggleFormBankBaru() {
+        slideToggle(formBankBaru, chkGunakanBankBaru.checked);
+        infoRekeningBaru.classList.toggle('d-none', !chkGunakanBankBaru.checked);
+        if (!chkGunakanBankBaru.checked) {
+            formBankBaru.querySelectorAll('input, select').forEach(el => el.value = '');
         }
     }
 
-    // Isi otomatis field bank dari data tersimpan
-    bankTersimpanEl?.addEventListener('change', function () {
-        const opt = this.options[this.selectedIndex];
-        if (!opt.value) return updateBankFormVisibility();
+    if (!isFirstPayment && chkGunakanBankBaru) {
+        chkGunakanBankBaru.addEventListener('change', toggleFormBankBaru);
+    }
 
-        const namaBank = opt.getAttribute('data-nama-bank');
-        const namaPemilik = opt.getAttribute('data-nama-pemilik');
-        const noRekening = opt.getAttribute('data-no-rekening');
-
-        const bankSelect = $('#bank_pengirim_id');
-        let bankId = null;
-        bankSelect.find('option').each(function () {
-            if ($(this).text().trim() === namaBank) {
-                bankId = $(this).val();
-                return false;
-            }
-        });
-        bankSelect.val(bankId || '').trigger('change');
-
-        if (namaPengirimEl) namaPengirimEl.value = namaPemilik;
-        if (noRekeningEl) noRekeningEl.value = noRekening;
-        updateBankFormVisibility();
-    });
-
-    // Toggle manual input bank
-    chkBaru?.addEventListener('change', function () {
-        formBankBaru.style.display = this.checked ? 'block' : 'none';
-        if (this.checked) {
-            $('#bank_pengirim_id').val('').trigger('change');
-            if (namaPengirimEl) namaPengirimEl.value = '';
-            if (noRekeningEl) noRekeningEl.value = '';
+    // ==== REDIRECT BANK TUJUAN ====
+    const bankSekolahSelect = document.getElementById('bank_sekolah_id');
+    bankSekolahSelect?.addEventListener('change', function () {
+        const bankId = this.value;
+        if (bankId) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('bank_sekolah_id', bankId);
+            window.location.href = url.toString();
         }
     });
 
-    // Preview file upload
-    buktiBayarEl.addEventListener('change', function () {
-        const file = this.files[0];
-        previewContainer.innerHTML = '';
-        if (!file) return previewContainer.classList.add('d-none');
-
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.width = '120px';
-                img.style.height = '120px';
-                img.style.objectFit = 'cover';
-                img.style.border = '1px solid #dee2e6';
-                img.style.borderRadius = '0.375rem';
-
-                const closeBtn = createCloseButton();
-                previewContainer.appendChild(img);
-                previewContainer.appendChild(closeBtn);
-                previewContainer.classList.remove('d-none');
-            };
-            reader.readAsDataURL(file);
-        } else if (file.type === 'application/pdf') {
-            const pdfDiv = document.createElement('div');
-            pdfDiv.className = 'embed';
-            pdfDiv.innerHTML = `<i class="bi bi-file-pdf me-1"></i> File PDF terpilih: ${file.name}`;
-            const closeBtn = createCloseButton();
-            previewContainer.appendChild(pdfDiv);
-            previewContainer.appendChild(closeBtn);
-            previewContainer.classList.remove('d-none');
-        } else {
-            previewContainer.classList.add('d-none');
-        }
-    });
+    // ==== FILE PREVIEW ====
+    const buktiBayarEl = document.getElementById('bukti_bayar');
+    const previewContainer = document.getElementById('previewContainer');
 
     function createCloseButton() {
         const btn = document.createElement('button');
         btn.className = 'btn-close';
-        btn.type = 'button';
-        btn.setAttribute('aria-label', 'Hapus preview');
         btn.onclick = () => {
             buktiBayarEl.value = '';
             previewContainer.classList.add('d-none');
@@ -442,34 +271,55 @@ document.addEventListener('DOMContentLoaded', function () {
         return btn;
     }
 
-    // Submit handler (loading state)
-    form.addEventListener('submit', function () {
-        btnSimpan.disabled = true;
-        loadingSpinner.classList.remove('d-none');
-        btnText.textContent = 'Menyimpan...';
+    buktiBayarEl?.addEventListener('change', function () {
+        const file = this.files[0];
+        previewContainer.innerHTML = '';
+        if (!file) return previewContainer.classList.add('d-none');
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '120px';
+                img.style.height = '120px';
+                img.style.objectFit = 'cover';
+                previewContainer.appendChild(img);
+                previewContainer.appendChild(createCloseButton());
+                previewContainer.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            const div = document.createElement('div');
+            div.innerHTML = `<i class="bi bi-file-pdf me-1"></i> ${file.name}`;
+            previewContainer.appendChild(div);
+            previewContainer.appendChild(createCloseButton());
+            previewContainer.classList.remove('d-none');
+        }
     });
 
-    // Format Rupiah
+    // ==== FORMAT RUPIAH ====
     document.querySelectorAll('.rupiah').forEach(input => {
-        const formatRupiah = () => {
+        input.addEventListener('keyup', () => {
             let value = input.value.replace(/\D/g, '');
             if (value) input.value = new Intl.NumberFormat('id-ID').format(value);
-        };
-
-        input.addEventListener('keyup', (e) => {
-            if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-            formatRupiah();
         });
-
-        input.addEventListener('blur', formatRupiah);
-
-        input.form.addEventListener('submit', () => {
+        input.form?.addEventListener('submit', () => {
             input.value = input.value.replace(/\D/g, '');
         });
     });
 
-    // Initial call
-    updateBankFormVisibility();
+    // ==== LOADING STATE ====
+    const form = document.getElementById('formPembayaran');
+    const btnSimpan = document.getElementById('btnSimpan');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('loadingSpinner');
+
+    form?.addEventListener('submit', () => {
+        btnSimpan.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.textContent = 'Menyimpan...';
+    });
 });
 </script>
 @endpush
