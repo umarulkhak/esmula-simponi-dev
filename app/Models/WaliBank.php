@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class WaliBank extends Model
 {
     protected $appends = ['nama_bank_full'];
+    protected $guarded = [];
 
     protected function namaBankFull(): Attribute
     {
