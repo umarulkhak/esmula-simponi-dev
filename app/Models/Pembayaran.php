@@ -15,6 +15,10 @@ class Pembayaran extends Model
         'tagihan_id',
         'wali_id',
         'wali_bank_id',
+        'nama_rekening_pengirim',
+        'nomor_rekening_pengirim',
+        'nama_bank_pengirim',
+        'kode_bank_pengirim',
         'bank_sekolah_id',
         'tanggal_bayar',
         'status_konfirmasi',
@@ -78,5 +82,13 @@ class Pembayaran extends Model
                 $pembayaran->user_id = auth()->id();
             }
         });
+    }
+
+    // Opsional: accessor untuk tampilan
+    public function getRekeningPengirimAttribute(): string
+    {
+        return ($this->nama_bank_pengirim ?? 'Bank')
+            . ' a/n ' . ($this->nama_rekening_pengirim ?? 'Nama')
+            . ' (' . ($this->nomor_rekening_pengirim ?? 'Nomor') . ')';
     }
 }

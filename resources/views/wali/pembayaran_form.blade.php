@@ -111,7 +111,7 @@
 
                             <div class="col-12">
                                 <div class="form-check">
-                                    {!! Form::checkbox('simpan_data_rekening', 1, true, [
+                                    {!! Form::checkbox('simpan_data_rekening', 1, false, [
                                         'class' => 'form-check-input',
                                         'id' => 'defaultCheck3'
                                     ]) !!}
