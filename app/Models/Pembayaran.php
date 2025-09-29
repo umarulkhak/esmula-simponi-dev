@@ -14,6 +14,8 @@ class Pembayaran extends Model
     protected $fillable = [
         'tagihan_id',
         'wali_id',
+        'wali_bank_id',
+        'bank_sekolah_id',
         'tanggal_bayar',
         'status_konfirmasi',
         'jumlah_dibayar',
@@ -40,6 +42,16 @@ class Pembayaran extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the Wali that owns the Pembayaran
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function wali(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'wali_id');
     }
 
     /**
