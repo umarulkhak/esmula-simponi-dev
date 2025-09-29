@@ -7,8 +7,11 @@ use App\Models\Tagihan;
 use App\Models\WaliBank;
 use App\Models\Pembayaran;
 use App\Models\BankSekolah;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\PembayaranNotification;
 
 class WaliMuridPembayaranController extends Controller
 {
@@ -24,7 +27,7 @@ class WaliMuridPembayaranController extends Controller
         $data['bankSekolah'] = BankSekolah::findOrFail($request->bank_sekolah_id);
         $data['model'] = new Pembayaran();
         $data['method'] = "POST";
-        $data['route'] = 'wali.pembayaran.store';
+        $data['route'] = ['wali.pembayaran.store'];
         $data['listWaliBank'] = WaliBank::where('wali_id', Auth::user()->id)->get()->pluck('nama_bank_full', 'id');
         $data['listBankSekolah'] = BankSekolah::pluck('nama_bank', 'id');
         $data['listBank'] = Bank::pluck('nama_bank', 'id');
@@ -77,7 +80,7 @@ class WaliMuridPembayaranController extends Controller
         $request->validate([
             'tanggal_bayar'   => 'required|date',
             'jumlah_dibayar'  => 'required|numeric',
-            'bukti_bayar'     => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
+            'bukti_bayar'     => 'required|mimes:jpeg,png,jpg,gif,svg,pdf|max:5048',
         ]);
 
         // Simpan file bukti bayar ke storage
@@ -96,9 +99,11 @@ class WaliMuridPembayaranController extends Controller
             'metode_pembayaran'  => 'transfer',
             'user_id'            => 0,
         ];
+        //dd($dataPembayaran);
+        $pembayaran = Pembayaran::create($dataPembayaran);
+        $userOperator = User::where('akses', 'operator')->get();
+        Notification::send($userOperator, new PembayaranNotification($pembayaran));
 
-        // Simpan data ke database
-        Pembayaran::create($dataPembayaran);
 
         // Tampilkan pesan sukses
         flash('Pembayaran berhasil disimpan dan akan segera dikonfirmasi oleh operator')->success();
@@ -106,8 +111,5 @@ class WaliMuridPembayaranController extends Controller
         // Kembali ke halaman sebelumnya
         return back();
 
-
-            }
-
-
+    }
 }
