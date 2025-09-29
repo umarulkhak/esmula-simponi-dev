@@ -173,7 +173,7 @@
 
                         <div class="col-12">
                             <label for="jumlah_dibayar" class="form-label fw-medium">Jumlah Dibayar</label>
-                            {!! Form::text('jumlah_dibayar', null, [
+                            {!! Form::text('jumlah_dibayar', $tagihan->tagihanDetails->sum('jumlah_biaya'), [
                                 'class' => 'form-control rupiah',
                                 'placeholder' => 'Contoh: 500.000',
                                 'id' => 'jumlah_dibayar'
