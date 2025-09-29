@@ -13,6 +13,24 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\PembayaranNotification;
 
+/**
+ * Controller untuk manajemen pembayaran tagihan oleh wali murid.
+ *
+ * Menyediakan fungsi untuk menampilkan form konfirmasi pembayaran dan menyimpan
+ * data pembayaran yang telah dilakukan oleh wali murid, termasuk:
+ * - Pemilihan atau pembuatan rekening pengirim (bank wali),
+ * - Upload bukti pembayaran,
+ * - Validasi input,
+ * - Notifikasi ke operator sekolah atas pembayaran baru.
+ *
+ * Semua aksi dilindungi oleh middleware autentikasi dan validasi input
+ * menggunakan Laravel Request Validation.
+ *
+ * @author  Umar Ulkhak
+ * @date    20 September 2025
+ * @updated 29 September 2025 — Perbaikan bug nilai null pada kolom wali_bank_id di tabel pembayaran
+ */
+
 class WaliMuridPembayaranController extends Controller
 {
     /**
