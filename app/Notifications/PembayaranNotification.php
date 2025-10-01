@@ -60,7 +60,7 @@ class PembayaranNotification extends Notification
             'wali_id'       => $this->pembayaran->wali_id,
             'pembayaran_id' => $this->pembayaran->id,
             'title'         => 'Pembayaran Tagihan',
-            'messages'      => $this->pembayaran->wali->name. 'Melakukan pembayaran tagihan.',
+            'messages'      => "{$this->pembayaran->wali->name} telah melakukan pembayaran tagihan.",
         ];
     }
 }
