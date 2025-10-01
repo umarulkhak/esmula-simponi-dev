@@ -42,7 +42,7 @@
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('wali.profile.index') }}">
                             <i class="fa fa-user me-2"></i>
                             <span>My Profile</span>
                         </a>

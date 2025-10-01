@@ -17,6 +17,7 @@ use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\BerandaWaliController;
 use App\Http\Controllers\BerandaOperatorController;
 use App\Http\Controllers\WaliMuridPembayaranController;
+use App\Http\Controllers\WaliMuridProfileController;
 use App\Http\Controllers\WaliMuridSiswaController;
 use App\Http\Controllers\WaliMuridTagihanController;
 
@@ -95,6 +96,10 @@ Route::prefix('wali')
         Route::resource('siswa', WaliMuridSiswaController::class);
         Route::resource('tagihan', WaliMuridTagihanController::class);
         Route::resource('pembayaran', WaliMuridPembayaranController::class);
+        // Profil wali: tanpa {id}, karena 1 user = 1 profile
+        Route::get('profile', [WaliMuridProfileController::class, 'index'])->name('profile.index');
+        Route::get('profile/edit', [WaliMuridProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('profile/{id}', [WaliMuridProfileController::class, 'update'])->name('profile.update');
     });
 
 // ============================================================================
