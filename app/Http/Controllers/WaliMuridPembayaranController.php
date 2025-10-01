@@ -36,6 +36,8 @@ use App\Notifications\PembayaranNotification;
  * @updated 29 September 2025 — Perbaikan bug nilai null pada kolom wali_bank_id di tabel pembayaran
  * @updated 29 September 2025 — Penyimpanan eksplisit data rekening pengirim ke tabel pembayaran
  *                              untuk menjamin ketersediaan data verifikasi operator
+ * @updated 01 Oktober 2025   — Penambahan validasi duplikat pembayaran berdasarkan jumlah, tagihan,
+ *                              dan status konfirmasi (untuk menghindari data ganda)
  */
 class WaliMuridPembayaranController extends Controller
 {
@@ -79,6 +81,8 @@ class WaliMuridPembayaranController extends Controller
      * - Jika checkbox "simpan_data_rekening" dicentang → simpan ke `wali_banks`.
      * - Simpan SEMUA data rekening pengirim ke tabel `pembayarans` (untuk verifikasi operator).
      * - Kirim notifikasi ke semua user dengan akses 'operator'.
+     * - Validasi duplikat pembayaran: mencegah data ganda dengan kriteria
+     *   `jumlah_dibayar`, `tagihan_id`, dan `status_konfirmasi = belum`.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -105,6 +109,27 @@ class WaliMuridPembayaranController extends Controller
                 'nama_rekening'   => 'required|string|max:255',
                 'nomor_rekening'  => 'required|string|max:50',
             ]);
+        }
+
+        /**
+         * ============================
+         * VALIDASI DUPLIKAT PEMBAYARAN
+         * ============================
+         * Mencegah data ganda untuk pembayaran dengan:
+         * - jumlah_dibayar sama,
+         * - tagihan_id sama,
+         * - status_konfirmasi masih 'belum'.
+         */
+        $jumlahDibayar = str_replace(['.', '•'], '', $request->jumlah_dibayar);
+
+        $validasiPembayaran = Pembayaran::where('jumlah_dibayar', $jumlahDibayar)
+            ->where('tagihan_id', $request->tagihan_id)
+            ->where('status_konfirmasi', 'belum')
+            ->exists();
+
+        if ($validasiPembayaran) {
+            flash('Data pembayaran ini sudah ada dan sedang menunggu konfirmasi operator')->error();
+            return back()->withInput();
         }
 
         // === Ambil data rekening pengirim ===
@@ -158,7 +183,7 @@ class WaliMuridPembayaranController extends Controller
             'bank_sekolah_id'         => $request->bank_sekolah_id,
             'tanggal_bayar'           => $request->tanggal_bayar,
             'status_konfirmasi'       => 'belum',
-            'jumlah_dibayar'          => str_replace('.', '', $request->jumlah_dibayar),
+            'jumlah_dibayar'          => $jumlahDibayar,
             'bukti_bayar'             => $buktiBayar,
             'metode_pembayaran'       => 'transfer',
             'user_id'                 => 0,
