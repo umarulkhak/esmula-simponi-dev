@@ -93,7 +93,8 @@ Route::prefix('wali')
     ->name('wali.')
     ->group(function () {
         Route::get('beranda', [BerandaWaliController::class, 'index'])->name('beranda');
-        Route::resource('siswa', WaliMuridSiswaController::class);
+        // Hanya izinkan: index, show, edit, update
+        Route::resource('siswa', WaliMuridSiswaController::class)->only(['index', 'show', 'edit', 'update']);
         Route::resource('tagihan', WaliMuridTagihanController::class);
         Route::resource('pembayaran', WaliMuridPembayaranController::class);
         // Profil wali: tanpa {id}, karena 1 user = 1 profile
