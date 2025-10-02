@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
+/**
+ * @property \Illuminate\Notifications\DatabaseNotificationCollection $notifications
+ * @property \Illuminate\Notifications\DatabaseNotificationCollection $unreadNotifications
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;

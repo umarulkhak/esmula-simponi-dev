@@ -141,6 +141,12 @@ class PembayaranController extends Controller
         }
         public function show(Pembayaran $pembayaran)
         {
+            auth()->user()
+            ->unreadNotifications
+            ->where('id', request('id'))
+            ->first()
+            ?->markAsRead();
+
             return view('operator.pembayaran_show', [
                 'model' => $pembayaran,
             ]);
