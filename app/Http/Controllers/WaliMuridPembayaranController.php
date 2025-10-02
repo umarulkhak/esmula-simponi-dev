@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bank;
+use App\Models\User;
 use App\Models\Tagihan;
 use App\Models\WaliBank;
 use App\Models\Pembayaran;
 use App\Models\BankSekolah;
-use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\PembayaranNotification;
@@ -16,36 +17,24 @@ use App\Notifications\PembayaranNotification;
 /**
  * Controller untuk manajemen pembayaran tagihan oleh wali murid.
  *
- * Menyediakan fungsi untuk menampilkan form konfirmasi pembayaran dan menyimpan
- * data pembayaran yang telah dilakukan oleh wali murid, termasuk:
- * - Pemilihan rekening tersimpan atau input rekening baru,
- * - Opsi menyimpan rekening baru ke daftar pribadi (opsional),
- * - Upload bukti pembayaran,
- * - Validasi input secara ketat,
- * - Penyimpanan lengkap data rekening pengirim (bahkan jika tidak disimpan ke wali_banks),
- * - Notifikasi real-time ke operator sekolah.
- *
- * Semua aksi dilindungi oleh middleware autentikasi dan menggunakan validasi Laravel
- * untuk memastikan integritas data. Solusi ini aman untuk:
- * - User baru pertama kali (tanpa rekening tersimpan),
- * - User lama yang memilih dari daftar atau input rekening baru,
- * - User yang memilih untuk menyimpan atau tidak menyimpan data rekening.
+ * Fitur utama:
+ * - Menampilkan form konfirmasi pembayaran
+ * - Validasi input pembayaran
+ * - Menyimpan rekening baru (opsional)
+ * - Mencegah duplikat pembayaran
+ * - Upload bukti pembayaran
+ * - Simpan semua detail rekening pengirim ke tabel `pembayarans`
+ * - Mengirim notifikasi ke operator sekolah
  *
  * @author  Umar Ulkhak
  * @date    20 September 2025
- * @updated 29 September 2025 — Perbaikan bug nilai null pada kolom wali_bank_id di tabel pembayaran
- * @updated 29 September 2025 — Penyimpanan eksplisit data rekening pengirim ke tabel pembayaran
- *                              untuk menjamin ketersediaan data verifikasi operator
- * @updated 01 Oktober 2025   — Penambahan validasi duplikat pembayaran berdasarkan jumlah, tagihan,
- *                              dan status konfirmasi (untuk menghindari data ganda)
+ * @updated 29 September 2025 — Fix kolom wali_bank_id null
+ * @updated 01 Oktober 2025   — Tambah validasi duplikat pembayaran
  */
 class WaliMuridPembayaranController extends Controller
 {
     /**
      * Menampilkan form konfirmasi pembayaran.
-     *
-     * Mengambil data tagihan, bank sekolah tujuan, dan daftar rekening wali yang tersimpan
-     * untuk ditampilkan dalam form. Mendukung prefill bank tujuan berdasarkan query string.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
@@ -57,14 +46,22 @@ class WaliMuridPembayaranController extends Controller
         $data['model'] = new Pembayaran();
         $data['method'] = 'POST';
         $data['route'] = ['wali.pembayaran.store'];
-        $data['listWaliBank'] = WaliBank::where('wali_id', Auth::id())->get()->pluck('nama_bank_full', 'id');
+
+        // Daftar rekening wali yang sudah tersimpan
+        $data['listWaliBank'] = WaliBank::where('wali_id', Auth::id())
+            ->get()
+            ->pluck('nama_bank_full', 'id');
+
+        // Daftar bank sekolah & bank umum
         $data['listBankSekolah'] = BankSekolah::pluck('nama_bank', 'id');
         $data['listBank'] = Bank::pluck('nama_bank', 'id');
 
+        // Prefill bank tujuan jika ada di query string
         if (!empty($request->bank_sekolah_id)) {
             $data['bankYangDipilih'] = BankSekolah::findOrFail($request->bank_sekolah_id);
         }
 
+        // URL form (agar bisa refresh tanpa kehilangan data)
         $data['url'] = route('wali.pembayaran.create', [
             'tagihan_id' => $request->tagihan_id,
         ]);
@@ -75,34 +72,38 @@ class WaliMuridPembayaranController extends Controller
     /**
      * Menyimpan data pembayaran baru dari wali murid.
      *
-     * Logika utama:
-     * - Jika `wali_bank_id` terisi → ambil data dari tabel `wali_banks`.
-     * - Jika tidak → ambil data dari input form (`bank_id`, `nama_rekening`, `nomor_rekening`).
-     * - Jika checkbox "simpan_data_rekening" dicentang → simpan ke `wali_banks`.
-     * - Simpan SEMUA data rekening pengirim ke tabel `pembayarans` (untuk verifikasi operator).
-     * - Kirim notifikasi ke semua user dengan akses 'operator'.
-     * - Validasi duplikat pembayaran: mencegah data ganda dengan kriteria
-     *   `jumlah_dibayar`, `tagihan_id`, dan `status_konfirmasi = belum`.
+     * Alur proses:
+     * 1. Validasi input wajib (tanggal, jumlah, bukti).
+     * 2. Cek apakah rekening dipilih dari daftar wali atau diinput baru.
+     * 3. Jika rekening baru & "simpan" dicentang → simpan ke tabel `wali_banks`.
+     * 4. Cegah duplikat pembayaran (jumlah, tagihan, status_konfirmasi=belum).
+     * 5. Simpan data pembayaran lengkap (termasuk info rekening pengirim).
+     * 6. Kirim notifikasi ke operator sekolah.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // Validasi awal: minimal salah satu cara input rekening harus ada
+        /**
+         * ===============================
+         *  VALIDASI INPUT
+         * ===============================
+         */
+        // Minimal salah satu cara input rekening harus ada
         if (!$request->filled('wali_bank_id') && !$request->filled('nomor_rekening')) {
             flash('Silakan pilih bank pengirim atau isi data rekening baru')->error();
             return back()->withInput();
         }
 
-        // Validasi utama pembayaran
+        // Validasi utama
         $request->validate([
             'tanggal_bayar'   => 'required|date',
             'jumlah_dibayar'  => 'required|numeric',
             'bukti_bayar'     => 'required|mimes:jpeg,png,jpg,gif,svg,pdf|max:5048',
         ]);
 
-        // Validasi tambahan jika input rekening baru
+        // Validasi tambahan jika rekening baru
         if (!$request->filled('wali_bank_id')) {
             $request->validate([
                 'bank_id'         => 'required|exists:banks,id',
@@ -112,15 +113,11 @@ class WaliMuridPembayaranController extends Controller
         }
 
         /**
-         * ============================
-         * VALIDASI DUPLIKAT PEMBAYARAN
-         * ============================
-         * Mencegah data ganda untuk pembayaran dengan:
-         * - jumlah_dibayar sama,
-         * - tagihan_id sama,
-         * - status_konfirmasi masih 'belum'.
+         * ===============================
+         *  VALIDASI DUPLIKAT PEMBAYARAN
+         * ===============================
          */
-        $jumlahDibayar = str_replace(['.', '•'], '', $request->jumlah_dibayar);
+        $jumlahDibayar = (int) str_replace(['.', '•'], '', $request->jumlah_dibayar);
 
         $validasiPembayaran = Pembayaran::where('jumlah_dibayar', $jumlahDibayar)
             ->where('tagihan_id', $request->tagihan_id)
@@ -128,32 +125,39 @@ class WaliMuridPembayaranController extends Controller
             ->exists();
 
         if ($validasiPembayaran) {
-            flash('Data pembayaran ini sudah ada dan sedang menunggu konfirmasi operator')->error();
+            flash('Data pembayaran serupa sudah tercatat dan masih menunggu konfirmasi operator.')->error();
             return back()->withInput();
         }
 
-        // === Ambil data rekening pengirim ===
+        /**
+         * ===============================
+         *  AMBIL DATA REKENING PENGIRIM
+         * ===============================
+         */
         if ($request->filled('wali_bank_id')) {
-            // User memilih dari daftar rekening tersimpan
+            // Rekening dipilih dari daftar wali
             $waliBank = WaliBank::findOrFail($request->wali_bank_id);
-            $namaRek = $waliBank->nama_rekening;
-            $nomorRek = $waliBank->nomor_rekening;
-            $namaBank = $waliBank->nama_bank;
-            $kodeBank = $waliBank->kode;
-            $waliBankId = $waliBank->id;
-        } else {
-            // User mengisi rekening baru
-            $bank = Bank::findOrFail($request->bank_id);
-            $namaRek = $request->nama_rekening;
-            $nomorRek = $request->nomor_rekening;
-            $namaBank = $bank->nama_bank;
-            $kodeBank = $bank->sandi_bank;
 
-            // Simpan ke wali_banks hanya jika dicentang
+            $namaRek   = $waliBank->nama_rekening;
+            $nomorRek  = $waliBank->nomor_rekening;
+            $namaBank  = $waliBank->nama_bank;
+            $kodeBank  = $waliBank->kode;
+            $waliBankId = $waliBank->id;
+
+        } else {
+            // Rekening baru diinput manual
+            $bank = Bank::findOrFail($request->bank_id);
+
+            $namaRek   = $request->nama_rekening;
+            $nomorRek  = $request->nomor_rekening;
+            $namaBank  = $bank->nama_bank;
+            $kodeBank  = $bank->sandi_bank;
+
+            // Simpan ke tabel wali_banks hanya jika dicentang
             if ($request->filled('simpan_data_rekening')) {
                 $waliBank = WaliBank::firstOrCreate(
                     [
-                        'wali_id' => Auth::id(),
+                        'wali_id'        => Auth::id(),
                         'nomor_rekening' => $nomorRek,
                     ],
                     [
@@ -164,36 +168,51 @@ class WaliMuridPembayaranController extends Controller
                 );
                 $waliBankId = $waliBank->id;
             } else {
-                $waliBankId = null; // Tidak disimpan ke wali_banks
+                $waliBankId = null;
             }
         }
 
-        // Simpan bukti pembayaran ke storage
+        /**
+         * ===============================
+         *  SIMPAN DATA PEMBAYARAN
+         * ===============================
+         */
         $buktiBayar = $request->file('bukti_bayar')->store('public');
 
-        // Simpan data pembayaran lengkap (termasuk info rekening pengirim)
-        $pembayaran = Pembayaran::create([
-            'tagihan_id'              => $request->tagihan_id,
-            'wali_id'                 => Auth::id(),
-            'wali_bank_id'            => $waliBankId,
-            'nama_rekening_pengirim'  => $namaRek,
-            'nomor_rekening_pengirim' => $nomorRek,
-            'nama_bank_pengirim'      => $namaBank,
-            'kode_bank_pengirim'      => $kodeBank,
-            'bank_sekolah_id'         => $request->bank_sekolah_id,
-            'tanggal_bayar'           => $request->tanggal_bayar,
-            'status_konfirmasi'       => 'belum',
-            'jumlah_dibayar'          => $jumlahDibayar,
-            'bukti_bayar'             => $buktiBayar,
-            'metode_pembayaran'       => 'transfer',
-            'user_id'                 => 0,
-        ]);
+        DB::beginTransaction();
+        try {
+            // Buat data pembayaran baru
+            $pembayaran = Pembayaran::create([
+                'tagihan_id'              => $request->tagihan_id,
+                'wali_id'                 => Auth::id(),
+                'wali_bank_id'            => $waliBankId,
+                'nama_rekening_pengirim'  => $namaRek,
+                'nomor_rekening_pengirim' => $nomorRek,
+                'nama_bank_pengirim'      => $namaBank,
+                'kode_bank_pengirim'      => $kodeBank,
+                'bank_sekolah_id'         => $request->bank_sekolah_id,
+                'tanggal_bayar'           => $request->tanggal_bayar,
+                'status_konfirmasi'       => 'belum',
+                'jumlah_dibayar'          => $jumlahDibayar,
+                'bukti_bayar'             => $buktiBayar,
+                'metode_pembayaran'       => 'transfer',
+                'user_id'                 => 0,
+            ]);
 
-        // Kirim notifikasi ke operator
-        $operatorUsers = User::where('akses', 'operator')->get();
-        Notification::send($operatorUsers, new PembayaranNotification($pembayaran));
+            // Kirim notifikasi ke semua user operator
+            $userOperator = User::where('akses', 'operator')->get();
+            Notification::send($userOperator, new PembayaranNotification($pembayaran));
 
-        flash('Pembayaran berhasil disimpan dan akan segera dikonfirmasi oleh operator')->success();
-        return back();
+            DB::commit();
+
+            flash('Berhasil! Pembayaran telah tercatat dan akan segera diverifikasi oleh operator sekolah.')->success();
+            return back();
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
+
+            flash('Gagal menyimpan data pembayaran: ' . $th->getMessage())->error();
+            return back();
+        }
     }
 }
