@@ -91,4 +91,14 @@ class Pembayaran extends Model
             . ' a/n ' . ($this->nama_rekening_pengirim ?? 'Nama')
             . ' (' . ($this->nomor_rekening_pengirim ?? 'Nomor') . ')';
     }
+
+    public function bankSekolah(): BelongsTo
+    {
+        return $this->belongsTo(BankSekolah::class);
+    }
+    public function waliBank(): BelongsTo
+    {
+        return $this->belongsTo(walibank::class);
+    }
+
 }
