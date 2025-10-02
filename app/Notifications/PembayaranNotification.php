@@ -11,48 +11,31 @@ class PembayaranNotification extends Notification
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     *
-     * @return void
-     */
     private $pembayaran;
+
     public function __construct($pembayaran)
     {
         $this->pembayaran = $pembayaran;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @param  mixed  $notifiable
-     * @return array
-     */
     public function via($notifiable)
     {
+        // Kalau hanya mau simpan ke database
         return ['database'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->subject('Konfirmasi Pembayaran')
+            ->greeting('Halo, ' . $notifiable->name)
+            ->line('Pembayaran Anda telah dikonfirmasi.')
+            ->line('Tagihan ID: ' . $this->pembayaran->tagihan_id)
+            ->line('Jumlah: Rp ' . number_format($this->pembayaran->jumlah_dibayar, 0, ',', '.'))
+            ->action('Lihat Detail', route('pembayaran.show', $this->pembayaran->id))
+            ->line('Terima kasih telah melakukan pembayaran.');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return array
-     */
     public function toArray($notifiable)
     {
         return [
