@@ -74,7 +74,15 @@
                                             <li class="mb-2">
                                                 <span class="fw-medium text-muted">Bukti Pembayaran</span><br>
                                                 @if(!empty($model->bukti_bayar))
-                                                    <a href="{{ \Storage::url($model->bukti_bayar) }}" target="_blank" class="text-primary text-decoration-underline">
+                                                    <a
+                                                        href="javascript:void(0)"
+                                                        onclick="popupCenter({
+                                                            url: '{{ \Storage::url($model->bukti_bayar) }}',
+                                                            title: 'Bukti Pembayaran',
+                                                            w: 900,
+                                                            h: 700
+                                                        })"
+                                                    >
                                                         Lihat Bukti Bayar
                                                     </a>
                                                 @else
