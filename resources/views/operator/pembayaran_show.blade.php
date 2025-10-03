@@ -61,7 +61,7 @@
                                             <li class="mb-2">
                                                 <span class="fw-medium text-muted">Status Pembayaran</span><br>
                                                 @php
-                                                    $statusPembayaran = $model->tagihan?->getStatusTagihanWaliAttribute() ?? 'Belum Dibayar';
+                                                    $statusPembayaran = $model->tagihan?->getStatusTagihanWaliAttribute();
                                                 @endphp
                                                 @if($statusPembayaran === 'Sudah Dibayar')
                                                     <span class="badge bg-success">Sudah Dibayar</span>
@@ -187,13 +187,18 @@
                 </div>
 
                 <!-- === TOMBOL KONFIRMASI DI LUAR CARD === -->
-                @if($model->status_konfirmasi !== 'sudah')
-                    <div class="d-flex justify-content-end mt-4">
-                        <a href="" class="btn btn-primary px-4">
-                            <i class="bx bx-check-circle me-1"></i>Konfirmasi Pembayaran
-                        </a>
-                    </div>
-                @endif
+                {!! Form::open([
+                    'route' => $route,
+                    'method' => 'PUT',
+                    'onsubmit' => 'return confirm("Apakah anda yakin?")',
+                    ]) !!}
+
+                    {!! Form::hidden('pembayaran_id', $model->id, []) !!}
+
+                    {!! Form::submit('Konfirmasi Pembayaran', ['class' => 'btn btn-primary']) !!}
+
+                {!! Form::close() !!}
+
             </div>
         </div>
     </div>

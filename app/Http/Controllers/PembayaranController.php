@@ -6,6 +6,7 @@ use App\Http\Requests\StorePembayaranRequest;
 use App\Models\Pembayaran;
 use App\Models\Tagihan;
 use Illuminate\Support\Facades\DB;
+use Request;
 
 class PembayaranController extends Controller
 {
@@ -54,6 +55,7 @@ class PembayaranController extends Controller
                 'tagihan_id' => $tagihanPas->id,
                 'jumlah_dibayar' => $jumlahDibayar,
                 'tanggal_bayar' => $requestData['tanggal_bayar'],
+                'tanggal_konfirmasi' => now(),
                 'status_konfirmasi' => 'sudah',
                 'metode_pembayaran' => 'manual',
                 'user_id' => auth()->id(),
@@ -138,17 +140,38 @@ class PembayaranController extends Controller
         flash($pesan)->success();
 
         return back();
-        }
-        public function show(Pembayaran $pembayaran)
-        {
-            auth()->user()
-            ->unreadNotifications
-            ->where('id', request('id'))
-            ->first()
-            ?->markAsRead();
+    }
 
-            return view('operator.pembayaran_show', [
-                'model' => $pembayaran,
-            ]);
-        }
+    public function show(Pembayaran $pembayaran)
+    {
+        auth()->user()
+        ->unreadNotifications
+        ->where('id', request('id'))
+        ->first()
+        ?->markAsRead();
+
+        return view('operator.pembayaran_show', [
+            'model' => $pembayaran,
+            'route' => ['pembayaran.update', $pembayaran->id],
+        ]);
+    }
+
+    public function update(Request $request, Pembayaran $pembayaran)
+    {
+        $pembayaran->status_konfirmasi = 'sudah';
+        $pembayaran->tanggal_konfirmasi = now();
+        $pembayaran->user_id = auth()->user()->id;
+
+        $pembayaran->save();
+
+        // update tagihan terkait
+        $pembayaran->tagihan->status = 'lunas';
+        $pembayaran->tagihan->save();
+
+        flash('Data pembayaran berhasil disimpan')->success();
+
+        return back();
+
+
+    }
 }

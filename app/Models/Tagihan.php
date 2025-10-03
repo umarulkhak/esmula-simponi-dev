@@ -71,9 +71,11 @@ class Tagihan extends Model
     public function getStatusTagihanWaliAttribute(): string
     {
         return match ($this->status) {
-            'baru'  => 'Belum dibayar',
-            'lunas' => 'Sudah dibayar',
+            'baru'  => 'Belum Dibayar',
+            'lunas' => 'Sudah Dibayar',
+            'angsur' => 'Angsur',
             default => ucfirst($this->status),
         };
     }
+
 }
