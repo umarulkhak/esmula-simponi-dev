@@ -29,7 +29,8 @@ class Pembayaran extends Model
     ];
 
     protected $dates = [
-        'tanggal_bayar'
+        'tanggal_bayar',
+        'tanggal_konfirmasi',
     ];
 
     /**

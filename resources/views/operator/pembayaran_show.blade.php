@@ -58,6 +58,12 @@
                                                     <span class="badge bg-warning text-dark">Belum</span>
                                                 @endif
                                             </li>
+                                             <li class="mb-2">
+                                                <span class="fw-medium text-muted">Tanggal Konfirmasi</span><br>
+                                                <span>
+                                                    {{ $model->tanggal_konfirmasi ? \Carbon\Carbon::parse($model->tanggal_konfirmasi)->locale('id')->isoFormat('D MMMM Y') : '–' }}
+                                                </span>
+                                            </li>
                                             <li class="mb-2">
                                                 <span class="fw-medium text-muted">Status Pembayaran</span><br>
                                                 @php
@@ -185,20 +191,24 @@
                         </div>
                     </div>
                 </div>
+                @if ($model->status_konfirmasi == 'belum')
+                    <!-- === TOMBOL KONFIRMASI DI LUAR CARD === -->
+                    {!! Form::open([
+                        'route' => $route,
+                        'method' => 'PUT',
+                        'onsubmit' => 'return confirm("Apakah anda yakin?")',
+                        ]) !!}
 
-                <!-- === TOMBOL KONFIRMASI DI LUAR CARD === -->
-                {!! Form::open([
-                    'route' => $route,
-                    'method' => 'PUT',
-                    'onsubmit' => 'return confirm("Apakah anda yakin?")',
-                    ]) !!}
+                        {!! Form::hidden('pembayaran_id', $model->id, []) !!}
 
-                    {!! Form::hidden('pembayaran_id', $model->id, []) !!}
+                        {!! Form::submit('Konfirmasi Pembayaran', ['class' => 'btn btn-primary']) !!}
 
-                    {!! Form::submit('Konfirmasi Pembayaran', ['class' => 'btn btn-primary']) !!}
-
-                {!! Form::close() !!}
-
+                    {!! Form::close() !!}
+                @else
+                    <div class="alert alert-primary" role="alert">
+                        <h3>TAGIHAN INI SUDAH LUNAS</h3>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
