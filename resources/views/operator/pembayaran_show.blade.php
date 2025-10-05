@@ -9,7 +9,7 @@
                 <h5 class="mb-0 fw-bold">
                     <i class="bx bx-credit-card me-2"></i>Detail Pembayaran
                 </h5>
-                <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ route('pembayaran' . '.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="bx bx-arrow-back me-1"></i>Kembali
                 </a>
             </div>
@@ -104,35 +104,37 @@
                 </div>
 
                 <!-- === 2. DETAIL REKENING (GABUNG JADI SATU CARD) === -->
-                <div class="row g-4 mb-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header fw-semibold">
-                                <i class="bx bx-detail me-1"></i>Detail Rekening
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <h6 class="fw-semibold mb-2">
-                                            <i class="bx bx-send me-1"></i>Rekening Pengirim
-                                        </h6>
-                                        <p class="mb-1"><span class="fw-medium">Bank:</span> {{ $model->waliBank?->nama_bank ?? '–' }}</p>
-                                        <p class="mb-1"><span class="fw-medium">No. Rek:</span> {{ $model->waliBank?->nomor_rekening ?? '–' }}</p>
-                                        <p class="mb-0"><span class="fw-medium">Atas Nama:</span> {{ $model->waliBank?->nama_rekening ?? '–' }}</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6 class="fw-semibold mb-2">
-                                            <i class="bx bx-wallet me-1"></i>Rekening Sekolah (Penerima)
-                                        </h6>
-                                        <p class="mb-1"><span class="fw-medium">Bank:</span> {{ $model->bankSekolah?->nama_bank ?? '–' }}</p>
-                                        <p class="mb-1"><span class="fw-medium">No. Rek:</span> {{ $model->bankSekolah?->nomor_rekening ?? '–' }}</p>
-                                        <p class="mb-0"><span class="fw-medium">Atas Nama:</span> {{ $model->bankSekolah?->nama_rekening ?? '–' }}</p>
+                @if ($model->metode_pembayaran != 'manual')
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header fw-semibold">
+                                    <i class="bx bx-detail me-1"></i>Detail Rekening
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6 class="fw-semibold mb-2">
+                                                <i class="bx bx-send me-1"></i>Rekening Pengirim
+                                            </h6>
+                                            <p class="mb-1"><span class="fw-medium">Bank:</span> {{ $model->waliBank?->nama_bank ?? '–' }}</p>
+                                            <p class="mb-1"><span class="fw-medium">No. Rek:</span> {{ $model->waliBank?->nomor_rekening ?? '–' }}</p>
+                                            <p class="mb-0"><span class="fw-medium">Atas Nama:</span> {{ $model->waliBank?->nama_rekening ?? '–' }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="fw-semibold mb-2">
+                                                <i class="bx bx-wallet me-1"></i>Rekening Sekolah (Penerima)
+                                            </h6>
+                                            <p class="mb-1"><span class="fw-medium">Bank:</span> {{ $model->bankSekolah?->nama_bank ?? '–' }}</p>
+                                            <p class="mb-1"><span class="fw-medium">No. Rek:</span> {{ $model->bankSekolah?->nomor_rekening ?? '–' }}</p>
+                                            <p class="mb-0"><span class="fw-medium">Atas Nama:</span> {{ $model->bankSekolah?->nama_rekening ?? '–' }}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @endif
 
                 <!-- === 3. TAGIHAN & SISWA === -->
                 <div class="row g-4">

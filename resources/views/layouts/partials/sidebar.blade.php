@@ -82,6 +82,14 @@
             </a>
         </li>
 
+        <!-- Data Pembayaran -->
+        <li class="menu-item {{ \Route::is('pembayaran.*') ? 'active' : '' }}">
+            <a href="{{ route('pembayaran.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-credit-card"></i>
+                <div>Data Pembayaran</div>
+            </a>
+        </li>
+
         <!-- Logout -->
         <li class="menu-item">
             <a href="{{ route('logout') }}" class="menu-link">

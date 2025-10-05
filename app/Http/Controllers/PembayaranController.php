@@ -17,13 +17,31 @@ class PembayaranController extends Controller
      * - Jika tidak ada → bayar tagihan terkecil yang bisa dibayar.
      * - Tampilkan pesan sukses spesifik.
      */
+
+    public function index()
+    {
+        // Ambil ID pembayaran terbaru per siswa (melalui tagihan)
+        $latestPaymentIds = DB::table('pembayarans')
+            ->join('tagihans', 'pembayarans.tagihan_id', '=', 'tagihans.id')
+            ->select(DB::raw('MAX(pembayarans.id) as id'))
+            ->groupBy('tagihans.siswa_id');
+
+        // Ambil data pembayaran berdasarkan ID tersebut, dengan relasi
+        $models = Pembayaran::whereIn('id', $latestPaymentIds)
+            ->with(['tagihan.siswa', 'wali'])
+            ->orderBy('tanggal_konfirmasi', 'desc')
+            ->paginate(50);
+
+        return view('operator.pembayaran_index', compact('models'));
+    }
+
     public function store(StorePembayaranRequest $request)
     {
         $requestData = $request->validated();
-
         // Ambil siswa_id dari tagihan
         $tagihanUtama = Tagihan::findOrFail($requestData['tagihan_id']);
         $siswaId = $tagihanUtama->siswa_id;
+        $requestData['wali_id'] = $tagihanUtama->siswa->wali_id;
 
         // Ambil SEMUA tagihan BELUM LUNAS dari siswa ini
         $tagihanBelumLunas = Tagihan::where('siswa_id', $siswaId)
