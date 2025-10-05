@@ -102,7 +102,7 @@
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
                                                class="btn btn-outline-info btn-sm d-inline-flex align-items-center justify-content-center"
                                                title="Detail Wali: {{ $item->name }}">
-                                                <i class="fa fa-info"></i> {{-- ✅ Tetap pakai fa --}}
+                                                <i class="fa fa-eye"></i> {{-- ✅ Tetap pakai fa --}}
                                             </a>
 
                                             {{-- Tombol Edit --}}

@@ -64,7 +64,7 @@
                                     <a href="{{ route('wali.siswa.show', $item->id) }}"
                                        class="btn btn-outline-info btn-sm flex-grow-1"
                                        title="Lihat Detail Siswa: {{ $item->nama }}">
-                                        <i class="fa fa-info me-1"></i> Detail
+                                        <i class="fa fa-eye me-1"></i> Detail
                                     </a>
 
                                     <!-- Edit -->
