@@ -32,10 +32,10 @@
                     </div>
                 @endif
 
-                {!! Form::model($model, ['route' => $route, 'method' => $method, 'files' => true, 'id' => 'formPembayaran']) !!}
+                {!! Form::open(['route' => 'wali.pembayaran.store', 'method' => 'POST', 'files' => true, 'id' => 'formPembayaran']) !!}
 
                 <!-- REKENING PENGIRIM -->
-                <section class="mb-3 mt-0"> {{-- mt-0 mengurangi jarak dari atas --}}
+                <section class="mb-3 mt-0">
                     <div class="divider divider-dark my-2">
                         <div class="divider-text">
                             <h6 class="mb-0"><i class="fa-solid fa-circle-info text-dark me-1"></i>Rekening Pengirim</h6>
@@ -46,7 +46,7 @@
                         <div class="form-group mb-3" id="formGroupBankTersimpan">
                             <label class="form-label fw-medium" for="wali_bank_id">Bank Tersimpan</label>
                             {!! Form::select('wali_bank_id', $listWaliBank, null, [
-                                'class' => 'form-select select2',
+                                'class' => 'form-select',
                                 'placeholder' => 'Pilih Bank Pengirim',
                                 'id' => 'wali_bank_id'
                             ]) !!}
@@ -76,7 +76,7 @@
                             <div class="col-12">
                                 <label for="bank_id" class="form-label fw-medium">Nama Bank Pengirim</label>
                                 {!! Form::select('bank_id', $listBank ?? [], null, [
-                                    'class' => 'form-select select2',
+                                    'class' => 'form-select',
                                     'placeholder' => 'Pilih bank pengirim...',
                                     'id' => 'bank_id'
                                 ]) !!}
@@ -124,7 +124,7 @@
                     </div>
                 </section>
 
-                <!-- REKENING TUJUAN -->
+                <!-- REKENING TUJUAN (CARD) -->
                 <section class="mb-3">
                     <div class="divider divider-dark my-2">
                         <div class="divider-text">
@@ -132,27 +132,44 @@
                         </div>
                     </div>
 
-                    <div class="form-group mb-2">
-                        <label for="bank_sekolah_id" class="form-label fw-medium">Bank Tujuan Pembayaran</label>
-                        {!! Form::select('bank_sekolah_id', $listBankSekolah, request('bank_sekolah_id'), [
-                            'class' => 'form-select select2',
-                            'placeholder' => 'Pilih Bank Tujuan Transfer',
-                            'id' => 'bank_sekolah_id'
-                        ]) !!}
-                        @error('bank_sekolah_id')
-                            <div class="text-danger mt-1 small">{{ $message }}</div>
-                        @enderror
+                    <input type="hidden" name="bank_sekolah_id" id="selected_bank_sekolah_id" value="{{ old('bank_sekolah_id', request('bank_sekolah_id')) }}" required>
+
+                    <div class="row g-3">
+                        @forelse($listBankSekolah as $id => $namaBank)
+                            @php
+                                $bank = $bankSekolahList->firstWhere('id', $id);
+                            @endphp
+                            <div class="col-12">
+                                <div class="card border {{ (old('bank_sekolah_id', request('bank_sekolah_id')) == $id) ? 'border-primary' : 'border-secondary' }} rounded-3 shadow-sm"
+                                     style="cursor: pointer; transition: all 0.2s;"
+                                     onclick="selectBank({{ $id }})">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 fw-bold">{{ $namaBank }}</h6>
+                                                <p class="mb-1"><strong>No. Rek:</strong> {{ $bank->nomor_rekening ?? '–' }}</p>
+                                                <p class="mb-0"><strong>Atas Nama:</strong> {{ $bank->nama_rekening ?? '–' }}</p>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="bank_radio" id="bank_{{ $id }}"
+                                                       {{ (old('bank_sekolah_id', request('bank_sekolah_id')) == $id) ? 'checked' : '' }} disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12">
+                                <div class="alert alert-warning small">
+                                    Tidak ada rekening bank sekolah tersedia.
+                                </div>
+                            </div>
+                        @endforelse
                     </div>
 
-                    @if(request('bank_sekolah_id') && $bankYangDipilih)
-                        <div class="alert alert-light border rounded-2 p-2 mt-2 small">
-                            <ul class="list-unstyled mb-0">
-                                <li><strong>Bank:</strong> {{ $bankYangDipilih->nama_bank }}</li>
-                                <li><strong>No. Rekening:</strong> {{ $bankYangDipilih->nomor_rekening }}</li>
-                                <li><strong>Atas Nama:</strong> {{ $bankYangDipilih->nama_rekening }}</li>
-                            </ul>
-                        </div>
-                    @endif
+                    @error('bank_sekolah_id')
+                        <div class="text-danger mt-2 small">{{ $message }}</div>
+                    @enderror
                 </section>
 
                 <!-- INFO PEMBAYARAN -->
@@ -163,31 +180,46 @@
                         </div>
                     </div>
 
+                    {{-- Tampilkan rincian tagihan yang dibayar --}}
+                    <div class="mb-3">
+                        <h6 class="fw-bold mb-2">Tagihan yang Dibayar</h6>
+                        <div class="bg-light p-2 rounded">
+                            @foreach($tagihanSelected as $tagihan)
+                                @php $subtotal = $tagihan->tagihanDetails->sum('jumlah_biaya'); @endphp
+                                <div class="mb-2 pb-2 border-bottom">
+                                    <strong>{{ \Carbon\Carbon::parse($tagihan->tanggal_tagihan)->translatedFormat('d F Y') }}</strong><br>
+                                    <ul class="mb-1 ps-3">
+                                        @foreach($tagihan->tagihanDetails as $detail)
+                                            <li>{{ $detail->nama_biaya }} — {{ formatRupiah($detail->jumlah_biaya) }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endforeach
+                            <div class="fw-bold text-end mt-2">
+                                <strong>Total Transfer: {{ formatRupiah($totalTagihan) }}</strong>
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2">
+                            <i class="bx bx-info-circle"></i> Anda akan membayar masing-masing tagihan sesuai nilainya.
+                            Bukti transfer yang diupload akan digunakan untuk semua tagihan di atas.
+                        </p>
+                    </div>
+
                     <div class="row g-2">
                         <div class="col-12">
                             <label for="tanggal_bayar" class="form-label fw-medium">Tanggal Bayar</label>
-                            {!! Form::date('tanggal_bayar', $model->tanggal_bayar ?? date('Y-m-d'), [
-                                'class' => 'form-control'
-                            ]) !!}
-                        </div>
-
-                        <div class="col-12">
-                            <label for="jumlah_dibayar" class="form-label fw-medium">Jumlah Dibayar</label>
-                            {!! Form::text('jumlah_dibayar', $tagihan->tagihanDetails->sum('jumlah_biaya'), [
-                                'class' => 'form-control rupiah',
-                                'placeholder' => 'Contoh: 500.000',
-                                'id' => 'jumlah_dibayar'
-                            ]) !!}
+                            {!! Form::date('tanggal_bayar', date('Y-m-d'), ['class' => 'form-control', 'required' => true]) !!}
                         </div>
 
                         <div class="col-12">
                             <label for="bukti_bayar" class="form-label fw-medium">
-                                <i class="bi bi-upload me-1"></i> Upload Bukti (JPG/PNG/PDF) <span class="text-danger">*</span>
+                                <i class="bi bi-upload me-1"></i> Upload Bukti Transfer (JPG/PNG/PDF) <span class="text-danger">*</span>
                             </label>
                             {!! Form::file('bukti_bayar', [
                                 'class' => 'form-control',
                                 'accept' => 'image/*,.pdf',
-                                'id' => 'bukti_bayar'
+                                'id' => 'bukti_bayar',
+                                'required' => true
                             ]) !!}
                             <div class="form-text small text-muted">Maks. 2MB</div>
                             <div id="previewContainer" class="mt-2 d-none"></div>
@@ -195,7 +227,10 @@
                     </div>
                 </section>
 
-                <input type="hidden" name="tagihan_id" value="{{ $tagihan->id }}">
+                {{-- Kirim semua tagihan_id --}}
+                @foreach($tagihanSelected as $tagihan)
+                    <input type="hidden" name="tagihan_id[]" value="{{ $tagihan->id }}">
+                @endforeach
 
                 <div class="d-grid gap-2 d-sm-flex justify-content-end mt-3">
                     <a href="{{ url()->previous() }}" class="btn btn-outline-secondary px-3 rounded-3">Batal</a>
@@ -214,57 +249,26 @@
 
 @push('styles')
 <style>
-    /* Opsional: sesuaikan tinggi Select2 di mobile */
-    .select2-container .select2-selection--single {
-        height: calc(1.5em + 0.75rem + 2px) !important;
-        padding: 0.375rem 0.75rem !important;
-        font-size: 0.95rem;
+    .card[onclick] {
+        user-select: none;
     }
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 1.5 !important;
-        padding-left: 0 !important;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: calc(1.5em + 0.75rem + 2px) !important;
+    .card[onclick]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 </style>
 @endpush
 
 @push('scripts')
 <script>
+function selectBank(bankId) {
+    document.getElementById('selected_bank_sekolah_id').value = bankId;
+    document.querySelectorAll('input[name="bank_radio"]').forEach(radio => radio.checked = false);
+    const selectedRadio = document.querySelector(`#bank_${bankId}`);
+    if (selectedRadio) selectedRadio.checked = true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Inisialisasi Select2
-    $('.select2').select2({
-        width: '100%',
-        dropdownAutoWidth: true,
-        minimumResultsForSearch: 5 // sembunyikan pencarian jika pilihan < 5
-    });
-
-    const hasSavedBank = {{ ($listWaliBank && count($listWaliBank) > 0) ? 'true' : 'false' }};
-    const formBankBaru = document.getElementById('formBankBaru');
-    const infoRekeningBaru = document.getElementById('infoRekeningBaru');
-    const checkboxToggle = document.getElementById('checkboxtoggle');
-
-    if (!hasSavedBank) {
-        formBankBaru.classList.remove('d-none');
-        infoRekeningBaru.classList.remove('d-none');
-    } else if (checkboxToggle) {
-        checkboxToggle.addEventListener('change', () => {
-            const isChecked = checkboxToggle.checked;
-            formBankBaru.classList.toggle('d-none', !isChecked);
-            infoRekeningBaru.classList.toggle('d-none', !isChecked);
-        });
-    }
-
-    // Redirect saat pilih bank tujuan
-    const bankSekolahSelect = document.getElementById('bank_sekolah_id');
-    bankSekolahSelect?.addEventListener('change', function () {
-        const url = new URL(window.location.href);
-        if (this.value) url.searchParams.set('bank_sekolah_id', this.value);
-        else url.searchParams.delete('bank_sekolah_id');
-        window.location.href = url.toString();
-    });
-
     // Preview bukti bayar
     const buktiBayarEl = document.getElementById('bukti_bayar');
     const previewContainer = document.getElementById('previewContainer');
@@ -317,17 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Format rupiah
-    document.querySelectorAll('.rupiah').forEach(input => {
-        input.addEventListener('keyup', () => {
-            let value = input.value.replace(/\D/g, '');
-            if (value) input.value = new Intl.NumberFormat('id-ID').format(value);
-        });
-        input.form?.addEventListener('submit', () => {
-            input.value = input.value.replace(/\D/g, '');
-        });
-    });
-
     // Loading state
     const form = document.getElementById('formPembayaran');
     const btnSimpan = document.getElementById('btnSimpan');
@@ -338,6 +331,23 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('d-none');
         btnText.textContent = 'Menyimpan...';
     });
+
+    // Toggle rekening baru
+    const hasSavedBank = {{ ($listWaliBank && count($listWaliBank) > 0) ? 'true' : 'false' }};
+    const formBankBaru = document.getElementById('formBankBaru');
+    const infoRekeningBaru = document.getElementById('infoRekeningBaru');
+    const checkboxToggle = document.getElementById('checkboxtoggle');
+
+    if (!hasSavedBank) {
+        formBankBaru.classList.remove('d-none');
+        infoRekeningBaru.classList.remove('d-none');
+    } else if (checkboxToggle) {
+        checkboxToggle.addEventListener('change', () => {
+            const isChecked = checkboxToggle.checked;
+            formBankBaru.classList.toggle('d-none', !isChecked);
+            infoRekeningBaru.classList.toggle('d-none', !isChecked);
+        });
+    }
 });
 </script>
 @endpush

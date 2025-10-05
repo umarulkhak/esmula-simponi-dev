@@ -38,12 +38,12 @@
                                             </li>
                                             <li class="mb-2">
                                                 <span class="fw-medium text-muted">Jumlah Dibayar</span><br>
-                                                <span class="text-success fw-bold">{{ formatRupiah($model->jumlah_dibayar ?? 0) }}</span>
+                                                <span class="text-success fw-bold">{{ formatRupiah($totalDibayar ?? 0) }}</span>
                                             </li>
                                             <li class="mb-2">
                                                 <span class="fw-medium text-muted">Total Tagihan</span><br>
                                                 <span class="text-danger fw-bold">
-                                                    {{ formatRupiah($model->tagihan?->tagihanDetails?->sum('jumlah_biaya') ?? 0) }}
+                                                    {{ formatRupiah($totalTagihan ?? 0) }}
                                                 </span>
                                             </li>
                                         </ul>
@@ -146,7 +146,7 @@
                             </div>
                             <div class="card-body">
                                 <p class="mb-2"><span class="fw-medium">ID Pembayaran:</span> {{ $model->id }}</p>
-                                <p class="mb-3"><span class="fw-medium">ID Tagihan:</span> {{ $model->tagihan_id }}</p>
+                                {{-- <p class="mb-3"><span class="fw-medium">Group ID:</span> {{ $model->group_id }}</p> --}}
 
                                 <h6 class="fw-semibold mb-2"><i class="bx bx-list-ul me-1"></i>Item Biaya</h6>
                                 <div class="table-responsive">
@@ -156,18 +156,29 @@
                                                 <th>No</th>
                                                 <th>Biaya</th>
                                                 <th class="text-end">Jumlah</th>
+                                                {{-- <th>Tagihan ID</th> --}}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($model->tagihan?->tagihanDetails ?? [] as $item)
-                                                <tr>
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $item->nama_biaya }}</td>
-                                                    <td class="text-end">{{ formatRupiah($item->jumlah_biaya) }}</td>
-                                                </tr>
+                                            @php $no = 1; @endphp
+                                            @forelse($pembayaranGroup as $pembayaran)
+                                                @if($pembayaran->tagihan)
+                                                    @foreach($pembayaran->tagihan->tagihanDetails as $item)
+                                                        <tr>
+                                                            <td>{{ $loop->iteration }}</td>
+                                                            <td>{{ $item->nama_biaya }}</td>
+                                                            <td class="text-end">{{ formatRupiah($item->jumlah_biaya) }}</td>
+                                                            {{-- <td>{{ $pembayaran->tagihan_id }}</td> --}}
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="4" class="text-danger">Tagihan ID {{ $pembayaran->tagihan_id }} tidak ditemukan.</td>
+                                                    </tr>
+                                                @endif
                                             @empty
                                                 <tr>
-                                                    <td colspan="3" class="text-center text-muted fst-italic">Tidak ada item</td>
+                                                    <td colspan="4" class="text-center text-muted fst-italic">Tidak ada item</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -184,11 +195,14 @@
                                 <i class="bx bx-user me-1"></i>Data Siswa
                             </div>
                             <div class="card-body">
-                                <p class="mb-2"><span class="fw-medium">Nama:</span> {{ $model->tagihan?->siswa?->nama ?? '–' }}</p>
-                                <p class="mb-2"><span class="fw-medium">NIS/NISN:</span> {{ $model->tagihan?->siswa?->nisn ?? '–' }}</p>
-                                <p class="mb-2"><span class="fw-medium">Kelas:</span> {{ $model->tagihan?->siswa?->kelas ?? '–' }}</p>
-                                <p class="mb-3"><span class="fw-medium">Wali Murid:</span> {{ $model->tagihan?->siswa?->wali?->name ?? '–' }}</p>
-                                <!-- TOMBOL DIHAPUS DARI SINI -->
+                                @if($siswa)
+                                    <p class="mb-2"><span class="fw-medium">Nama:</span> {{ $siswa->nama ?? '–' }}</p>
+                                    <p class="mb-2"><span class="fw-medium">NIS/NISN:</span> {{ $siswa->nisn ?? '–' }}</p>
+                                    <p class="mb-2"><span class="fw-medium">Kelas:</span> {{ $siswa->kelas ?? '–' }}</p>
+                                    <p class="mb-3"><span class="fw-medium">Wali Murid:</span> {{ $siswa->wali?->name ?? '–' }}</p>
+                                @else
+                                    <p class="text-muted">Data siswa tidak ditemukan.</p>
+                                @endif
                             </div>
                         </div>
                     </div>

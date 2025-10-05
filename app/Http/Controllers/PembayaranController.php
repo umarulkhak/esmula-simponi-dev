@@ -18,13 +18,12 @@ class PembayaranController extends Controller
      * - Tampilkan pesan sukses spesifik.
      */
 
-    public function index()
+        public function index()
     {
-        // Ambil ID pembayaran terbaru per siswa (melalui tagihan)
+        // Ambil ID pembayaran terbaru per group (melalui tagihan)
         $latestPaymentIds = DB::table('pembayarans')
-            ->join('tagihans', 'pembayarans.tagihan_id', '=', 'tagihans.id')
-            ->select(DB::raw('MAX(pembayarans.id) as id'))
-            ->groupBy('tagihans.siswa_id');
+            ->select(DB::raw('MAX(id) as id'))
+            ->groupBy('group_id');
 
         // Ambil data pembayaran berdasarkan ID tersebut, dengan relasi
         $models = Pembayaran::whereIn('id', $latestPaymentIds)
@@ -162,34 +161,71 @@ class PembayaranController extends Controller
 
     public function show(Pembayaran $pembayaran)
     {
-        auth()->user()
-        ->unreadNotifications
-        ->where('id', request('id'))
-        ->first()
-        ?->markAsRead();
+        if (auth()->check()) {
+            auth()->user()
+                ->unreadNotifications
+                ->where('id', request('id'))
+                ->first()
+                ?->markAsRead();
+        }
+
+        // Ambil semua pembayaran dalam group yang sama
+        $pembayaranGroup = $pembayaran->group_id
+            ? Pembayaran::where('group_id', $pembayaran->group_id)
+                ->with([
+                    'tagihan' => fn ($q) => $q->whereNotNull('id'),
+                    'tagihan.siswa',
+                    'tagihan.tagihanDetails',
+                    'bankSekolah',
+                    'waliBank'
+                ])
+                ->get()
+            : collect([$pembayaran->load([
+                'tagihan.siswa',
+                'tagihan.tagihanDetails',
+                'bankSekolah',
+                'waliBank'
+            ])]);
+
+        // Hitung total jumlah dibayar & total tagihan
+        $totalDibayar = $pembayaranGroup->sum('jumlah_dibayar');
+        $totalTagihan = $pembayaranGroup->sum(function ($pembayaran) {
+            return $pembayaran->tagihan?->tagihanDetails->sum('jumlah_biaya') ?? 0;
+        });
+
+        // Ambil siswa dari pembayaran pertama
+        $siswa = $pembayaranGroup->first()?->tagihan?->siswa;
 
         return view('operator.pembayaran_show', [
             'model' => $pembayaran,
+            'pembayaranGroup' => $pembayaranGroup,
+            'siswa' => $siswa,
+            'totalDibayar' => $totalDibayar,
+            'totalTagihan' => $totalTagihan,
             'route' => ['pembayaran.update', $pembayaran->id],
         ]);
     }
 
     public function update(Request $request, Pembayaran $pembayaran)
     {
-        $pembayaran->status_konfirmasi = 'sudah';
-        $pembayaran->tanggal_konfirmasi = now();
-        $pembayaran->user_id = auth()->user()->id;
+        DB::transaction(function () use ($pembayaran) {
+            // Ambil semua pembayaran dalam group yang sama
+            $pembayaranGroup = Pembayaran::where('group_id', $pembayaran->group_id)->get();
 
-        $pembayaran->save();
+            foreach ($pembayaranGroup as $item) {
+                $item->status_konfirmasi = 'sudah';
+                $item->tanggal_konfirmasi = now();
+                $item->user_id = auth()->user()->id;
+                $item->save();
 
-        // update tagihan terkait
-        $pembayaran->tagihan->status = 'lunas';
-        $pembayaran->tagihan->save();
+                // Update status tagihan
+                $item->tagihan->status = 'lunas';
+                $item->tagihan->save();
+            }
+        });
 
         flash('Data pembayaran berhasil disimpan')->success();
 
         return back();
-
-
     }
 }

@@ -26,6 +26,7 @@ class Pembayaran extends Model
         'bukti_bayar',
         'metode_pembayaran',
         'user_id',
+        'group_id',
     ];
 
     protected $dates = [
