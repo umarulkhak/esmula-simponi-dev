@@ -105,89 +105,86 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($models as $item)
-                                    <tr>
-                                        <td class="text-center fw-bold">{{ $loop->iteration }}</td>
-                                        <td><span class="badge bg-light text-dark">{{ $item->tagihan->siswa->nisn }}</span></td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="flex-grow-1">
-                                                    <strong>{{ $item->tagihan->siswa->nama }}</strong>
-                                                    <div class="text-muted small">Angkatan: {{ $item->tagihan->siswa->angkatan }}</div>
-                                                </div>
+                            @forelse ($results as $item)
+                                <tr>
+                                    <td class="text-center fw-bold">{{ $loop->iteration }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ $item->nisn }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <strong>{{ $item->nama_siswa }}</strong>
+                                                <div class="text-muted small">Angkatan: {{ $item->angkatan }}</div>
                                             </div>
-                                        </td>
-                                        <td><span class="badge bg-light text-dark">{{ $item->wali->name }}</span></td>
-                                        <td class="text-center">
-                                            @php
-                                                $kelas = $item->tagihan->siswa->kelas ?? 'Tanpa Kelas';
-                                                $colorMap = [
-                                                    'VII' => 'primary',
-                                                    'VIII' => 'success',
-                                                    'IX' => 'danger',
-                                                ];
-                                                $color = $colorMap[$kelas] ?? 'secondary';
-                                            @endphp
-                                            <span class="badge bg-{{ $color }} text-white px-3 py-2 rounded-pill">
-                                                {{ $kelas }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ $item->nama_wali }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @php
+                                            $kelas = $item->kelas ?? 'Tanpa Kelas';
+                                            $colorMap = [
+                                                'VII' => 'primary',
+                                                'VIII' => 'success',
+                                                'IX' => 'danger',
+                                            ];
+                                            $color = $colorMap[$kelas] ?? 'secondary';
+                                        @endphp
+                                        <span class="badge bg-{{ $color }} text-white px-3 py-2 rounded-pill">
+                                            {{ $kelas }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">
+                                            {{ \Carbon\Carbon::parse($item->tanggal_konfirmasi)->translatedFormat('d M Y') }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($item->status_konfirmasi == 'belum')
+                                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                                <i class="fa fa-clock me-1"></i> BELUM
                                             </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-light text-dark">
-                                                {{ optional($item->tanggal_bayar)->translatedFormat('d M Y') }}
+                                        @else
+                                            <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                                                <i class="fa fa-check-circle me-1"></i> SUDAH
                                             </span>
-                                        </td>
-                                        <td class="text-center">
-                                            @if($item->status_konfirmasi == 'belum')
-                                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                                    <i class="fa fa-clock me-1"></i> BELUM
-                                                </span>
-                                            @elseif($item->status_konfirmasi == 'sudah')
-                                                <span class="badge bg-success text-white px-3 py-2 rounded-pill">
-                                                    <i class="fa fa-check-circle me-1"></i> SUDAH
-                                                </span>
-                                            @else
-                                                <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
-                                                    <i class="fa fa-info-circle me-1"></i> {{ ucfirst($item->status_konfirmasi) }}
-                                                </span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <a href="{{ route('pembayaran' . '.show', $item->id) }}"
-                                                   class="btn btn-outline-primary btn-sm px-3"
-                                                   title="Lihat detail">
-                                                    <i class="fa fa-eye"></i>
-                                                </a>
-                                                <form action="{{ route('pembayaran' . '.destroy', $item->tagihan->siswa->id) }}"
-                                                      method="POST"
-                                                      class="d-inline"
-                                                      onsubmit="return confirm('⚠️ PERHATIAN!\n\nYakin ingin menghapus SEMUA tagihan siswa ini?\n\nNama: {{ $item->tagihan->siswa->nama }}\nNISN: {{ $item->tagihan->siswa->nisn }}\n\nTindakan ini tidak bisa dibatalkan!')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Hapus semua">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{{ route('pembayaran.show', $item->id) }}"
+                                               class="btn btn-outline-primary btn-sm px-3"
+                                               title="Lihat detail">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                            <form action="{{ route('pembayaran.destroy', $item->siswa_id) }}"
+                                                  method="POST"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('⚠️ PERHATIAN!\n\nYakin ingin menghapus SEMUA tagihan siswa ini?\n\nNama: {{ $item->nama_siswa }}\nNISN: {{ $item->nisn }}\n\nTindakan ini tidak bisa dibatalkan!')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Hapus semua">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5">
+                                    <td colspan="8" class="text-center py-5">
                                         <div class="text-center">
                                             <div class="mb-3">
                                                 <i class="fa fa-database fa-3x text-muted"></i>
                                             </div>
                                             <h5 class="text-muted fw-normal mb-2">
-                                                Belum ada data tagihan
+                                                Belum ada data pembayaran
                                             </h5>
                                             <p class="text-muted small">
-                                                Silakan tambah data tagihan baru.
+                                                Silakan tunggu pembayaran dari wali murid.
                                             </p>
-                                            <a href="{{ route('pembayaran' . '.create') }}" class="btn btn-primary btn-sm mt-3">
-                                                <i class="fa fa-plus me-1"></i> Tambah Tagihan
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -197,13 +194,13 @@
                 </div>
 
                 {{-- Pagination --}}
-                @if($models->isNotEmpty())
+                @if($results->isNotEmpty())
                     <div class="mt-4">
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <small class="text-muted">
-                                Menampilkan {{ $models->firstItem() }} - {{ $models->lastItem() }} dari {{ $models->total() }} data
+                                Menampilkan {{ $results->firstItem() }} - {{ $results->lastItem() }} dari {{ $results->total() }} data
                             </small>
-                            {!! $models->links() !!}
+                            {!! $results->links() !!}
                         </div>
                     </div>
                 @endif

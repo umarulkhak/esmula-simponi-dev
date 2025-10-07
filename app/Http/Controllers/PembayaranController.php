@@ -18,20 +18,55 @@ class PembayaranController extends Controller
      * - Tampilkan pesan sukses spesifik.
      */
 
-        public function index()
+    public function index()
     {
-        // Ambil ID pembayaran terbaru per group (melalui tagihan)
-        $latestPaymentIds = DB::table('pembayarans')
-            ->select(DB::raw('MAX(id) as id'))
-            ->groupBy('group_id');
+        // Ambil data per siswa + periode (bulan-tahun)
+        $query = DB::table('pembayarans as p')
+            ->select(
+                DB::raw('MAX(p.id) as id'), // ID utama untuk route show
+                's.id as siswa_id',
+                's.nama as nama_siswa',
+                's.nisn',
+                's.kelas',
+                's.angkatan',
+                'u.name as nama_wali',
+                DB::raw('SUM(p.jumlah_dibayar) as total_dibayar'),
+                DB::raw('MAX(p.tanggal_konfirmasi) as tanggal_konfirmasi'),
+                DB::raw('MIN(p.status_konfirmasi) as status_konfirmasi'),
+                DB::raw('DATE_FORMAT(p.tanggal_bayar, "%Y-%m") as periode')
+            )
+            ->join('tagihans as t', 'p.tagihan_id', '=', 't.id')
+            ->join('siswas as s', 't.siswa_id', '=', 's.id')
+            ->join('users as u', 'p.wali_id', '=', 'u.id')
+            ->groupBy(
+                's.id',
+                's.nama',
+                's.nisn',
+                's.kelas',
+                's.angkatan',
+                'u.name',
+                'periode'
+            );
 
-        // Ambil data pembayaran berdasarkan ID tersebut, dengan relasi
-        $models = Pembayaran::whereIn('id', $latestPaymentIds)
-            ->with(['tagihan.siswa', 'wali'])
-            ->orderBy('tanggal_konfirmasi', 'desc')
-            ->paginate(50);
+        // Filter bulan & tahun
+        if (request('bulan') && request('tahun')) {
+            $query->whereRaw('MONTH(p.tanggal_bayar) = ?', [request('bulan')])
+                  ->whereRaw('YEAR(p.tanggal_bayar) = ?', [request('tahun')]);
+        } elseif (request('tahun')) {
+            $query->whereRaw('YEAR(p.tanggal_bayar) = ?', [request('tahun')]);
+        }
 
-        return view('operator.pembayaran_index', compact('models'));
+        // Filter pencarian
+        if (request('q')) {
+            $query->where(function ($q) {
+                $q->where('s.nama', 'like', '%' . request('q') . '%')
+                  ->orWhere('s.nisn', 'like', '%' . request('q') . '%');
+            });
+        }
+
+        $results = $query->orderBy('tanggal_konfirmasi', 'desc')->paginate(50);
+
+        return view('operator.pembayaran_index', compact('results'));
     }
 
     public function store(StorePembayaranRequest $request)
@@ -161,6 +196,7 @@ class PembayaranController extends Controller
 
     public function show(Pembayaran $pembayaran)
     {
+        // Tandai notifikasi sebagai sudah dibaca jika ada
         if (auth()->check()) {
             auth()->user()
                 ->unreadNotifications
@@ -169,32 +205,31 @@ class PembayaranController extends Controller
                 ?->markAsRead();
         }
 
-        // Ambil semua pembayaran dalam group yang sama
-        $pembayaranGroup = $pembayaran->group_id
-            ? Pembayaran::where('group_id', $pembayaran->group_id)
-                ->with([
-                    'tagihan' => fn ($q) => $q->whereNotNull('id'),
-                    'tagihan.siswa',
-                    'tagihan.tagihanDetails',
-                    'bankSekolah',
-                    'waliBank'
-                ])
-                ->get()
-            : collect([$pembayaran->load([
+        // Ambil data siswa dari tagihan pembayaran
+        $siswa = $pembayaran->tagihan?->siswa;
+
+        // Periode pembayaran (format: YYYY-MM)
+        $periode = \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->format('Y-m');
+
+        // Ambil semua pembayaran siswa di periode yang sama
+        $pembayaranGroup = Pembayaran::whereHas('tagihan', function ($q) use ($siswa) {
+                $q->where('siswa_id', $siswa->id);
+            })
+            ->whereRaw("DATE_FORMAT(tanggal_bayar, '%Y-%m') = ?", [$periode])
+            ->with([
+                'tagihan',
                 'tagihan.siswa',
                 'tagihan.tagihanDetails',
                 'bankSekolah',
                 'waliBank'
-            ])]);
+            ])
+            ->get();
 
-        // Hitung total jumlah dibayar & total tagihan
+        // Hitung total pembayaran & tagihan
         $totalDibayar = $pembayaranGroup->sum('jumlah_dibayar');
         $totalTagihan = $pembayaranGroup->sum(function ($pembayaran) {
             return $pembayaran->tagihan?->tagihanDetails->sum('jumlah_biaya') ?? 0;
         });
-
-        // Ambil siswa dari pembayaran pertama
-        $siswa = $pembayaranGroup->first()?->tagihan?->siswa;
 
         return view('operator.pembayaran_show', [
             'model' => $pembayaran,
