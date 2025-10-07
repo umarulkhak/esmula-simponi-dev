@@ -51,9 +51,7 @@ Route::prefix('operator')
     ->middleware(['auth', 'auth.operator'])
     ->group(function () {
         Route::get('beranda', [BerandaOperatorController::class, 'index'])->name('operator.beranda');
-        // Update multiple pembayaran sekaligus
-        Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])
-            ->name('pembayaran.update.multiple');
+        Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])->name('pembayaran.update.multiple');
 
         // Resource routes
         Route::resource('user', UserController::class);
@@ -95,12 +93,11 @@ Route::prefix('wali')
     ->middleware(['auth', 'auth.wali'])
     ->name('wali.')
     ->group(function () {
+        Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])->name('pembayaran.update.multiple');
         Route::get('beranda', [BerandaWaliController::class, 'index'])->name('beranda');
-        // Hanya izinkan: index, show, edit, update
         Route::resource('siswa', WaliMuridSiswaController::class)->only(['index', 'show', 'edit', 'update']);
         Route::resource('tagihan', WaliMuridTagihanController::class);
         Route::resource('pembayaran', WaliMuridPembayaranController::class);
-        // Profil wali: tanpa {id}, karena 1 user = 1 profile
         Route::get('profile', [WaliMuridProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/edit', [WaliMuridProfileController::class, 'edit'])->name('profile.edit');
         Route::put('profile/{id}', [WaliMuridProfileController::class, 'update'])->name('profile.update');

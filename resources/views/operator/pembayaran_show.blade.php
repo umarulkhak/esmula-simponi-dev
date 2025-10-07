@@ -4,80 +4,74 @@
 <div class="row justify-content-center">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bx bx-credit-card me-2"></i>Detail Pembayaran
-                </h5>
-                <a href="{{ route('pembayaran.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bx bx-arrow-back me-1"></i>Kembali
-                </a>
+            {{-- 1. HEADER: INFORMASI SISWA --}}
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                    <div>
+                        @if($siswa)
+                            <h5 class="mb-1 fw-bold">
+                                {{ $siswa->nama }}
+                            </h5>
+                            <div class="d-flex flex-wrap gap-3">
+                                <span><i class="bx bx-id-card me-1"></i> NISN: {{ $siswa->nisn }}</span>
+                                <span><i class="bx bx-school me-1"></i> Kelas: {{ $siswa->kelas }}</span>
+                                <span><i class="bx bx-user-circle me-1"></i> Wali: {{ $siswa->wali?->name ?? '–' }}</span>
+                            </div>
+                        @else
+                            <h5 class="mb-1 fw-bold">Siswa Tidak Ditemukan</h5>
+                            <div class="text-muted">Data siswa tidak tersedia.</div>
+                        @endif
+                    </div>
+                    <a href="{{ route('pembayaran.index') }}" class="btn btn-light btn-sm">
+                        <i class="bx bx-arrow-back me-1"></i>Kembali
+                    </a>
+                </div>
             </div>
+
             <div class="card-body">
 
-                {{-- 1. RINGKASAN PEMBAYARAN --}}
+                {{-- 2. STATUS PEMBAYARAN SISWA --}}
                 <div class="row g-4 mb-4">
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header fw-semibold">
-                                <i class="bx bx-receipt me-1"></i>Ringkasan Pembayaran
+                                <i class="bx bx-bar-chart-alt-2 me-1"></i>Status Pembayaran Siswa
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <ul class="list-unstyled mb-0">
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Jumlah Dibayar</span><br>
-                                                <span class="text-success fw-bold">{{ formatRupiah($totalDibayar ?? 0) }}</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Total Tagihan</span><br>
-                                                <span class="text-danger fw-bold">{{ formatRupiah($totalTagihan ?? 0) }}</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Jumlah Item</span><br>
-                                                <span>{{ $pembayaranGroup->count() }} pembayaran</span>
-                                            </li>
-                                        </ul>
+                                <div class="row text-center">
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="bg-light rounded p-3">
+                                            <div class="text-muted">Total Tagihan</div>
+                                            <div class="fw-bold text-danger">{{ formatRupiah($totalTagihan ?? 0) }}</div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <ul class="list-unstyled mb-0">
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Status Konfirmasi</span><br>
-                                                @php
-                                                    $statusGroup = $pembayaranGroup->every(fn($p) => $p->status_konfirmasi == 'sudah') ? 'sudah' : 'belum';
-                                                @endphp
-                                                @if($statusGroup === 'sudah')
-                                                    <span class="badge bg-success">Sudah</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark">Belum</span>
-                                                @endif
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Tanggal Konfirmasi</span><br>
-                                                <span>
-                                                    {{ $pembayaranGroup->where('status_konfirmasi', 'sudah')->max('tanggal_konfirmasi')
-                                                        ? \Carbon\Carbon::parse($pembayaranGroup->where('status_konfirmasi', 'sudah')->max('tanggal_konfirmasi'))->locale('id')->isoFormat('D MMMM Y')
-                                                        : '–' }}
-                                                </span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="fw-medium text-muted">Status Pembayaran</span><br>
-                                                @php
-                                                    $statusPembayaran = 'Belum Dibayar';
-
-                                                    if ($siswa) {
-                                                        $jumlahTagihanBelumLunas = $siswa->tagihan()->where('status', '!=', 'lunas')->count();
-                                                        $jumlahTagihanTotal = $siswa->tagihan()->count();
-
-                                                        if ($jumlahTagihanBelumLunas == 0 && $jumlahTagihanTotal > 0) {
-                                                            $statusPembayaran = 'Sudah Dibayar';
-                                                        } elseif ($jumlahTagihanBelumLunas > 0) {
-                                                            $statusPembayaran = 'Angsur';
-                                                        }
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="bg-light rounded p-3">
+                                            <div class="text-muted">Sudah Dibayar</div>
+                                            <div class="fw-bold text-success">{{ formatRupiah($totalDibayar ?? 0) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-light rounded p-3">
+                                            <div class="text-muted">Status</div>
+                                            @php
+                                                $statusPembayaran = 'Belum Dibayar';
+                                                if ($siswa) {
+                                                    $belumLunas = $siswa->tagihan()->where('status', '!=', 'lunas')->count();
+                                                    $totalTagihanSiswa = $siswa->tagihan()->count();
+                                                    if ($totalTagihanSiswa > 0) {
+                                                        $statusPembayaran = $belumLunas == 0 ? 'Sudah Dibayar' : 'Angsur';
                                                     }
-                                                @endphp
-                                            </li>
-                                        </ul>
+                                                }
+                                            @endphp
+                                            @if($statusPembayaran === 'Sudah Dibayar')
+                                                <span class="badge bg-success px-3 py-2">Lunas</span>
+                                            @elseif($statusPembayaran === 'Angsur')
+                                                <span class="badge bg-warning text-dark px-3 py-2">Angsur</span>
+                                            @else
+                                                <span class="badge bg-danger px-3 py-2">Belum Bayar</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -85,20 +79,27 @@
                     </div>
                 </div>
 
-                {{-- 2. DAFTAR ITEM PEMBAYARAN --}}
+                {{-- 3. DAFTAR PEMBAYARAN --}}
                 <div class="row g-4 mb-4">
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
-                            <div class="card-header fw-semibold">
-                                <i class="bx bx-list-ul me-1"></i>Daftar Pembayaran
+                            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                                <span><i class="bx bx-list-ul me-1"></i>Daftar Pembayaran</span>
                             </div>
                             <div class="card-body">
+                                @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
+                                    {!! Form::open(['route' => 'pembayaran.update.multiple', 'method' => 'PUT']) !!}
+                                    @csrf
+                                @endif
+
                                 <div class="table-responsive">
                                     <table class="table table-sm">
-                                        <thead>
+                                        <thead class="table-light">
                                             <tr>
-                                                <th>No</th>
-                                                {{-- <th>ID Pembayaran</th> --}}
+                                                @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
+                                                    <th style="width: 5%">#</th>
+                                                @endif
+                                                <th>Tagihan ID</th>
                                                 <th>Tanggal Bayar</th>
                                                 <th>Metode</th>
                                                 <th class="text-end">Jumlah</th>
@@ -111,13 +112,13 @@
                                         <tbody>
                                             @foreach($pembayaranGroup as $pembayaran)
                                                 <tr>
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    {{-- <td>{{ $pembayaran->id }}</td> --}}
-                                                    <td>
-                                                        {{ $pembayaran->tanggal_bayar
-                                                            ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y')
-                                                            : '–' }}
-                                                    </td>
+                                                    @if($pembayaran->status_konfirmasi == 'belum')
+                                                        <td>
+                                                            <input type="checkbox" name="pembayaran_ids[]" value="{{ $pembayaran->id }}" class="pembayaran-checkbox">
+                                                        </td>
+                                                    @endif
+                                                    <td>{{ $pembayaran->tagihan_id }}</td>
+                                                    <td>{{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y') : '–' }}</td>
                                                     <td>{{ $pembayaran->metode_pembayaran }}</td>
                                                     <td class="text-end">{{ formatRupiah($pembayaran->jumlah_dibayar) }}</td>
                                                     <td>
@@ -138,13 +139,7 @@
                                                     </td>
                                                     <td>
                                                         @if($pembayaran->bukti_bayar)
-                                                            <a href="javascript:void(0)"
-                                                               onclick="popupCenter({
-                                                                   url: '{{ \Storage::url($pembayaran->bukti_bayar) }}',
-                                                                   title: 'Bukti Pembayaran #{{ $pembayaran->id }}',
-                                                                   w: 900,
-                                                                   h: 700
-                                                               })">
+                                                            <a href="javascript:void(0)" onclick="popupCenter({ url: '{{ \Storage::url($pembayaran->bukti_bayar) }}', title: 'Bukti', w: 800, h: 600 })">
                                                                 Lihat
                                                             </a>
                                                         @else
@@ -163,23 +158,26 @@
                                         </tbody>
                                     </table>
                                 </div>
+
+                                @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
+                                    <button type="submit" class="btn btn-success mt-3" id="btn-konfirmasi" disabled>
+                                        <i class="bx bx-check-circle me-1"></i>Konfirmasi Terpilih
+                                    </button>
+                                    {!! Form::close() !!}
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {{-- 3. TAGIHAN & SISWA --}}
+                {{-- 4. RINCIAN TAGIHAN YANG DIBAYAR --}}
                 <div class="row g-4">
-                    {{-- Informasi Tagihan --}}
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm h-100">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
                             <div class="card-header fw-semibold">
-                                <i class="bx bx-file me-1"></i>Rincian Tagihan
+                                <i class="bx bx-file me-1"></i>Rincian Tagihan yang Dibayar
                             </div>
                             <div class="card-body">
-                                <h6 class="fw-semibold mb-2">
-                                    <i class="bx bx-list-ul me-1"></i>Item Biaya
-                                </h6>
                                 <div class="table-responsive">
                                     <table class="table table-sm">
                                         <thead>
@@ -187,7 +185,7 @@
                                                 <th>No</th>
                                                 <th>Biaya</th>
                                                 <th class="text-end">Jumlah</th>
-                                                {{-- <th>Tagihan ID</th> --}}
+                                                <th>Tagihan ID</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -199,21 +197,13 @@
                                                             <td>{{ $no++ }}</td>
                                                             <td>{{ $item->nama_biaya }}</td>
                                                             <td class="text-end">{{ formatRupiah($item->jumlah_biaya) }}</td>
-                                                            {{-- <td>{{ $pembayaran->tagihan_id }}</td> --}}
+                                                            <td>{{ $pembayaran->tagihan_id }}</td>
                                                         </tr>
                                                     @endforeach
-                                                @else
-                                                    <tr>
-                                                        <td colspan="4" class="text-danger">
-                                                            Tagihan ID {{ $pembayaran->tagihan_id }} tidak ditemukan.
-                                                        </td>
-                                                    </tr>
                                                 @endif
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted fst-italic">
-                                                        Tidak ada item
-                                                    </td>
+                                                    <td colspan="4" class="text-center text-muted">Tidak ada data</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -222,78 +212,7 @@
                             </div>
                         </div>
                     </div>
-                    {{-- Informasi Siswa --}}
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header fw-semibold">
-                                <i class="bx bx-user me-1"></i>Data Siswa
-                            </div>
-                            <div class="card-body">
-                                @if($siswa)
-                                    <p class="mb-2"><span class="fw-medium">Nama:</span> {{ $siswa->nama ?? '–' }}</p>
-                                    <p class="mb-2"><span class="fw-medium">NIS/NISN:</span> {{ $siswa->nisn ?? '–' }}</p>
-                                    <p class="mb-2"><span class="fw-medium">Kelas:</span> {{ $siswa->kelas ?? '–' }}</p>
-                                    <p class="mb-3"><span class="fw-medium">Wali Murid:</span> {{ $siswa->wali?->name ?? '–' }}</p>
-                                @else
-                                    <p class="text-muted">Data siswa tidak ditemukan.</p>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
                 </div>
-
-                {{-- 4. TOMBOL KONFIRMASI DENGAN CHECKBOX --}}
-                @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
-                    {!! Form::open([
-                        'route' => 'pembayaran.update.multiple',
-                        'method' => 'PUT',
-                        'onsubmit' => 'return confirm("Apakah anda yakin ingin mengonfirmasi pembayaran yang dipilih?")',
-                    ]) !!}
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 5%">
-                                        <input type="checkbox" id="select-all" onchange="toggleAll(this)">
-                                    </th>
-                                    <th>ID</th>
-                                    <th>Tanggal Bayar</th>
-                                    <th class="text-end">Jumlah</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($pembayaranGroup as $pembayaran)
-                                    @if($pembayaran->status_konfirmasi == 'belum')
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" name="pembayaran_ids[]" value="{{ $pembayaran->id }}" class="pembayaran-checkbox">
-                                            </td>
-                                            <td>{{ $pembayaran->id }}</td>
-                                            <td>
-                                                {{ $pembayaran->tanggal_bayar
-                                                    ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y')
-                                                    : '–' }}
-                                            </td>
-                                            <td class="text-end">{{ formatRupiah($pembayaran->jumlah_dibayar) }}</td>
-                                            <td>
-                                                <span class="badge bg-warning text-dark">Belum</span>
-                                            </td>
-                                        </tr>
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="btn-konfirmasi" disabled>
-                        Konfirmasi Pembayaran Terpilih
-                    </button>
-                    {!! Form::close() !!}
-                @else
-                    <div class="alert alert-primary" role="alert">
-                        <h3>Semua pembayaran sudah dikonfirmasi.</h3>
-                    </div>
-                @endif
 
             </div>
         </div>
@@ -303,21 +222,21 @@
 
 @push('scripts')
 <script>
-function toggleAll(source) {
-    const checkboxes = document.querySelectorAll('.pembayaran-checkbox');
-    checkboxes.forEach(cb => cb.checked = source.checked);
-    updateSubmitButton();
-}
-function updateSubmitButton() {
-    const anyChecked = document.querySelector('.pembayaran-checkbox:checked');
-    const btn = document.getElementById('btn-konfirmasi');
-    if (btn) btn.disabled = !anyChecked;
-}
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.pembayaran-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateSubmitButton);
+    const checkboxes = document.querySelectorAll('.pembayaran-checkbox');
+    const btn = document.querySelector('#btn-konfirmasi');
+
+    function updateButton() {
+        if (btn) {
+            btn.disabled = !document.querySelector('.pembayaran-checkbox:checked');
+        }
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateButton);
     });
-    updateSubmitButton();
+
+    updateButton();
 });
 </script>
 @endpush
