@@ -51,6 +51,9 @@ Route::prefix('operator')
     ->middleware(['auth', 'auth.operator'])
     ->group(function () {
         Route::get('beranda', [BerandaOperatorController::class, 'index'])->name('operator.beranda');
+        // Update multiple pembayaran sekaligus
+        Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])
+            ->name('pembayaran.update.multiple');
 
         // Resource routes
         Route::resource('user', UserController::class);

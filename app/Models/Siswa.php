@@ -5,17 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nicolaslopezj\Searchable\SearchableTrait;
 
 class Siswa extends Model
 {
     use HasFactory, SearchableTrait;
 
-    /**
-     * Kolom yang bisa digunakan untuk pencarian.
-     *
-     * Bobot (score) menentukan prioritas hasil pencarian.
-     */
     protected $searchable = [
         'columns' => [
             'nama' => 10,
@@ -23,9 +19,6 @@ class Siswa extends Model
         ],
     ];
 
-    /**
-     * Kolom yang dapat diisi secara massal.
-     */
     protected $fillable = [
         'wali_id',
         'wali_status',
@@ -47,11 +40,18 @@ class Siswa extends Model
 
     /**
      * Relasi ke user yang menjadi wali murid.
-     * Menggunakan default value jika wali belum ditentukan.
      */
     public function wali(): BelongsTo
     {
         return $this->belongsTo(User::class, 'wali_id')
             ->withDefault(['name' => 'Belum ada wali murid']);
+    }
+
+    /**
+     * Relasi ke tagihan: 1 siswa punya banyak tagihan.
+     */
+    public function tagihan(): HasMany
+    {
+        return $this->hasMany(Tagihan::class, 'siswa_id');
     }
 }

@@ -6,7 +6,7 @@ use App\Http\Requests\StorePembayaranRequest;
 use App\Models\Pembayaran;
 use App\Models\Tagihan;
 use Illuminate\Support\Facades\DB;
-use Request;
+use Illuminate\Http\Request;
 
 class PembayaranController extends Controller
 {
@@ -263,4 +263,32 @@ class PembayaranController extends Controller
 
         return back();
     }
+    public function updateMultiple(Request $request)
+{
+    $request->validate([
+        'pembayaran_ids' => 'required|array|min:1',
+        'pembayaran_ids.*' => 'exists:pembayarans,id'
+    ]);
+
+    DB::transaction(function () use ($request) {
+        foreach ($request->pembayaran_ids as $id) {
+            $pembayaran = Pembayaran::findOrFail($id);
+
+            // Hanya konfirmasi jika belum
+            if ($pembayaran->status_konfirmasi == 'belum') {
+                $pembayaran->status_konfirmasi = 'sudah';
+                $pembayaran->tanggal_konfirmasi = now();
+                $pembayaran->user_id = auth()->id();
+                $pembayaran->save();
+
+                // Update status tagihan jadi lunas
+                $pembayaran->tagihan->status = 'lunas';
+                $pembayaran->tagihan->save();
+            }
+        }
+    });
+
+    flash('Pembayaran terpilih berhasil dikonfirmasi.')->success();
+    return back();
+}
 }
