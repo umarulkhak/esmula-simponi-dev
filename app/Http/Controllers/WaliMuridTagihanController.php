@@ -8,111 +8,79 @@ use App\Models\BankSekolah;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
-/**
- * Controller untuk manajemen tagihan SPP wali murid.
- *
- * Menampilkan daftar tagihan per siswa dan detail pembayaran.
- * Dilengkapi proteksi akses: wali hanya bisa melihat data siswa yang dimilikinya.
- * Memanfaatkan scope `waliSiswa()` dari model Tagihan untuk konsistensi query.
- * Menyediakan daftar bank umum (\App\Models\Bank) untuk pilihan "Bank Pengirim".
- *
- * @author  Umar Ulkhak
- * @date    3 Agustus 2025
- * @updated 5 April 2025 — Tambah support bank pengirim dari model Bank
- */
 class WaliMuridTagihanController extends Controller
 {
-    /**
-     * Menampilkan daftar tagihan SPP untuk semua siswa milik wali yang login.
-     *
-     * Menggunakan scope `waliSiswa()` untuk memastikan hanya menampilkan tagihan siswa milik user.
-     *
-     * @return \Illuminate\View\View
-     */
     public function index()
     {
         $user = Auth::user();
 
-        // Cek apakah wali memiliki siswa terdaftar
         if (!$user->siswa || $user->siswa->isEmpty()) {
             return view('wali.tagihan_index', [
                 'tagihanGrouped' => collect(),
             ])->with('info', 'Anda belum memiliki siswa terdaftar.');
         }
 
-        // Gunakan scope `waliSiswa()` untuk ambil tagihan milik siswa user
         $tagihan = Tagihan::waliSiswa()
             ->orderBy('tanggal_tagihan', 'desc')
             ->get();
 
-        // Kelompokkan tagihan berdasarkan siswa
         $tagihanGrouped = $tagihan->groupBy('siswa_id');
 
         return view('wali.tagihan_index', compact('tagihanGrouped'));
     }
 
-    /**
-     * Menampilkan detail tagihan dan riwayat pembayaran untuk satu siswa.
-     *
-     * Memvalidasi bahwa siswa yang diakses benar-benar dimiliki oleh wali yang sedang login.
-     * Menyediakan data bank umum untuk dropdown "Bank Pengirim" di form pembayaran.
-     *
-     * @param  int  $siswaId  ID siswa yang ingin dilihat tagihannya
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
     public function show($siswaId)
     {
         try {
             $user = Auth::user();
             $userSiswaIds = $user->getAllSiswaId();
 
-            // 🔒 Proteksi akses: cegah manipulasi URL
             if (!in_array($siswaId, $userSiswaIds)) {
                 abort(403, 'Anda tidak memiliki akses ke data ini.');
             }
 
-            // Ambil tagihan siswa ini
-            $tagihanList = Tagihan::waliSiswa()
+            // ✅ Load SEMUA pembayaran (tanpa filter status_konfirmasi)
+            $tagihanList = Tagihan::with([
+                    'siswa',
+                    'tagihanDetails',
+                    'pembayaran' // 👈 Ambil SEMUA pembayaran
+                ])
+                ->waliSiswa()
                 ->where('siswa_id', $siswaId)
                 ->orderBy('tanggal_tagihan', 'desc')
                 ->get();
 
-            // Pastikan data siswa tersedia
-            $siswa = $tagihanList->first()?->siswa;
-            if (!$siswa) {
+            if ($tagihanList->isEmpty()) {
                 return redirect()->route('wali.tagihan.index')
-                    ->with('error', 'Siswa tidak ditemukan.');
+                    ->with('error', 'Tidak ada tagihan ditemukan untuk siswa ini.');
             }
 
-            // Ambil riwayat pembayaran
-            $pembayaran = Pembayaran::whereIn('tagihan_id', $tagihanList->pluck('id'))
-                ->orderBy('tanggal_bayar', 'desc')
-                ->get();
-
-            // 💰 Ambil daftar rekening bank sekolah (untuk BANK TUJUAN)
+            $siswa = $tagihanList->first()->siswa;
             $banksekolah = BankSekolah::all();
-
-
-            // 💳 Ambil daftar bank umum (untuk BANK PENGIRIM di form pembayaran)
             $listbank = \App\Models\Bank::pluck('nama_bank', 'id');
 
-            // Hitung total tagihan dan total pembayaran
-            $grandTotal = $tagihanList->sum(fn($tagihan) => $tagihan->tagihanDetails->sum('jumlah_biaya'));
-            $totalDibayar = $pembayaran->sum('jumlah_dibayar');
+            // Hitung total tagihan
+            $grandTotal = $tagihanList->sum(fn($t) => $t->tagihanDetails->sum('jumlah_biaya'));
 
-            // Tentukan status pembayaran global
-            $statusGlobal = $this->determinePaymentStatus($grandTotal, $totalDibayar);
+            // ✅ Hitung total yang SUDAH DIKONFIRMASI (status_konfirmasi = 'sudah')
+            $totalDibayarDikonfirmasi = $tagihanList->sum(function ($tagihan) {
+                return $tagihan->pembayaran
+                    ->where('status_konfirmasi', 'sudah')
+                    ->sum('jumlah_dibayar');
+            });
 
-            // Kirim semua data ke view
+            $statusGlobal = $this->determinePaymentStatus($grandTotal, $totalDibayarDikonfirmasi);
+            $semuaDikonfirmasi = ($statusGlobal === 'lunas');
+
             return view('wali.tagihan_show', compact(
                 'tagihanList',
                 'siswa',
-                'pembayaran',
                 'banksekolah',
                 'grandTotal',
-                'totalDibayar',
+                'totalDibayarDikonfirmasi',
                 'statusGlobal',
                 'listbank',
+                'semuaDikonfirmasi'
             ));
 
         } catch (\Exception $e) {
@@ -127,13 +95,6 @@ class WaliMuridTagihanController extends Controller
         }
     }
 
-    /**
-     * Menentukan status pembayaran global berdasarkan total tagihan dan pembayaran.
-     *
-     * @param  float  $grandTotal    Total seluruh tagihan
-     * @param  float  $totalDibayar  Total yang sudah dibayar
-     * @return string                Status: 'lunas', 'angsur', atau 'belum_bayar'
-     */
     private function determinePaymentStatus(float $grandTotal, float $totalDibayar): string
     {
         if ($totalDibayar >= $grandTotal) {
@@ -141,7 +102,6 @@ class WaliMuridTagihanController extends Controller
         } elseif ($totalDibayar > 0) {
             return 'angsur';
         }
-
         return 'belum_bayar';
     }
 }
