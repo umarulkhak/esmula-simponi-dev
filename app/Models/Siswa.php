@@ -55,4 +55,21 @@ class Siswa extends Model
     {
         return $this->hasMany(Tagihan::class, 'siswa_id');
     }
+
+    // 🔹 RELASI BARU: satu tagihan per siswa pada bulan & tahun tertentu
+    public function tagihanPadaBulan()
+    {
+        return $this->hasOne(Tagihan::class, 'siswa_id');
+    }
+
+    // 🔹 SCOPE BARU: eager load tagihan berdasarkan bulan & tahun
+    public function scopeDenganTagihanBulan($query, string $bulan, string $tahun)
+    {
+        return $query->with([
+            'tagihanPadaBulan' => function ($q) use ($bulan, $tahun) {
+                $q->whereMonth('tanggal_tagihan', $bulan)
+                  ->whereYear('tanggal_tagihan', $tahun);
+            }
+        ]);
+    }
 }
