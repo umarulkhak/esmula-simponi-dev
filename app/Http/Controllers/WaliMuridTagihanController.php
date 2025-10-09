@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Siswa;
 use App\Models\Tagihan;
 use App\Models\Pembayaran;
 use App\Models\BankSekolah;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class WaliMuridTagihanController extends Controller
 {
@@ -103,5 +106,61 @@ class WaliMuridTagihanController extends Controller
             return 'angsur';
         }
         return 'belum_bayar';
+    }
+
+    public function cetakInvoice(Siswa $siswa)
+    {
+        if (!$siswa->wali_id || $siswa->wali_id !== auth()->id()) {
+            abort(403, 'Tidak diizinkan mengakses data ini.');
+        }
+
+        $tagihanList = $siswa->tagihan()
+            ->with(['tagihanDetails', 'pembayaran'])
+            ->get();
+
+        $grandTotal = $tagihanList->sum(fn($t) => $t->tagihanDetails->sum('jumlah_biaya'));
+
+        $semuaDikonfirmasi = true;
+        foreach ($tagihanList as $tagihan) {
+            $totalDibayar = $tagihan->pembayaran
+                ->where('status_konfirmasi', 'sudah')
+                ->sum('jumlah_dibayar');
+            $subtotal = $tagihan->tagihanDetails->sum('jumlah_biaya');
+            if ($totalDibayar < $subtotal) {
+                $semuaDikonfirmasi = false;
+                break;
+            }
+        }
+
+        $banksekolah = BankSekolah::all();
+        $now = now();
+        $invNumber = "INV/ESMULA/{$now->year}/" . str_pad($now->month, 2, '0', STR_PAD_LEFT) . '/' . str_pad($now->day, 2, '0', STR_PAD_LEFT);
+
+        // Generate QR Code (tanpa size() — biar default)
+        $qrData = "NISN:{$siswa->nisn}|INV:{$invNumber}|TGL:" . now()->format('Y-m-d');
+        $qrCode = QrCode::format('png')->generate($qrData);
+        $qrCodeBase64 = base64_encode($qrCode);
+
+        // Load logo (hardcode jika perlu)
+        $logoPath = public_path('sneat/assets/img/logo-esmula.png');
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        } else {
+            $logoBase64 = 'image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="#f0f0f0"/><text x="40" y="45" font-size="10" text-anchor="middle" fill="#999">LOGO</text></svg>');
+        }
+
+        $pdf = Pdf::loadView('wali.invoice-pdf', compact(
+            'siswa',
+            'tagihanList',
+            'banksekolah',
+            'grandTotal',
+            'semuaDikonfirmasi',
+            'invNumber',
+            'qrCodeBase64',
+            'logoBase64'
+        ));
+
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream("invoice-{$siswa->nisn}.pdf");
     }
 }

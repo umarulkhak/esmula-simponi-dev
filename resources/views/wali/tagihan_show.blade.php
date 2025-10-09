@@ -240,9 +240,9 @@
                 </div>
 
                 <div class="text-center my-3 mx-3 mx-md-4">
-                    <button type="button" class="btn btn-dark w-100 w-md-auto px-4 py-2 fs-6" onclick="cetakInvoice()">
-                        <i class="bx bx-printer me-2"></i> Cetak Invoice
-                    </button>
+                    <a href="{{ route('wali.invoice.cetak', $siswa) }}" target="_blank" class="btn btn-dark w-100 w-md-auto px-4 py-2 fs-6">
+                        <i class="bx bx-printer me-2"></i> Cetak Invoice (PDF)
+                    </a>
                 </div>
             @endif
         @endif

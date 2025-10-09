@@ -101,6 +101,8 @@ Route::prefix('wali')
         Route::get('profile', [WaliMuridProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/edit', [WaliMuridProfileController::class, 'edit'])->name('profile.edit');
         Route::put('profile/{id}', [WaliMuridProfileController::class, 'update'])->name('profile.update');
+        Route::get('siswa/{siswa}/invoice', [WaliMuridTagihanController::class, 'cetakInvoice'])
+            ->name('invoice.cetak');
     });
 
 // ============================================================================

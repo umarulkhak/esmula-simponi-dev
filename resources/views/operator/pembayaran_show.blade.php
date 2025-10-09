@@ -93,64 +93,81 @@
                                 @endif
 
                                 <div class="table-responsive">
-                                    <table class="table table-sm">
+                                    <table class="table table-striped table-hover align-middle">
                                         <thead class="table-light">
-                                            <tr>
-                                                @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
-                                                    <th style="width: 5%">#</th>
-                                                @endif
-                                                <th>Tagihan ID</th>
-                                                <th>Tanggal Bayar</th>
-                                                <th>Metode</th>
-                                                <th class="text-end">Jumlah</th>
-                                                <th>Rekening Pengirim</th>
-                                                <th>Rekening Sekolah</th>
-                                                <th>Bukti Bayar</th>
-                                                <th>Status</th>
-                                            </tr>
+                                                <tr>
+                                                    <th style="width: 5%; text-align: center;">#</th>
+                                                    <th style="width: 10%;">Tagihan ID</th>
+                                                    <th style="width: 12%;">Tanggal Bayar</th>
+                                                    <th style="width: 10%;">Metode</th>
+                                                    <th style="width: 10%;" class="text-end">Jumlah</th>
+                                                    <th style="width: 20%;">Rekening Pengirim</th>
+                                                    <th style="width: 20%;">Rekening Sekolah</th>
+                                                    <th style="width: 8%;">Bukti Bayar</th>
+                                                    <th style="width: 8%;">Status</th>
+                                                </tr>
                                         </thead>
                                         <tbody>
                                             @foreach($pembayaranGroup as $pembayaran)
                                                 <tr>
-                                                    @if($pembayaran->status_konfirmasi == 'belum')
-                                                        <td>
+                                                    <!-- Kolom # (Checkbox / Icon) -->
+                                                    <td style="text-align: center; width: 5%;">
+                                                        @if ($pembayaran->status_konfirmasi == 'belum')
                                                             <input type="checkbox" name="pembayaran_ids[]" value="{{ $pembayaran->id }}" class="pembayaran-checkbox">
-                                                        </td>
-                                                    @endif
-                                                    <td>{{ $pembayaran->tagihan_id }}</td>
-                                                    <td>{{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y') : '–' }}</td>
-                                                    <td>{{ $pembayaran->metode_pembayaran }}</td>
-                                                    <td class="text-end">{{ formatRupiah($pembayaran->jumlah_dibayar) }}</td>
-                                                    <td>
-                                                        @if($pembayaran->waliBank)
-                                                            {{ $pembayaran->waliBank->nama_bank }}<br>
-                                                            {{ $pembayaran->waliBank->nomor_rekening }}<br>
-                                                            {{ $pembayaran->waliBank->nama_rekening }}
                                                         @else
-                                                            {{ $pembayaran->nama_bank_pengirim }}<br>
-                                                            {{ $pembayaran->nomor_rekening_pengirim }}<br>
-                                                            {{ $pembayaran->nama_rekening_pengirim }}
+                                                            <i class="bx bx-check-circle text-success"></i>
                                                         @endif
                                                     </td>
-                                                    <td>
-                                                        {{ $pembayaran->bankSekolah?->nama_bank }}<br>
-                                                        {{ $pembayaran->bankSekolah?->nomor_rekening }}<br>
-                                                        {{ $pembayaran->bankSekolah?->nama_rekening }}
+
+                                                    <!-- Kolom Tagihan ID -->
+                                                    <td style="width: 10%;">{{ $pembayaran->tagihan_id }}</td>
+
+                                                    <!-- Kolom Tanggal Bayar -->
+                                                    <td style="width: 12%;">{{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y') : '–' }}</td>
+
+                                                    <!-- Kolom Metode -->
+                                                    <td style="width: 10%;">{{ $pembayaran->metode_pembayaran }}</td>
+
+                                                    <!-- Kolom Jumlah -->
+                                                    <td style="width: 10%;" class="text-end">{{ formatRupiah($pembayaran->jumlah_dibayar) }}</td>
+
+                                                    <!-- Kolom Rekening Pengirim -->
+                                                    <td style="width: 20%;">
+                                                        @if($pembayaran->waliBank)
+                                                            <small>{{ $pembayaran->waliBank->nama_bank }}</small><br>
+                                                            <small>{{ $pembayaran->waliBank->nomor_rekening }}</small><br>
+                                                            <small>{{ $pembayaran->waliBank->nama_rekening }}</small>
+                                                        @else
+                                                            <small>{{ $pembayaran->nama_bank_pengirim }}</small><br>
+                                                            <small>{{ $pembayaran->nomor_rekening_pengirim }}</small><br>
+                                                            <small>{{ $pembayaran->nama_rekening_pengirim }}</small>
+                                                        @endif
                                                     </td>
-                                                    <td>
+
+                                                    <!-- Kolom Rekening Sekolah -->
+                                                    <td style="width: 20%;">
+                                                        <small>{{ $pembayaran->bankSekolah?->nama_bank }}</small><br>
+                                                        <small>{{ $pembayaran->bankSekolah?->nomor_rekening }}</small><br>
+                                                        <small>{{ $pembayaran->bankSekolah?->nama_rekening }}</small>
+                                                    </td>
+
+                                                    <!-- Kolom Bukti Bayar -->
+                                                    <td style="width: 8%;">
                                                         @if($pembayaran->bukti_bayar)
-                                                            <a href="javascript:void(0)" onclick="popupCenter({ url: '{{ \Storage::url($pembayaran->bukti_bayar) }}', title: 'Bukti', w: 800, h: 600 })">
+                                                            <a href="javascript:void(0)" onclick="popupCenter({ url: '{{ \Storage::url($pembayaran->bukti_bayar) }}', title: 'Bukti', w: 800, h: 600 })" class="text-primary">
                                                                 Lihat
                                                             </a>
                                                         @else
                                                             –
                                                         @endif
                                                     </td>
-                                                    <td>
+
+                                                    <!-- Kolom Status -->
+                                                    <td style="width: 8%;">
                                                         @if($pembayaran->status_konfirmasi == 'sudah')
-                                                            <span class="badge bg-success">Sudah</span>
+                                                            <span class="badge bg-success rounded-pill px-2 py-1">Sudah</span>
                                                         @else
-                                                            <span class="badge bg-warning text-dark">Belum</span>
+                                                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1">Belum</span>
                                                         @endif
                                                     </td>
                                                 </tr>
@@ -179,13 +196,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-sm">
+                                    <table class="table table-striped table-hover">
                                         <thead>
                                             <tr>
-                                                <th>No</th>
-                                                <th>Biaya</th>
-                                                <th class="text-end">Jumlah</th>
-                                                <th>Tagihan ID</th>
+                                                <th style="width: 5%;">No</th>
+                                                <th style="width: 60%;">Biaya</th>
+                                                <th style="width: 20%;" class="text-end">Jumlah</th>
+                                                <th style="width: 15%;">Tagihan ID</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -228,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateButton() {
         if (btn) {
-            btn.disabled = !document.querySelector('.pembayaran-checkbox:checked');
+            btn.disabled = !Array.from(checkboxes).some(cb => cb.checked);
         }
     }
 
@@ -238,5 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateButton();
 });
+
+function popupCenter({ url, title, w, h }) {
+    const left = (screen.width / 2) - (w / 2);
+    const top = (screen.height / 2) - (h / 2);
+    const win = window.open(url, title, `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=${w}, height=${h}, top=${top}, left=${left}`);
+    win.focus();
+}
 </script>
 @endpush

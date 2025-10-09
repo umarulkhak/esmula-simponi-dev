@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.0.2",
         "andes2912/indobank": "^0.9.0",
+        "barryvdh/laravel-dompdf": "^3.1",
         "guzzlehttp/guzzle": "^7.2",
         "laracasts/flash": "^3.2",
         "laravel-lang/common": "^4.0",
@@ -15,7 +16,9 @@
         "laravel/tinker": "^2.7",
         "laravel/ui": "^4.0",
         "laravelcollective/html": "^6.3",
-        "nicolaslopezj/searchable": "^1.13"
+        "milon/barcode": "^12.0",
+        "nicolaslopezj/searchable": "^1.13",
+        "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",
