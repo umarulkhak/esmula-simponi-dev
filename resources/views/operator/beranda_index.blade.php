@@ -18,7 +18,7 @@
 |   - $title → Judul halaman
 |   - $stats → array statistik (total_siswa, pembayaran_bulan_ini, tingkat_pembayaran, tunggakan)
 |   - $kelasStats → array data per kelas
-|   - $recentPayments → array pembayaran terbaru
+|   - $recentPayments → collection pembayaran terbaru (dari DB::table)
 |   - $recentActivities → array aktivitas terbaru
 |
 --}}
@@ -218,11 +218,11 @@
                                         <tbody>
                                             @forelse($recentPayments as $payment)
                                                 <tr>
-                                                    <td class="fw-semibold">{{ $payment->siswa->nama }}</td>
-                                                    <td>{{ $payment->siswa->kelas }}</td>
+                                                    <td class="fw-semibold">{{ $payment->siswa ? $payment->siswa->nama : '-' }}</td>
+                                                    <td>{{ $payment->siswa ? $payment->siswa->kelas : '-' }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($payment->tanggal_tagihan)->translatedFormat('F Y') }}</td>
                                                     <td class="fw-bold">Rp {{ number_format($payment->total_biaya, 0, ',', '.') }}</td>
-                                                    <td>{{ $payment->created_at->format('d-m-Y') }}</td>
+                                                    <td>{{ \Carbon\Carbon::parse($payment->created_at)->format('d-m-Y') }}</td>
                                                     <td>
                                                         @if($payment->status === 'lunas')
                                                             <span class="badge bg-label-success">Lunas</span>
@@ -269,7 +269,6 @@
                                 <div class="timeline">
                                     @forelse($recentActivities as $activity)
                                         <div class="timeline-item mb-3">
-                                            {{-- ✅ PERBAIKAN: Ganti $activity->type → $activity['type'] --}}
                                             <div class="timeline-point bg-{{ $activity['type'] === 'payment' ? 'success' : ($activity['type'] === 'student' ? 'primary' : ($activity['type'] === 'reminder' ? 'warning' : 'danger')) }}"></div>
                                             <div class="timeline-content">
                                                 <h6 class="mb-1">{{ $activity['title'] }}</h6>
@@ -287,7 +286,7 @@
                             </div>
                         </div>
                     </div>
-
+                </div>
             </div>
         </div>
     </div>
@@ -337,7 +336,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Chart
         const ctx = document.getElementById('paymentChart').getContext('2d');
         const paymentChart = new Chart(ctx, {
             type: 'bar',
