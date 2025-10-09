@@ -138,7 +138,9 @@ class WaliMuridTagihanController extends Controller
 
         // Generate QR Code (tanpa size() — biar default)
         $qrData = "NISN:{$siswa->nisn}|INV:{$invNumber}|TGL:" . now()->format('Y-m-d');
-        $qrCode = QrCode::format('png')->generate($qrData);
+        /** @var \SimpleSoftwareIO\QrCode\Generator $qr */
+        $qr = QrCode::format('png');
+        $qrCode = $qr->generate($qrData);
         $qrCodeBase64 = base64_encode($qrCode);
 
         // Load logo (hardcode jika perlu)
