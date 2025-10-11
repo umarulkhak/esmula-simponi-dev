@@ -7,11 +7,8 @@
         {{-- === HEADER === --}}
         <div class="d-flex justify-content-between align-items-center mb-4 p-2">
             <div>
-                <h5 class="fw-bold mb-0">Halo, Bapak/Ibu 👋</h5>
+                <h5 class="fw-bold mb-0">Halo, {{ Auth::user()->name ?? 'Bapak/Ibu' }} 👋</h5>
                 <small class="text-muted">Dashboard Wali Murid</small>
-            </div>
-            <div class="avatar avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
             </div>
         </div>
 
@@ -20,7 +17,7 @@
             <div class="col-6">
                 <div class="card shadow-sm border-0 rounded-3 bg-light-primary">
                     <div class="card-body p-3 text-center">
-                        <div class="fs-5 fw-bold text-primary">2</div>
+                        <div class="fs-5 fw-bold text-primary">{{ $jumlahAnak }}</div>
                         <small class="text-muted">Anak</small>
                     </div>
                 </div>
@@ -28,7 +25,7 @@
             <div class="col-6">
                 <div class="card shadow-sm border-0 rounded-3 bg-light-warning">
                     <div class="card-body p-3 text-center">
-                        <div class="fs-5 fw-bold text-warning">3</div>
+                        <div class="fs-5 fw-bold text-warning">{{ $tagihanBelumLunas }}</div>
                         <small class="text-muted">Tagihan Belum Lunas</small>
                     </div>
                 </div>
@@ -45,55 +42,64 @@
             </a>
         </div>
 
-        {{-- === INFO PENTING === --}}
+        {{-- === PAPAN INFORMASI (COMING SOON) === --}}
         <div class="card shadow-sm border-0 rounded-3 mb-4">
             <div class="card-header bg-white border-0 py-2">
                 <h6 class="mb-0 fw-bold">
-                    <i class="bx bx-bell text-info me-1"></i> Info Penting
+                    <i class="bx bx-news text-info me-1"></i> Papan Informasi
                 </h6>
             </div>
-            <div class="card-body p-3">
-                <ul class="list-unstyled small mb-0">
-                    <li class="mb-2">🗓️ Pembayaran SPP Oktober dibuka 1–10 Oktober 2025.</li>
-                    <li class="mb-2">📱 Konfirmasi pembayaran bisa lewat menu ini.</li>
-                    <li>📞 Butuh bantuan? Hubungi operator via WhatsApp.</li>
-                </ul>
+            <div class="card-body p-3 text-center">
+                <div class="py-4">
+                    <i class="bx bx-hourglass fs-1 text-muted mb-2"></i>
+                    <p class="mb-0 text-muted">Fitur ini sedang dalam pengembangan</p>
+                    <small class="text-muted">Coming Soon</small>
+                </div>
             </div>
         </div>
 
         {{-- === RIWAYAT PEMBAYARAN TERBARU === --}}
         <div class="card shadow-sm border-0 rounded-3">
             <div class="card-header bg-white border-0 py-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Riwayat Terbaru</h6>
-                <a href="{{ route('wali.pembayaran.index') }}" class="small text-decoration-none">Lihat semua</a>
+                <h6 class="mb-0 fw-bold">Riwayat Pembayaran Terbaru</h6>
+                <a href="{{ route('wali.tagihan.index') }}" class="small text-decoration-none">Lihat semua</a>
             </div>
             <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item border-0 px-3 py-2">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="fw-medium">SPP September</div>
-                                <small class="text-muted">15 Sep 2025</small>
+                @if($riwayatPembayaran->isNotEmpty())
+                    <div class="list-group list-group-flush">
+                        @foreach($riwayatPembayaran as $pembayaran)
+                            <div class="list-group-item border-0 px-3 py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-medium">
+                                            {{ $pembayaran->tagihan?->judul_dinamis ?? 'Tagihan #' . $pembayaran->tagihan_id }}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->format('d M Y') : '-' }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">
+                                            {{ 'Rp ' . number_format($pembayaran->jumlah_dibayar, 0, ',', '.') }}
+                                        </div>
+                                        @if($pembayaran->status_konfirmasi === 'sudah')
+                                            <small class="badge bg-success">Sudah</small>
+                                        @elseif($pembayaran->status_konfirmasi === 'ditolak')
+                                            <small class="badge bg-danger">Ditolak</small>
+                                        @else
+                                            <small class="badge bg-warning">Menunggu</small>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <div class="fw-bold">Rp 350.000</div>
-                                <small class="badge bg-warning">Menunggu</small>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
-                    <div class="list-group-item border-0 px-3 py-2">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="fw-medium">Uang Gedung</div>
-                                <small class="text-muted">10 Sep 2025</small>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold">Rp 1.500.000</div>
-                                <small class="badge bg-success">Sudah</small>
-                            </div>
-                        </div>
+                @else
+                    <div class="text-center py-3 text-muted">
+                        <i class="bx bx-receipt fs-2 mb-1"></i>
+                        <p class="mb-0">Belum ada riwayat pembayaran</p>
                     </div>
-                </div>
+                @endif
             </div>
         </div>
 

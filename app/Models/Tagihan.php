@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Tagihan extends Model
 {
@@ -76,6 +77,31 @@ class Tagihan extends Model
             'angsur' => 'Angsur',
             default => ucfirst($this->status),
         };
+    }
+
+
+    /**
+     * Accessor untuk menampilkan judul tagihan yang ramah pengguna.
+     * Contoh: "Budi - SPP (September 2025)"
+     */
+    protected function judulDinamis(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Nama siswa
+                $namaSiswa = $this->siswa?->nama ?? 'Siswa';
+
+                // Keterangan (misal: "SPP", "Uang Seragam")
+                $keterangan = $this->keterangan ?: 'Tagihan';
+
+                // Periode dari tanggal_tagihan
+                $periode = $this->tanggal_tagihan
+                    ? \Carbon\Carbon::parse($this->tanggal_tagihan)->format('F Y')
+                    : 'Tanpa Tanggal';
+
+                return "{$namaSiswa} - {$keterangan} ({$periode})";
+            }
+        );
     }
 
 }
