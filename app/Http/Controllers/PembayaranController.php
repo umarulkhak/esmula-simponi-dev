@@ -172,6 +172,11 @@ class PembayaranController extends Controller
 
         $siswa = $pembayaran->tagihan?->siswa;
 
+        if (!$siswa) {
+            flash('Data siswa tidak ditemukan.')->error();
+            return redirect()->route('pembayaran.index');
+        }
+
         // Ambil SEMUA pembayaran dari siswa ini
         $pembayaranGroup = Pembayaran::whereHas('tagihan', function ($q) use ($siswa) {
                 $q->where('siswa_id', $siswa->id);
@@ -187,9 +192,22 @@ class PembayaranController extends Controller
             ->get();
 
         $totalDibayar = $pembayaranGroup->sum('jumlah_dibayar');
-        $totalTagihan = $pembayaranGroup->sum(function ($pembayaran) {
-            return $pembayaran->tagihan?->tagihanDetails->sum('jumlah_biaya') ?? 0;
+
+        // Hitung total tagihan & status di controller (hindari N+1 di view)
+        $tagihanSiswa = Tagihan::with('tagihanDetails')
+            ->where('siswa_id', $siswa->id)
+            ->get();
+
+        $totalTagihan = $tagihanSiswa->sum(function ($tagihan) {
+            return $tagihan->tagihanDetails->sum('jumlah_biaya');
         });
+
+        $belumLunas = $tagihanSiswa->where('status', '!=', 'lunas')->count();
+        $totalTagihanSiswa = $tagihanSiswa->count();
+        $statusPembayaran = 'Belum Bayar';
+        if ($totalTagihanSiswa > 0) {
+            $statusPembayaran = $belumLunas == 0 ? 'Lunas' : 'Angsur';
+        }
 
         return view('operator.pembayaran_show', [
             'model' => $pembayaran,
@@ -197,6 +215,7 @@ class PembayaranController extends Controller
             'siswa' => $siswa,
             'totalDibayar' => $totalDibayar,
             'totalTagihan' => $totalTagihan,
+            'statusPembayaran' => $statusPembayaran,
             'route' => ['pembayaran.update.multiple'],
         ]);
     }
@@ -209,28 +228,64 @@ class PembayaranController extends Controller
 
     public function updateMultiple(Request $request)
     {
-        // Tambahkan import: use Illuminate\Http\Request;
         $request->validate([
             'pembayaran_ids' => 'required|array|min:1',
             'pembayaran_ids.*' => 'exists:pembayarans,id'
         ]);
 
-        DB::transaction(function () use ($request) {
-            foreach ($request->pembayaran_ids as $id) {
-                $pembayaran = Pembayaran::findOrFail($id);
-                if ($pembayaran->status_konfirmasi == 'belum') {
-                    $pembayaran->status_konfirmasi = 'sudah';
-                    $pembayaran->tanggal_konfirmasi = now();
-                    $pembayaran->user_id = auth()->id();
-                    $pembayaran->save();
+        $pembayaranList = Pembayaran::with([
+            'tagihan.siswa',
+            'tagihan.tagihanDetails',
+        ])->whereIn('id', $request->pembayaran_ids)->get();
 
+        $yangDikonfirmasi = $pembayaranList->filter(fn($p) => $p->status_konfirmasi === 'belum');
+
+        if ($yangDikonfirmasi->isEmpty()) {
+            flash('Tidak ada pembayaran baru yang perlu dikonfirmasi.')->warning();
+            return back();
+        }
+
+        DB::transaction(function () use ($yangDikonfirmasi) {
+            foreach ($yangDikonfirmasi as $pembayaran) {
+                $pembayaran->status_konfirmasi = 'sudah';
+                $pembayaran->tanggal_konfirmasi = now();
+                $pembayaran->user_id = auth()->id();
+                $pembayaran->save();
+
+                if ($pembayaran->tagihan) {
                     $pembayaran->tagihan->status = 'lunas';
                     $pembayaran->tagihan->save();
                 }
             }
         });
 
-        flash('Pembayaran terpilih berhasil dikonfirmasi.')->success();
+        // Bangun pesan informatif
+        $jumlah = $yangDikonfirmasi->count();
+        $totalNominal = $yangDikonfirmasi->sum('jumlah_dibayar');
+        $daftarSiswa = $yangDikonfirmasi
+            ->map(fn($p) => optional($p->tagihan)->siswa?->nama ?? 'Siswa Tidak Diketahui')
+            ->unique()
+            ->values();
+
+        $namaSiswa = $daftarSiswa->count() === 1
+            ? $daftarSiswa[0]
+            : $daftarSiswa->count() . ' siswa';
+
+        $daftarBiaya = $yangDikonfirmasi
+            ->flatMap(fn($p) => optional($p->tagihan)?->tagihanDetails?->pluck('nama_biaya') ?? collect([]))
+            ->unique()
+            ->take(5)
+            ->implode(', ');
+
+        $sisaBiaya = $yangDikonfirmasi->flatMap(fn($p) => optional($p->tagihan)?->tagihanDetails?->pluck('nama_biaya') ?? collect([]))->count() > 5
+            ? ' + beberapa lainnya'
+            : '';
+
+        $pesan = "Berhasil mengkonfirmasi {$jumlah} pembayaran dari {$namaSiswa} "
+               . "untuk biaya: {$daftarBiaya}{$sisaBiaya}. "
+               . "Total nominal: " . formatRupiah($totalNominal) . ".";
+
+        flash($pesan)->success();
         return back();
     }
 }
