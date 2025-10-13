@@ -31,7 +31,7 @@ class BerandaWaliController extends Controller
             return Pembayaran::where('wali_id', $user->id)
                 ->with('tagihan.siswa')
                 ->orderBy('created_at', 'desc')
-                ->limit(5)
+                ->limit(3)
                 ->get();
         });
 

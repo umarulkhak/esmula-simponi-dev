@@ -56,6 +56,7 @@ Route::prefix('operator')
         // Resource routes
         Route::resource('user', UserController::class);
         Route::resource('wali', WaliController::class);
+        Route::delete('siswa/mass-destroy', [SiswaController::class, 'massDestroy'])->name('siswa.massDestroy');
         Route::resource('siswa', SiswaController::class);
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);

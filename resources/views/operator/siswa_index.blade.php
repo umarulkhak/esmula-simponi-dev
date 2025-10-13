@@ -3,12 +3,13 @@
 | VIEW: Operator - Daftar Siswa
 |--------------------------------------------------------------------------
 | Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan daftar siswa dengan fitur pencarian, aksi, dan pagination.
+| Tujuan      : Menampilkan daftar siswa dengan fitur pencarian, aksi, pagination, dan hapus massal.
 | Fitur       :
 |   - Tombol tambah data
 |   - Pencarian real-time (berdasarkan nama siswa)
 |   - Tabel responsif dengan aksi: Edit, Detail, Hapus (icon-only style)
 |   - Pagination Bootstrap
+|   - Hapus beberapa data sekaligus & hapus semua
 |   - Responsif di mobile
 |   - UX Friendly: konfirmasi hapus, ikon, spacing konsisten
 |   - Clean Code: struktur blade rapi, komentar jelas
@@ -65,11 +66,34 @@
                     {!! Form::close() !!}
                 </div>
 
+                {{-- === SECTION: TOMBOL AKSI MASSAL === --}}
+                <div class="mb-3 d-flex gap-2 flex-wrap">
+                    <form id="form-mass-delete" method="POST" style="display: none;">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="ids" id="selected-ids">
+                    </form>
+
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-selected" disabled>
+                        <i class="bx bx-trash me-1"></i> Hapus Terpilih
+                    </button>
+
+                    @if($models->total() > 0 && !request('q'))
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-all"
+                                onclick="confirmDeleteAll()">
+                            <i class="bx bx-trash me-1"></i> Hapus Semua
+                        </button>
+                    @endif
+                </div>
+
                 {{-- === SECTION: TABEL DATA === --}}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="table-siswa">
                         <thead class="table-light">
                             <tr>
+                                <th class="text-center" style="width: 5%">
+                                    <input type="checkbox" id="select-all">
+                                </th>
                                 <th class="text-center" style="width: 5%">#</th>
                                 <th>Wali Murid</th>
                                 <th>Nama Siswa</th>
@@ -83,6 +107,9 @@
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="siswa_ids[]" value="{{ $item->id }}" class="siswa-checkbox">
+                                    </td>
                                     <td class="text-center fw-medium">
                                         {{ $loop->iteration + ($models->firstItem() - 1) }}
                                     </td>
@@ -136,7 +163,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
+                                    <td colspan="9" class="text-center py-5">
                                         <i class="bx bx-empty fs-1 text-muted mb-2 d-block"></i>
                                         <p class="text-muted mb-0">Data tidak ditemukan.</p>
                                         @if(request('q'))
@@ -189,8 +216,78 @@
 
 @push('scripts')
 <script>
-    // Optional: Fokus ke input pencarian saat halaman load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.siswa-checkbox');
+        const deleteSelectedBtn = document.getElementById('btn-delete-selected');
+        const formMassDelete = document.getElementById('form-mass-delete');
+        const selectedIdsInput = document.getElementById('selected-ids');
+
+        // Toggle semua checkbox
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateDeleteButton();
+            });
+        }
+
+        // Update status tombol hapus terpilih
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateDeleteButton);
+        });
+
+        function updateDeleteButton() {
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            deleteSelectedBtn.disabled = !anyChecked;
+        }
+
+        // Submit hapus terpilih
+        deleteSelectedBtn.addEventListener('click', function () {
+            const selected = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            if (selected.length === 0) return;
+
+            if (!confirm(`⚠️ Yakin ingin menghapus ${selected.length} data siswa yang dipilih?`)) {
+                return;
+            }
+
+            selectedIdsInput.value = JSON.stringify(selected);
+            formMassDelete.action = "{{ route($routePrefix . '.massDestroy') }}";
+            formMassDelete.submit();
+        });
+
+        // Fungsi hapus semua
+        window.confirmDeleteAll = function () {
+            if (!confirm('⚠️ YAKIN ingin menghapus SEMUA data siswa? Tindakan ini tidak bisa dibatalkan!')) {
+                return;
+            }
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ route($routePrefix . '.massDestroy') }}";
+            form.style.display = 'none';
+
+            const csrf = document.createElement('input');
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            const method = document.createElement('input');
+            method.name = '_method';
+            method.value = 'DELETE';
+            form.appendChild(method);
+
+            const allFlag = document.createElement('input');
+            allFlag.name = 'delete_all';
+            allFlag.value = '1';
+            form.appendChild(allFlag);
+
+            document.body.appendChild(form);
+            form.submit();
+        };
+
+        // Fokus ke input pencarian saat halaman load
         const searchInput = document.getElementById('q');
         if (searchInput && !searchInput.value) {
             searchInput.focus();
