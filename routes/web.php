@@ -61,6 +61,7 @@ Route::prefix('operator')
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);
         Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
+        Route::delete('pembayaran/mass-destroy', [PembayaranController::class, 'massDestroy'])->name('pembayaran.massDestroy');
         Route::resource('pembayaran', PembayaranController::class);
         Route::resource('banksekolah', BankSekolahController::class);
 
