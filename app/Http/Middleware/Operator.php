@@ -4,19 +4,30 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class Operator
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-     */
     public function handle(Request $request, Closure $next)
-{
-if ($request->user()->akses == 'operator' || $request->user()->akses == 'admin' ) {
-return $next($request); }
-abort(403, 'Akses khusus Operator'); }
+    {
+        // Pastikan user sudah login
+        if (!Auth::check()) {
+            return redirect('login');
+        }
+
+        $akses = Auth::user()->akses;
+
+        // Izinkan operator dan admin
+        if ($akses === 'operator' || $akses === 'admin') {
+            return $next($request);
+        }
+
+        // Jika user adalah wali, redirect ke dashboard wali
+        if ($akses === 'wali') {
+            return redirect()->route('wali.beranda')->with('error', 'Anda tidak memiliki akses ke halaman operator.');
+        }
+
+        // Jika akses tidak dikenali (misal: null, atau role lain)
+        abort(403, 'Akses ditolak. Hanya operator dan admin yang diizinkan.');
+    }
 }

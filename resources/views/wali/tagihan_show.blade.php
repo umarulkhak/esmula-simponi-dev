@@ -12,7 +12,8 @@
 
 @section('content')
 
-@include('wali.modals.modal_cara_bayar_atm')
+@include('wali.modals.modal_cara_bayar_atm', ['banksekolah' => $banksekolah])
+@include('wali.modals.modal_cara_bayar_manual', ['siswa' => $siswa])
 
 <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -31,9 +32,7 @@
                 {{-- Foto Siswa --}}
                 <div class="flex-shrink-0 text-center mb-3 mb-md-0">
                     @php
-                        $fotoPath = ($siswa->foto && \Storage::exists($siswa->foto))
-                            ? \Storage::url($siswa->foto)
-                            : asset('images/no-image.png');
+                        $fotoPath = $siswa->foto ? \Storage::url($siswa->foto) : asset('images/no-image.png');
                     @endphp
                     <img
                         src="{{ $fotoPath }}"
@@ -211,11 +210,13 @@
                             <ul class="mb-2 small">
                                 <li>
                                     <a href="#" class="text-decoration-none text-primary fs-7" data-bs-toggle="modal" data-bs-target="#modalCaraBayarATM">
-                                        Cara Bayar via ATM
+                                        Cara Bayar via ATM / m-Banking.
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#" class="text-decoration-none text-primary fs-7">Cara Bayar via Internet Banking</a>
+                                    <a href="#" class="text-decoration-none text-primary fs-7" data-bs-toggle="modal" data-bs-target="#modalCaraBayarManual">
+                                        Cara Bayar Langsung di Sekolah
+                                    </a>
                                 </li>
                             </ul>
                             <p class="text-muted small fs-7">

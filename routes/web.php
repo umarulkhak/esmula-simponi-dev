@@ -33,13 +33,14 @@ use App\Http\Controllers\WaliMuridTagihanController;
 // ============================================================================
 // Rute Publik
 // ============================================================================
-Route::get('/', fn () => view('welcome')); // Halaman landing page
+
+// Redirect halaman utama ke login khusus wali
+Route::get('/', function () {
+    return redirect()->route('login.wali');
+});
 
 // Rute autentikasi bawaan Laravel (login, register, password reset, dll)
 Auth::routes();
-
-// Halaman setelah login (default)
-Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Login khusus wali
 Route::get('login-wali', [LoginController::class, 'showLoginFormWali'])->name('login.wali');
@@ -61,7 +62,6 @@ Route::prefix('operator')
         Route::resource('walisiswa', WaliSiswaController::class);
         Route::resource('biaya', BiayaController::class);
         Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
-        // Di dalam group operator
         Route::post('/tagihan/{tagihan}/bayar', [TagihanController::class, 'bayar'])->name('tagihan.bayar');
         Route::delete('pembayaran/mass-destroy', [PembayaranController::class, 'massDestroy'])->name('pembayaran.massDestroy');
         Route::resource('pembayaran', PembayaranController::class);
@@ -71,7 +71,7 @@ Route::prefix('operator')
         Route::get('/tagihan/export', [TagihanController::class, 'export'])->name('tagihan.export');
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])->name('tagihan.destroySiswa');
 
-        // Rute debug hanya di environment local (lebih aman)
+        // Rute debug hanya di environment local
         if (app()->environment('local')) {
             Route::get('/debug-tagihan', function () {
                 $model = new \App\Models\Tagihan();
@@ -110,12 +110,15 @@ Route::prefix('wali')
     });
 
 // ============================================================================
-// Rute Admin (masih kosong, siap diisi)
+// Rute Admin
 // ============================================================================
 Route::prefix('admin')
     ->middleware(['auth', 'auth.admin'])
     ->group(function () {
-        // Tambahkan rute admin di sini
+        // Contoh rute admin dasar (bisa dikembangkan)
+        Route::get('dashboard', function () {
+            return view('admin.dashboard');
+        })->name('admin.dashboard');
     });
 
 // ============================================================================

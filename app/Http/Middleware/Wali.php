@@ -4,20 +4,26 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class Wali
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-     */
-    public function handle(Request $request, Closure $next) {
-if ($request->user()->akses == 'wali') {
-return $next($request); }
+    public function handle(Request $request, Closure $next)
+    {
+        // 1. Pastikan user sudah login
+        if (!Auth::check()) {
+            return redirect('login-wali');
+        }
 
-abort(403, 'Akses khusus wali murid'); 
-}
+        // 2. Ambil nilai akses
+        $akses = Auth::user()->akses;
+
+        // 3. Cek apakah akses = 'wali'
+        if ($akses === 'wali') {
+            return $next($request);
+        }
+
+        // 4. Jika bukan wali, tampilkan pesan error
+        abort(403, 'Akses khusus wali murid — Anda login sebagai: ' . ($akses ?? 'tidak diketahui'));
+    }
 }

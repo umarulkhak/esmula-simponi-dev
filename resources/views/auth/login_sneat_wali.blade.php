@@ -146,7 +146,7 @@
                 </div>
               </form>
 
-              <!-- Register Link -->
+              {{-- <!-- Register Link -->
               @if (Route::has('register'))
                 <p class="text-center">
                   <span>Belum punya akun?</span>
@@ -154,7 +154,7 @@
                     <span class="text-dark">Buat Akun</span>
                   </a>
                 </p>
-              @endif
+              @endif --}}
             </div>
           </div>
           <!-- /Login Card -->
