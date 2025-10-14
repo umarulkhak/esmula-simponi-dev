@@ -101,11 +101,15 @@
           <div class="col-12 col-lg-6">
             <label for="foto" class="form-label fw-semibold">Foto Siswa</label>
             <div class="border rounded p-3 mb-2 bg-light text-center">
-              <img id="preview-foto"
-                   src="{{ $model->foto && \Storage::exists($model->foto) ? \Storage::url($model->foto) : asset('images/no-image.png') }}"
-                   alt="Preview Foto Siswa"
-                   class="img-fluid rounded"
-                   style="max-height: 200px; object-fit: cover; width: auto; max-width: 100%; border: 1px dashed #ccc;">
+                @php
+                    $fotoPath = $model->foto ? \Storage::url($model->foto) : asset('images/no-image.png');
+                @endphp
+              <img
+                src="{{ $fotoPath }}"
+                onerror="this.src='{{ asset('images/no-image.png') }}'"
+                alt="Foto Profil {{ $model->nama }}"
+                class="img-fluid rounded shadow-sm"
+                style="max-width: 100%; max-height: 200px; object-fit: cover; border: 3px solid #f8f9fa;">
             </div>
             {!! Form::file('foto', [
               'class' => 'form-control' . ($errors->has('foto') ? ' is-invalid' : ''),
