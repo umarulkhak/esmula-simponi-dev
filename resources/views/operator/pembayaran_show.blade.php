@@ -14,7 +14,7 @@
                             </h5>
                             <div class="d-flex flex-wrap gap-3 mt-1">
                                 <span class="badge bg-light text-dark"><i class="bx bx-id-card me-1"></i> {{ $siswa->nisn }}</span>
-                                <span class="badge bg-light text-dark"><i class="bx bx-school me-1"></i> {{ $siswa->kelas }}</span>
+                                <span class="badge bg-light text-dark"><i class="bx bx-compass me-1"></i> {{ $siswa->kelas }}</span>
                                 <span class="badge bg-light text-dark"><i class="bx bx-user me-1"></i> {{ $siswa->wali?->name ?? '–' }}</span>
                             </div>
                         @else
@@ -22,7 +22,7 @@
                             <div class="text-muted">Data tidak tersedia.</div>
                         @endif
                     </div>
-                    <a href="{{ route('pembayaran.index') }}" class="btn btn-outline-light btn-sm">
+                    <a href="{{ route('pembayaran.index') }}" class="btn btn-outline-secondary btn-sm">
                         <i class="bx bx-arrow-back me-1"></i> Kembali
                     </a>
                 </div>
@@ -30,31 +30,40 @@
 
             <div class="card-body">
 
-                {{-- STATUS PEMBAYARAN --}}
+                {{-- STATUS PEMBAYARAN - DIPERBAIKI --}}
                 <div class="row g-4 mb-4">
                     <div class="col-12">
-                        <div class="card border rounded-3">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between flex-wrap gap-3">
-                                    <div class="text-center flex-fill">
-                                        <small class="text-muted d-block">Total Tagihan</small>
-                                        <strong class="text-danger fs-5">{{ formatRupiah($totalTagihan ?? 0) }}</strong>
+                        <div class="card border rounded-3 shadow-sm">
+                            <div class="card-body p-4">
+                                <div class="row g-3 text-center">
+                                    <div class="col-12 col-md-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="bx bx-receipt text-muted fs-4 mb-2"></i>
+                                            <small class="text-muted">Total Tagihan</small>
+                                            <strong class="text-danger fs-5 mt-1">{{ formatRupiah($totalTagihan ?? 0) }}</strong>
+                                        </div>
                                     </div>
-                                    <div class="vr d-none d-md-block"></div>
-                                    <div class="text-center flex-fill">
-                                        <small class="text-muted d-block">Sudah Dibayar</small>
-                                        <strong class="text-success fs-5">{{ formatRupiah($totalDibayar ?? 0) }}</strong>
+                                    <div class="col-12 col-md-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="bx bx-wallet text-muted fs-4 mb-2"></i>
+                                            <small class="text-muted">Sudah Dibayar</small>
+                                            <strong class="text-success fs-5 mt-1">{{ formatRupiah($totalDibayar ?? 0) }}</strong>
+                                        </div>
                                     </div>
-                                    <div class="vr d-none d-md-block"></div>
-                                    <div class="text-center flex-fill">
-                                        <small class="text-muted d-block">Status</small>
-                                            @if($statusPembayaran === 'Lunas')
-                                                <span class="badge bg-success px-3 py-2">Lunas</span>
-                                            @elseif($statusPembayaran === 'Angsur')
-                                                <span class="badge bg-warning text-dark px-3 py-2">Angsur</span>
-                                            @else
-                                                <span class="badge bg-danger px-3 py-2">Belum Bayar</span>
-                                            @endif
+                                    <div class="col-12 col-md-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="bx bx-check-circle text-muted fs-4 mb-2"></i>
+                                            <small class="text-muted">Status</small>
+                                            <div class="mt-1">
+                                                @if($statusPembayaran === 'Lunas')
+                                                    <span class="badge bg-success px-3 py-2 rounded-pill">Lunas</span>
+                                                @elseif($statusPembayaran === 'Angsur')
+                                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Angsur</span>
+                                                @else
+                                                    <span class="badge bg-danger px-3 py-2 rounded-pill">Belum Bayar</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -90,7 +99,8 @@
                                                 <tr>
                                                     <th style="width: 40px;" class="text-center">#</th>
                                                     <th>Tagihan</th>
-                                                    <th>Tanggal</th>
+                                                    <th>Tgl. Bayar</th>
+                                                    <th>Tgl. Konfirmasi</th>
                                                     <th>Metode</th>
                                                     <th>Biaya</th>
                                                     <th class="text-end">Jumlah</th>
@@ -118,6 +128,14 @@
                                                         <td class="align-middle fw-medium">{{ $pembayaran->tagihan_id }}</td>
                                                         <td class="align-middle">
                                                             {{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y') : '–' }}
+                                                        </td>
+                                                        {{-- KOLOM TANGGAL KONFIRMASI --}}
+                                                        <td class="align-middle">
+                                                            @if($pembayaran->tanggal_konfirmasi)
+                                                                {{ \Carbon\Carbon::parse($pembayaran->tanggal_konfirmasi)->translatedFormat('d M Y') }}
+                                                            @else
+                                                                <span class="text-muted">–</span>
+                                                            @endif
                                                         </td>
                                                         <td class="align-middle">
                                                             @php $metode = strtolower($pembayaran->metode_pembayaran); @endphp
@@ -167,7 +185,7 @@
                                             </tbody>
                                             <tfoot class="fw-bold">
                                                 <tr class="bg-light">
-                                                    <td colspan="5" class="text-end py-3">Total Pembayaran:</td>
+                                                    <td colspan="6" class="text-end py-3">Total Pembayaran:</td>
                                                     <td class="text-end py-3">{{ formatRupiah($totalJumlah) }}</td>
                                                     <td></td>
                                                 </tr>
@@ -194,42 +212,54 @@
     </div>
 </div>
 
-{{-- MODAL DETAIL TRANSFER (MODERN) --}}
+{{-- MODAL DETAIL TRANSFER - DIPERBAIKI: LEBAR & PROFESIONAL --}}
 <div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Detail Transfer</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg"> {{-- ✅ modal-lg untuk lebar --}}
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-light py-3 px-4">
+                <h6 class="modal-title fw-bold text-primary"><i class="bx bx-transfer-alt me-1"></i> Detail Transfer</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-0">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <h6 class="fw-bold text-primary mb-2">Rekening Pengirim</h6>
-                        <div class="bg-light p-3 rounded">
-                            <p class="mb-1"><strong>Nama:</strong> <span id="pengirim-nama">–</span></p>
-                            <p class="mb-1"><strong>No Rek:</strong> <span id="pengirim-no">–</span></p>
-                            <p class="mb-0"><strong>Bank:</strong> <span id="pengirim-bank">–</span></p>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Rekening Pengirim & Sekolah dalam 2 kolom -->
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bx bx-user-circle text-primary fs-5 me-2"></i>
+                            <h6 class="mb-0 fw-semibold">Rekening Pengirim</h6>
+                        </div>
+                        <div class="bg-light p-3 rounded-2 h-100">
+                            <p class="mb-1"><i class="bx bx-user me-1 text-muted"></i> <strong>Nama:</strong> <span id="pengirim-nama">–</span></p>
+                            <p class="mb-1"><i class="bx bx-hash me-1 text-muted"></i> <strong>No Rek:</strong> <span id="pengirim-no">–</span></p>
+                            <p class="mb-0"><i class="bx bx-building me-1 text-muted"></i> <strong>Bank:</strong> <span id="pengirim-bank">–</span></p>
                         </div>
                     </div>
-                    <div class="col-12">
-                        <h6 class="fw-bold text-primary mb-2">Rekening Sekolah</h6>
-                        <div class="bg-light p-3 rounded">
-                            <p class="mb-1"><strong>Nama:</strong> <span id="sekolah-nama">–</span></p>
-                            <p class="mb-1"><strong>No Rek:</strong> <span id="sekolah-no">–</span></p>
-                            <p class="mb-0"><strong>Bank:</strong> <span id="sekolah-bank">–</span></p>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bx bx-building-house text-primary fs-5 me-2"></i>
+                            <h6 class="mb-0 fw-semibold">Rekening Sekolah</h6>
+                        </div>
+                        <div class="bg-light p-3 rounded-2 h-100">
+                            <p class="mb-1"><i class="bx bx-user me-1 text-muted"></i> <strong>Nama:</strong> <span id="sekolah-nama">–</span></p>
+                            <p class="mb-1"><i class="bx bx-hash me-1 text-muted"></i> <strong>No Rek:</strong> <span id="sekolah-no">–</span></p>
+                            <p class="mb-0"><i class="bx bx-building me-1 text-muted"></i> <strong>Bank:</strong> <span id="sekolah-bank">–</span></p>
                         </div>
                     </div>
+
+                    <!-- Bukti Pembayaran (full width) -->
                     <div class="col-12">
-                        <h6 class="fw-bold text-primary mb-2">Bukti Pembayaran</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bx bx-image-alt text-primary fs-5 me-2"></i>
+                            <h6 class="mb-0 fw-semibold">Bukti Pembayaran</h6>
+                        </div>
                         <div id="modal-bukti" class="text-center py-2">
-                            –
+                            <span class="text-muted">Tidak ada bukti</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            <div class="modal-footer bg-light border-0 pt-0 pb-3 px-4">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -284,15 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const buktiDiv = document.getElementById('modal-bukti');
             if (buktiUrl) {
                 buktiDiv.innerHTML = `
-                    <img src="${buktiUrl}" alt="Bukti Bayar" class="img-fluid rounded border" style="max-height: 200px; object-fit: cover;">
+                    <div class="border rounded-2 overflow-hidden d-inline-block bg-white p-1">
+                        <img src="${buktiUrl}" alt="Bukti Bayar" class="img-fluid" style="max-height: 250px; object-fit: contain;">
+                    </div>
                     <div class="mt-2">
-                        <a href="${buktiUrl}" target="_blank" class="btn btn-outline-primary btn-sm">
-                            <i class="bx bx-download me-1"></i> Unduh / Lihat Penuh
+                        <a href="${buktiUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bx bx-download me-1"></i> Lihat / Unduh
                         </a>
                     </div>
                 `;
             } else {
-                buktiDiv.innerHTML = '<span class="text-muted">Tidak ada bukti</span>';
+                buktiDiv.innerHTML = '<span class="text-muted">Tidak ada bukti pembayaran</span>';
             }
         });
     }
