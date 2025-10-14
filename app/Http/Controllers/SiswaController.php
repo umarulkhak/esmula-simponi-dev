@@ -29,42 +29,16 @@ use App\Http\Requests\UpdateSiswaRequest;
  */
 class SiswaController extends Controller
 {
-    /**
-     * Prefix path untuk view operator.
-     */
     private string $viewPath = 'operator.';
-
-    /**
-     * Prefix route untuk siswa (tanpa group name prefix).
-     * Contoh: 'siswa.index', 'siswa.create', dll.
-     */
     private string $routePrefix = 'siswa';
-
-    /**
-     * Nama view untuk halaman index.
-     */
     private string $viewIndex = 'siswa_index';
-
-    /**
-     * Nama view untuk form tambah/edit.
-     */
     private string $viewForm = 'siswa_form';
-
-    /**
-     * Nama view untuk halaman detail.
-     */
     private string $viewShow = 'siswa_show';
 
     // =========================================================================
     // READ — Menampilkan Data
     // =========================================================================
 
-    /**
-     * Menampilkan daftar siswa dengan fitur pencarian dan pagination.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\View\View
-     */
     public function index(Request $request)
     {
         $query = Model::with('wali', 'user');
@@ -82,12 +56,6 @@ class SiswaController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan detail data siswa.
-     *
-     * @param  int  $id  ID siswa
-     * @return \Illuminate\View\View
-     */
     public function show(int $id)
     {
         $siswa = Model::findOrFail($id);
@@ -103,11 +71,6 @@ class SiswaController extends Controller
     // CREATE — Form & Penyimpanan
     // =========================================================================
 
-    /**
-     * Menampilkan form tambah data siswa.
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
         return view($this->viewPath . $this->viewForm, [
@@ -120,18 +83,12 @@ class SiswaController extends Controller
         ]);
     }
 
-    /**
-     * Menyimpan data siswa baru ke database.
-     *
-     * @param  \App\Http\Requests\StoreSiswaRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(StoreSiswaRequest $request)
     {
         $validated = $request->validated();
 
         if ($request->hasFile('foto')) {
-            $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
+            $validated['foto'] = $request->file('foto')->store('foto_siswa', 'public');
         }
 
         if ($request->filled('wali_id')) {
@@ -150,12 +107,6 @@ class SiswaController extends Controller
     // UPDATE — Form & Pembaruan
     // =========================================================================
 
-    /**
-     * Menampilkan form edit data siswa.
-     *
-     * @param  int  $id  ID siswa
-     * @return \Illuminate\View\View
-     */
     public function edit(int $id)
     {
         $siswa = Model::findOrFail($id);
@@ -170,13 +121,6 @@ class SiswaController extends Controller
         ]);
     }
 
-    /**
-     * Memperbarui data siswa di database.
-     *
-     * @param  \App\Http\Requests\UpdateSiswaRequest  $request
-     * @param  int  $id  ID siswa
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(UpdateSiswaRequest $request, int $id)
     {
         $siswa = Model::findOrFail($id);
@@ -187,7 +131,7 @@ class SiswaController extends Controller
 
         if ($request->hasFile('foto')) {
             $this->deleteFotoIfExists($siswa->foto);
-            $validated['foto'] = $request->file('foto')->store('public/foto_siswa');
+            $validated['foto'] = $request->file('foto')->store('foto_siswa', 'public');
         }
 
         $validated['wali_status'] = $request->filled('wali_id') ? 'ok' : null;
@@ -209,12 +153,6 @@ class SiswaController extends Controller
     // DELETE — Penghapusan Data
     // =========================================================================
 
-    /**
-     * Menghapus satu data siswa dari database.
-     *
-     * @param  int  $id  ID siswa
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function destroy(int $id)
     {
         $siswa = Model::findOrFail($id);
@@ -228,20 +166,6 @@ class SiswaController extends Controller
         return redirect()->route($this->routePrefix . '.index');
     }
 
-    /**
-     * Menghapus beberapa atau semua data siswa sekaligus.
-     *
-     * Fitur:
-     * - Hapus berdasarkan daftar ID (dikirim sebagai JSON string)
-     * - Hapus semua data siswa (dengan konfirmasi ekstra di frontend)
-     * - Tampilkan daftar nama & kelas yang dihapus di flash message
-     * - Batasi tampilan daftar jika >10 data (hindari overload UI)
-     * - Aman: hanya hapus data yang benar-benar ada di database
-     * - Otomatis hapus file foto terkait
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function massDestroy(Request $request)
     {
         $request->validate([
@@ -301,15 +225,6 @@ class SiswaController extends Controller
         return redirect()->route($this->routePrefix . '.index');
     }
 
-    /**
-     * Format daftar siswa untuk ditampilkan di flash message.
-     *
-     * Jika jumlah siswa ≤ 10: tampilkan semua.
-     * Jika > 10: tampilkan 10 pertama + "dan X lainnya".
-     *
-     * @param  \Illuminate\Support\Collection  $siswas
-     * @return string
-     */
     private function formatDaftarSiswa($siswas): string
     {
         $maxTampil = 10;
@@ -331,11 +246,6 @@ class SiswaController extends Controller
     // HELPER — Fungsi Bantuan Internal
     // =========================================================================
 
-    /**
-     * Ambil daftar wali murid untuk dropdown select.
-     *
-     * @return \Illuminate\Support\Collection
-     */
     private function getWaliOptions()
     {
         return User::where('akses', 'wali')
@@ -343,16 +253,10 @@ class SiswaController extends Controller
                    ->pluck('name', 'id');
     }
 
-    /**
-     * Hapus file foto dari storage jika path-nya valid dan ada.
-     *
-     * @param  string|null  $path
-     * @return void
-     */
     private function deleteFotoIfExists(?string $path): void
     {
-        if (!empty($path) && Storage::exists($path)) {
-            Storage::delete($path);
+        if (!empty($path) && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
         }
     }
 }

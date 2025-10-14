@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Siswa;
+use Illuminate\Support\Facades\Storage;
 
 class WaliMuridSiswaController extends Controller
 {
@@ -35,12 +36,10 @@ class WaliMuridSiswaController extends Controller
     {
         $model = Siswa::findOrFail($id);
 
-        // Pastikan data milik wali yang sedang login
         if ($model->wali_id !== Auth::id()) {
             abort(403, 'Akses ditolak.');
         }
 
-        // Kirim data ke view form edit
         return view('wali.siswa_form', [
             'model' => $model,
             'title' => 'Edit Data Siswa',
@@ -60,18 +59,19 @@ class WaliMuridSiswaController extends Controller
 
         $request->validate([
             'nama' => 'required|string|max:255',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         $data = $request->only(['nama']);
 
-        // Handle upload foto
         if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada
-            if ($model->foto && \Storage::exists($model->foto)) {
-                \Storage::delete($model->foto);
+            // Hapus foto lama
+            if ($model->foto && Storage::disk('public')->exists($model->foto)) {
+                Storage::disk('public')->delete($model->foto);
             }
-            $data['foto'] = $request->file('foto')->store('siswa/foto', 'public');
+
+            // Simpan ke folder: foto_siswa (tanpa 'public/' di depan)
+            $data['foto'] = $request->file('foto')->store('foto_siswa', 'public');
         }
 
         $model->update($data);

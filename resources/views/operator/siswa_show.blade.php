@@ -19,7 +19,7 @@
                     {{-- === SECTION: FOTO PROFILE === --}}
                     <div class="col-12 col-md-4 text-center">
                         @php
-                            $fotoPath = $model->foto && \Storage::exists($model->foto)
+                            $fotoPath = $model->foto
                                 ? \Storage::url($model->foto)
                                 : asset('images/no-image.png');
                         @endphp
@@ -27,6 +27,7 @@
                         <div class="mb-3 position-relative d-inline-block">
                             <img
                                 src="{{ $fotoPath }}"
+                                onerror="this.src='{{ asset('images/no-image.png') }}'"
                                 alt="Foto Profil {{ $model->nama }}"
                                 class="img-fluid rounded shadow-sm"
                                 style="max-width: 100%; max-height: 280px; object-fit: cover; border: 3px solid #f8f9fa;">
@@ -229,21 +230,17 @@
 
 {{--
 |--------------------------------------------------------------------------
-| VIEW: Detail Siswa
+| VIEW: Detail Siswa (Diperbaiki untuk Path Foto Lama)
 |--------------------------------------------------------------------------
 | Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan detail lengkap profil siswa dengan tampilan user-friendly.
-| Fitur       :
-|   - Foto profil besar dengan fallback
-|   - Layout 2 kolom (foto + detail) di desktop, 1 kolom di mobile
-|   - Ikon & warna untuk setiap informasi
-|   - Badge status visual
-|   - Tombol aksi: Edit & Kembali
-|   - Animasi halus saat load
+| Perbaikan   :
+|   - Foto dengan path 'public/foto_siswa/...' kini ditampilkan dengan benar
+|   - Gunakan fallback otomatis jika gambar broken
+|   - Tidak lagi mengecek Storage::exists() yang salah disk
 |
 | Variabel yang diharapkan:
 |   - $model      → Instance model Siswa
 |   - $title      → Judul halaman (opsional)
-|   - $routePrefix → Prefix route (misal: 'siswa')
+|   - $routePrefix → Prefix route (misal: 'wali.siswa')
 |
 --}}

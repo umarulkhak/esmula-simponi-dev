@@ -12,32 +12,30 @@
             </div>
             <div class="card-body">
 
-                {{-- === FOTO PROFIL (Bukan Lingkaran) === --}}
-                <div class="text-center mb-4">
-                    @php
-                        $fotoPath = $model->foto && \Storage::exists($model->foto)
-                            ? \Storage::url($model->foto)
-                            : asset('images/no-image.png');
-                    @endphp
+                {{-- === SECTION: FOTO PROFILE === --}}
+                    <div class="col-12 text-center">
+                        @php
+                            $fotoPath = $model->foto ? \Storage::url($model->foto) : asset('images/no-image.png');
+                        @endphp
 
-                    <div class="position-relative d-inline-block mb-3">
-                        <img
-                            src="{{ $fotoPath }}"
-                            alt="Foto {{ $model->nama }}"
-                            class="img-fluid rounded shadow-sm"
-                            style="max-width: 180px; height: auto; border: 2px solid #f8f9fa;">
-                        <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow-sm">
-                            <i class="bx bx-image text-muted fs-6"></i>
+                        <div class="mb-3 position-relative d-inline-block">
+                            <img
+                                src="{{ $fotoPath }}"
+                                onerror="this.src='{{ asset('images/no-image.png') }}'"
+                                alt="Foto Profil {{ $model->nama }}"
+                                class="img-fluid rounded shadow-sm"
+                                style="max-width: 100%; max-height: 280px; object-fit: cover; border: 3px solid #f8f9fa;">
+                            <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-2 shadow-sm">
+                                <i class="bx bx-image text-muted fs-5"></i>
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <span class="badge bg-label-primary rounded-pill px-3 py-1">
+                                ID: #{{ $model->id }}
+                            </span>
                         </div>
                     </div>
-
-                    <h5 class="fw-bold mb-1">{{ $model->nama }}</h5>
-                    <p class="text-muted mb-0">
-                        <span class="badge bg-label-{{ $model->kelas == 'VII' ? 'success' : ($model->kelas == 'VIII' ? 'warning' : 'danger') }} rounded-pill px-2 py-1">
-                            Kelas {{ $model->kelas }}
-                        </span>
-                    </p>
-                </div>
 
                 {{-- === DETAIL DATA (TETAP SAMA) === --}}
                 <div class="row g-3">
