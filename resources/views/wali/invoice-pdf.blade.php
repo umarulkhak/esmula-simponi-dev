@@ -269,7 +269,7 @@
                                 @if ($pembayaran && $pembayaran->metode_pembayaran)
                                     {{ ucfirst(strtolower($pembayaran->metode_pembayaran)) }}
                                 @else
-                                    Belum Bayar
+                                    Manual
                                 @endif
                             </td>
                         </tr>
