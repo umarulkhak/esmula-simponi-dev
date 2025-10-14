@@ -323,6 +323,41 @@ class TagihanController extends Controller
         }
     }
 
+    /**
+     * Menandai tagihan sebagai LUNAS oleh operator.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Tagihan  $tagihan
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bayar(Request $request, Tagihan $tagihan)
+    {
+        $request->validate([
+            'tanggal_bayar' => 'required|date',
+        ]);
+
+        $tanggalBayar = Carbon::parse($request->tanggal_bayar);
+
+        // Simpan ke tabel pembayaran
+        Pembayaran::create([
+            'tagihan_id'       => $tagihan->id,
+            'siswa_id'         => $tagihan->siswa_id,
+            'wali_id'          => $tagihan->siswa->wali_id,
+            'user_id'          => auth()->id(),
+            'tanggal_bayar'    => $tanggalBayar,
+            'tanggal_konfirmasi' => $tanggalBayar,
+            'jumlah_dibayar'   => $tagihan->tagihanDetails->sum('jumlah_biaya'),
+            'status_konfirmasi'=> 'sudah',
+        ]);
+
+        // Update status tagihan
+        $tagihan->update(['status' => 'lunas']);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Tagihan berhasil ditandai sebagai LUNAS.');
+    }
+
     // =======================
     // HELPER PRIVATE
     // =======================
