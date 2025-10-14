@@ -223,21 +223,13 @@ class TagihanController extends Controller
     {
         $siswa = Siswa::findOrFail($id);
 
-        $query = Tagihan::with('tagihanDetails')
-            ->where('siswa_id', $siswa->id);
+        // Ambil SEMUA tagihan milik siswa ini
+        $tagihan = Tagihan::with('tagihanDetails')
+            ->where('siswa_id', $siswa->id)
+            ->orderBy('tanggal_tagihan', 'desc')
+            ->get();
 
-        if ($bulan = $request->input('bulan')) {
-            $query->whereMonth('tanggal_tagihan', $bulan);
-        }
-
-        if ($tahun = $request->input('tahun')) {
-            $tahun = strlen($tahun) === 2 ? '20' . $tahun : $tahun;
-            $query->whereYear('tanggal_tagihan', $tahun);
-        }
-
-        $tagihan = $query->orderBy('tanggal_tagihan', 'desc')->get();
-
-        // ✅ Ambil tagihan default: pertama yang belum lunas, atau ambil yang pertama
+        // Ambil tagihan default (untuk form pembayaran)
         $tagihanDefault = $tagihan->firstWhere('status', '!=', 'lunas') ?? $tagihan->first();
 
         $pembayaran = Pembayaran::whereIn('tagihan_id', $tagihan->pluck('id'))
@@ -248,7 +240,7 @@ class TagihanController extends Controller
         return view($this->viewPath . $this->viewShow, [
             'siswa'          => $siswa,
             'tagihan'        => $tagihan,
-            'tagihanDefault' => $tagihanDefault, // ✅ Hanya kirim tagihan default (untuk hidden field)
+            'tagihanDefault' => $tagihanDefault,
             'pembayaran'     => $pembayaran,
             'title'          => "Daftar Tagihan {$siswa->nama}",
         ]);

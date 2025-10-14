@@ -231,13 +231,9 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <a href="{{ route($routePrefix . '.show', [
-                                                    $item->siswa->id,
-                                                    'bulan' => $item->tanggal_tagihan->format('m'),
-                                                    'tahun' => $item->tanggal_tagihan->format('Y'),
-                                                ]) }}"
-                                                   class="btn btn-outline-primary btn-sm px-3"
-                                                   title="Lihat detail">
+                                                <<a href="{{ route($routePrefix . '.show', $item->siswa->id) }}"
+                                                    class="btn btn-outline-primary btn-sm px-3"
+                                                    title="Lihat semua tagihan">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
                                                 <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
