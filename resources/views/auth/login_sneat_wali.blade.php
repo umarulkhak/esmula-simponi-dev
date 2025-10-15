@@ -33,8 +33,8 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('sneat/assets/img/logo-fav.png') }}" />
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com  " />
+    <link rel="preconnect" href="https://fonts.gstatic.com  " crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
       rel="stylesheet"
@@ -57,9 +57,6 @@
     <!-- Helpers -->
     <script src="{{ asset('sneat/assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('sneat/assets/js/config.js') }}"></script>
-
-
-
   </head>
 
   <body>
@@ -108,14 +105,7 @@
                 </div>
 
                 <div class="mb-3 form-password-toggle">
-                  <div class="d-flex justify-content-between">
-                    <label class="form-label" for="password">Password</label>
-                    @if (Route::has('password.request'))
-                      <a href="{{ route('password.request') }}">
-                        <small class="text-dark">Lupa Password?</small>
-                      </a>
-                    @endif
-                  </div>
+                  <label class="form-label" for="password">Password</label>
                   <div class="input-group input-group-merge">
                     <input
                       type="password"
@@ -146,15 +136,23 @@
                 </div>
               </form>
 
-              {{-- <!-- Register Link -->
-              @if (Route::has('register'))
-                <p class="text-center">
-                  <span>Belum punya akun?</span>
-                  <a href="{{ route('register') }}">
-                    <span class="text-dark">Buat Akun</span>
-                  </a>
-                </p>
-              @endif --}}
+
+              @if (Route::has('password.request'))
+                <div class="text-center">
+                  <small class="text-muted">
+                    Lupa password?
+                    <a href="#" class="fw-bold text-decoration-none text-dark">
+                      Reset sandi
+                    </a>
+                  </small>
+                </div>
+              @endif
+
+              <div class="text-center mt-1">
+                <small class="text-muted">
+                  <a href="https://umarulkhak.github.io/gitprofile/" class="fw-bold text-dark">© {{ date('Y') }} SMP Muhammadiyah Larangan • Simponi</a>
+                </small>
+              </div>
             </div>
           </div>
           <!-- /Login Card -->

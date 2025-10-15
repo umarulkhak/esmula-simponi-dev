@@ -51,7 +51,7 @@
                         <a class="dropdown-item" href="{{ route('wali.tagihan.index') }}">
                             <span class="d-flex align-items-center">
                                 <i class="fa fa-credit-card me-2"></i>
-                                <span>Billing</span>
+                                <span>Tagihan</span>
                             </span>
                         </a>
                     </li>
