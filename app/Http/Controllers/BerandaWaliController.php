@@ -17,7 +17,7 @@ class BerandaWaliController extends Controller
         // Jumlah anak (siswa yang dimiliki wali)
         $jumlahAnak = $user->siswa()->count();
 
-        // Hitung tagihan yang BELUM LUNAS (akurat: total bayar < total tagihan)
+        // Hitung tagihan yang BELUM LUNAS
         $tagihanBelumLunas = Cache::remember("tagihan_belum_lunas_wali_{$userId}", now()->addMinutes(1), function () use ($user) {
             $siswaIds = $user->siswa()->pluck('id');
             if ($siswaIds->isEmpty()) {
