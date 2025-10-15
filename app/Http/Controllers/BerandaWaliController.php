@@ -17,19 +17,47 @@ class BerandaWaliController extends Controller
         // Jumlah anak (siswa yang dimiliki wali)
         $jumlahAnak = $user->siswa()->count();
 
-        // Tagihan yang belum lunas (belum ada pembayaran dengan status 'sudah')
-        $tagihanBelumLunas = Cache::remember("tagihan_belum_lunas_wali_{$userId}", now()->addMinutes(10), function () use ($user) {
-            return Tagihan::waliSiswa()
-                ->whereDoesntHave('pembayaran', function ($query) {
-                    $query->where('status_konfirmasi', 'sudah');
-                })
-                ->count();
+        // Hitung tagihan yang BELUM LUNAS (akurat: total bayar < total tagihan)
+        $tagihanBelumLunas = Cache::remember("tagihan_belum_lunas_wali_{$userId}", now()->addMinutes(1), function () use ($user) {
+            $siswaIds = $user->siswa()->pluck('id');
+            if ($siswaIds->isEmpty()) {
+                return 0;
+            }
+
+            $tagihanList = Tagihan::whereIn('siswa_id', $siswaIds)
+                ->with(['tagihanDetails', 'pembayaran'])
+                ->get();
+
+            $belumLunasCount = 0;
+            foreach ($tagihanList as $tagihan) {
+                $totalTagihan = $tagihan->tagihanDetails->sum('jumlah_biaya');
+                $totalDibayarDikonfirmasi = $tagihan->pembayaran
+                    ->where('status_konfirmasi', 'sudah')
+                    ->sum('jumlah_dibayar');
+
+                if ($totalDibayarDikonfirmasi < $totalTagihan) {
+                    $belumLunasCount++;
+                }
+            }
+
+            return $belumLunasCount;
         });
 
-        // Riwayat pembayaran terbaru (maks 5)
-        $riwayatPembayaran = Cache::remember("riwayat_pembayaran_wali_{$userId}", now()->addMinutes(5), function () use ($user) {
-            return Pembayaran::where('wali_id', $user->id)
-                ->with('tagihan.siswa')
+        // Riwayat pembayaran terbaru — ambil via siswa (lebih akurat)
+        $riwayatPembayaran = Cache::remember("riwayat_pembayaran_wali_{$userId}", now()->addMinutes(1), function () use ($user) {
+            $siswaIds = $user->siswa()->pluck('id');
+            if ($siswaIds->isEmpty()) {
+                return collect();
+            }
+
+            $tagihanIds = Tagihan::whereIn('siswa_id', $siswaIds)->pluck('id');
+            if ($tagihanIds->isEmpty()) {
+                return collect();
+            }
+
+            return Pembayaran::whereIn('tagihan_id', $tagihanIds)
+                ->where('status_konfirmasi', 'sudah')
+                ->with(['tagihan.siswa'])
                 ->orderBy('created_at', 'desc')
                 ->limit(3)
                 ->get();

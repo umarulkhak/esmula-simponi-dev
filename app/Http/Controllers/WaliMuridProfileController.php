@@ -38,18 +38,40 @@ class WaliMuridProfileController extends Controller
         ]);
     }
 
-
     public function update(Request $request, $id)
     {
         $user = Model::findOrFail($id);
 
-        $validated = $request->validate([
+        // Aturan validasi dasar
+        $rules = [
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'nohp'     => 'required|string|unique:users,nohp,' . $user->id,
-            'password' => 'nullable|string|min:6|confirmed',
-        ]);
+        ];
 
+        // Tambahkan aturan password hanya jika diisi
+        if ($request->filled('password')) {
+            $rules['password'] = 'string|min:6|confirmed';
+        }
+
+        // Pesan error kustom dalam bahasa Indonesia
+        $messages = [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'name.string'   => 'Nama lengkap harus berupa teks.',
+            'name.max'      => 'Nama lengkap maksimal :max karakter.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email'   => 'Format email tidak valid.',
+            'email.unique'  => 'Email sudah digunakan oleh pengguna lain.',
+            'nohp.required' => 'Nomor HP wajib diisi.',
+            'nohp.string'   => 'Nomor HP harus berupa teks.',
+            'nohp.unique'   => 'Nomor HP sudah digunakan oleh pengguna lain.',
+            'password.min'  => 'Password minimal :min karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
+
+        // Hash password hanya jika diisi
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -59,7 +81,7 @@ class WaliMuridProfileController extends Controller
         $namaLama = $user->name;
         $user->update($validated);
 
-        $pesan = "✅ User berhasil diperbarui";
+        $pesan = "✅ Profil berhasil diperbarui";
         $pesan .= ($namaLama !== $validated['name'])
             ? " ({$namaLama} → {$validated['name']})"
             : ": {$validated['name']}";

@@ -1,94 +1,88 @@
 {{--
 |--------------------------------------------------------------------------
-| VIEW: Wali - Lihat Profil
+| VIEW: Wali - Lihat Profil (Mobile-Pro)
 |--------------------------------------------------------------------------
-| Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan profil wali murid dalam mode read-only.
+| Penulis     : Umar Ulkhak (diperbarui untuk UX mobile profesional)
+| Tujuan      : Menampilkan profil wali murid dalam mode read-only, optimal di HP.
 | Fitur       :
-|   - Tampilan profil sederhana & rapi
-|   - Data user ditampilkan di card
-|   - Tombol Edit untuk menuju ke form
-|   - Responsif di desktop & mobile
-|   - Clean Code
+|   - Desain minimalis & fokus
+|   - Tombol aksi besar & mudah dijangkau
+|   - Informasi terstruktur dengan jarak lega
+|   - Visual bersih tanpa elemen berlebihan
+|   - Mendukung dark mode (jika layout Sneat mendukung)
 --}}
 
 @extends('layouts.app_sneat_wali')
 
 @section('content')
-<div class="row">
-    <div class="col-12 mx-auto">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bx bx-user me-2"></i>Profil Saya</h5>
-                <a href="{{ route('wali.profile.edit', auth()->id()) }}" class="btn btn-warning btn-sm">
-                    <i class="bx bx-edit me-1"></i>Edit Profil
-                </a>
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <!-- Header dengan tombol edit di pojok kanan atas -->
+        <div class="card-header bg-white py-4 position-relative">
+            <h5 class="mb-0 fw-bold text-dark">
+                <i class="bx bx-user-circle me-2"></i>Profil Saya
+            </h5>
+            <a href="{{ route('wali.profile.edit', auth()->id()) }}" class="btn btn-primary btn-sm position-absolute top-50 end-0 translate-middle-y me-3 px-3">
+                <i class="bx bx-edit me-1"></i>Edit
+            </a>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Nama sebagai highlight utama -->
+            <div class="text-center mb-4 pb-3 border-bottom">
+                <h5 class="fw-bold mb-1">{{ $model->name }}</h5>
+                <span class="badge bg-label-info px-3 py-1">
+                    {{ ucfirst($model->akses ?? 'Wali Murid') }}
+                </span>
             </div>
-            <div class="card-body">
 
-                <!-- Opsional: Avatar (bisa dikembangkan nanti) -->
-                <!--
-                <div class="text-center mb-4">
-                    <div class="avatar avatar-xl mb-3">
-                        <span class="avatar-initial rounded-circle bg-label-primary fs-3">{{ strtoupper(substr($model->name, 0, 1)) }}</span>
-                    </div>
-                    <h6 class="mb-1">{{ $model->name }}</h6>
-                    <small class="text-muted">{{ ucfirst($model->akses) }}</small>
-                </div>
-                -->
+            <!-- Daftar Informasi Profil -->
+            <div class="profile-info-list">
 
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-user-circle text-muted me-2"></i>
-                        <span class="fw-medium text-body">Nama Lengkap</span>
+                <!-- Email -->
+                <div class="d-flex align-items-start mb-4">
+                    <div class="icon-box bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                        <i class="bx bx-envelope text-muted fs-5"></i>
                     </div>
-                    <p class="mb-0 ms-4">{{ $model->name }}</p>
+                    <div>
+                        <small class="text-muted fw-medium">Email</small>
+                        <p class="mb-0 fw-medium">{{ $model->email }}</p>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-envelope text-muted me-2"></i>
-                        <span class="fw-medium text-body">Email</span>
+                <!-- No. HP -->
+                <div class="d-flex align-items-start mb-4">
+                    <div class="icon-box bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                        <i class="bx bx-phone text-muted fs-5"></i>
                     </div>
-                    <p class="mb-0 ms-4">{{ $model->email }}</p>
+                    <div>
+                        <small class="text-muted fw-medium">Nomor HP</small>
+                        <p class="mb-0 fw-medium">{{ $model->nohp ?? '–' }}</p>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-phone text-muted me-2"></i>
-                        <span class="fw-medium text-body">No. HP</span>
+                <!-- Tanggal Daftar -->
+                <div class="d-flex align-items-start mb-4">
+                    <div class="icon-box bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                        <i class="bx bx-calendar-plus text-muted fs-5"></i>
                     </div>
-                    <p class="mb-0 ms-4">{{ $model->nohp ?? '–' }}</p>
+                    <div>
+                        <small class="text-muted fw-medium">Terdaftar Sejak</small>
+                        <p class="mb-0 fw-medium">{{ $model->created_at->translatedFormat('d F Y') }}</p>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-shield text-muted me-2"></i>
-                        <span class="fw-medium text-body">Akses</span>
+                <!-- Terakhir Diperbarui -->
+                <div class="d-flex align-items-start">
+                    <div class="icon-box bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                        <i class="bx bx-time-five text-muted fs-5"></i>
                     </div>
-                    <p class="mb-0 ms-4">
-                        <span class="badge bg-label-info">{{ ucfirst($model->akses) }}</span>
-                    </p>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-calendar-plus text-muted me-2"></i>
-                        <span class="fw-medium text-body">Terdaftar Sejak</span>
+                    <div>
+                        <small class="text-muted fw-medium">Terakhir Diperbarui</small>
+                        <p class="mb-0 fw-medium">{{ $model->updated_at->diffForHumans() }}</p>
                     </div>
-                    <p class="mb-0 ms-4">{{ $model->created_at->translatedFormat('d F Y') }}</p>
-                </div>
-
-                <div class="mb-0">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bx bx-time-five text-muted me-2"></i>
-                        <span class="fw-medium text-body">Terakhir Diperbarui</span>
-                    </div>
-                    <p class="mb-0 ms-4">{{ $model->updated_at->diffForHumans() }}</p>
                 </div>
 
             </div>
         </div>
     </div>
-</div>
 @endsection
