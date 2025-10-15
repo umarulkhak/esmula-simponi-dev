@@ -23,10 +23,12 @@ class WaliMuridSiswaController extends Controller
 
     public function show($id)
     {
-        $model = Siswa::with(['wali', 'user'])->findOrFail($id);
+        // Hanya cari di antara siswa milik wali ini
+        $model = Auth::user()->siswa()->with(['wali', 'user'])->find($id);
 
-        if ($model->wali_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke data ini.');
+        if (!$model) {
+            return redirect()->route('wali.siswa.index')
+                ->with('error', 'Anda tidak memiliki akses ke data siswa ini.');
         }
 
         return view('wali.siswa_show', compact('model'));
@@ -34,10 +36,11 @@ class WaliMuridSiswaController extends Controller
 
     public function edit($id)
     {
-        $model = Siswa::findOrFail($id);
+        $model = Auth::user()->siswa()->find($id);
 
-        if ($model->wali_id !== Auth::id()) {
-            abort(403, 'Akses ditolak.');
+        if (!$model) {
+            return redirect()->route('wali.siswa.index')
+                ->with('error', 'Akses ditolak. Anda hanya bisa mengelola data anak Anda sendiri.');
         }
 
         return view('wali.siswa_form', [
@@ -51,10 +54,11 @@ class WaliMuridSiswaController extends Controller
 
     public function update(Request $request, $id)
     {
-        $model = Siswa::findOrFail($id);
+        $model = Auth::user()->siswa()->find($id);
 
-        if ($model->wali_id !== Auth::id()) {
-            abort(403, 'Akses ditolak.');
+        if (!$model) {
+            return redirect()->route('wali.siswa.index')
+                ->with('error', 'Akses ditolak. Anda hanya bisa memperbarui data anak Anda sendiri.');
         }
 
         $request->validate([
@@ -65,18 +69,15 @@ class WaliMuridSiswaController extends Controller
         $data = $request->only(['nama']);
 
         if ($request->hasFile('foto')) {
-            // Hapus foto lama
             if ($model->foto && Storage::disk('public')->exists($model->foto)) {
                 Storage::disk('public')->delete($model->foto);
             }
-
-            // Simpan ke folder: foto_siswa (tanpa 'public/' di depan)
             $data['foto'] = $request->file('foto')->store('foto_siswa', 'public');
         }
 
         $model->update($data);
 
         return redirect()->route('wali.siswa.index')
-                        ->with('success', 'Data siswa berhasil diperbarui.');
+            ->with('success', 'Data siswa berhasil diperbarui.');
     }
 }
