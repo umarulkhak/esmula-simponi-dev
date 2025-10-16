@@ -1,287 +1,162 @@
-{{--
-|--------------------------------------------------------------------------
-| VIEW: Operator - Beranda Dashboard
-|--------------------------------------------------------------------------
-| Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan dashboard operator dengan statistik, grafik, dan aktivitas terbaru.
-| Fitur       :
-|   - Statistik ringkas (total siswa, pembayaran, tingkat pembayaran, tunggakan)
-|   - Grafik statistik pembayaran (Chart.js)
-|   - Ringkasan per kelas (VII, VIII, IX) dengan status pembayaran
-|   - Daftar pembayaran terbaru
-|   - Log aktivitas sistem
-|   - Tombol aksi: export laporan, buat tagihan baru, tambah siswa
-|   - Responsif di desktop & mobile
-|   - Clean Code: struktur blade rapi, komentar jelas
-|
-| Variabel yang diharapkan dari Controller:
-|   - $title → Judul halaman
-|   - $stats → array statistik (total_siswa, pembayaran_bulan_ini, tingkat_pembayaran, tunggakan)
-|   - $kelasStats → array data per kelas
-|   - $recentPayments → collection pembayaran terbaru (dari DB::table)
-|   - $recentActivities → array aktivitas terbaru
-|
---}}
-
 @extends('layouts.app_sneat')
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-3 p-md-4">
 
-                {{-- === SECTION: HEADER === --}}
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h4 class="fw-bold mb-1">Dashboard Operator</h4>
-                        <p class="text-muted mb-0">Selamat datang di Simponi SMP Muhammadiyah Larangan</p>
+                    {{-- === HEADER === --}}
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-1">Dashboard Operator</h5>
+                            <p class="text-muted mb-0 small">Selamat datang di Simponi SMP Muhammadiyah Larangan</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {{-- <a href="#" class="btn btn-outline-secondary btn-sm px-3">
+                                <i class="bx bx-file me-1"></i> Export
+                            </a> --}}
+                            <a href="{{ route('tagihan.create') }}" class="btn btn-primary btn-sm px-3">
+                                <i class="bx bx-calendar-plus me-1"></i> Tagihan Baru
+                            </a>
+                        </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="bx bx-file me-1"></i> Export Laporan
-                        </a>
-                        <a href="{{ route('tagihan.create') }}" class="btn btn-primary btn-sm">
-                            <i class="bx bx-calendar-plus me-1"></i> Buat Tagihan Baru
-                        </a>
-                    </div>
-                </div>
 
-                {{-- === SECTION: STATS CARDS === --}}
-                <div class="row g-4 mb-4">
-                    <div class="col-12 col-md-6 col-lg-3">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p class="text-muted small mb-1">Total Siswa</p>
-                                        <h4 class="mb-0 fw-bold">{{ number_format($stats['total_siswa']) }}</h4>
-                                        <small class="text-success">+{{ $stats['siswa_baru'] }} siswa baru</small>
-                                    </div>
-                                    <div class="bg-label-primary rounded p-3">
-                                        <i class="bx bx-user fs-4"></i>
+                    {{-- === STATISTIK RINGKAS === --}}
+                    <div class="row g-3 mb-4">
+                        @php
+                            $statsList = [
+                                ['label' => 'Total Siswa', 'value' => number_format($stats['total_siswa']), 'desc' => '+'.$stats['siswa_baru'].' baru', 'color' => 'primary', 'icon' => 'bx-user'],
+                                ['label' => 'Pembayaran Bulan Ini', 'value' => 'Rp '.number_format($stats['pembayaran_bulan_ini'], 0, ',', '.'), 'desc' => '+'.$stats['pertumbuhan_bulan_lalu'].'%', 'color' => 'success', 'icon' => 'bx-credit-card'],
+                                ['label' => 'Tingkat Pembayaran', 'value' => $stats['tingkat_pembayaran'].'%', 'desc' => '+'.$stats['peningkatan_bulan_lalu'].'%', 'color' => 'info', 'icon' => 'bx-trending-up'],
+                                ['label' => 'Tunggakan', 'value' => $stats['tunggakan'], 'desc' => $stats['tagihan_belum_bayar'].' tagihan', 'color' => 'danger', 'icon' => 'bx-error-circle'],
+                            ];
+                        @endphp
+
+                        @foreach($statsList as $item)
+                            <div class="col-6 col-md-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <div class="mb-2">
+                                            <i class="bx {{ $item['icon'] }} text-{{ $item['color'] }} fs-4"></i>
+                                        </div>
+                                        <h6 class="mb-1 fw-bold">{{ $item['value'] }}</h6>
+                                        <p class="text-muted small mb-0">{{ $item['label'] }}</p>
+                                        <small class="{{ strpos($item['desc'], '+') !== false ? 'text-success' : 'text-danger' }} fst-italic">
+                                            {{ $item['desc'] }}
+                                        </small>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
 
-                    <div class="col-12 col-md-6 col-lg-3">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p class="text-muted small mb-1">Pembayaran Bulan Ini</p>
-                                        <h4 class="mb-0 fw-bold">Rp {{ number_format($stats['pembayaran_bulan_ini'], 0, ',', '.') }}</h4>
-                                        <small class="text-success">+{{ $stats['pertumbuhan_bulan_lalu'] }}% dari bulan lalu</small>
-                                    </div>
-                                    <div class="bg-label-success rounded p-3">
-                                        <i class="bx bx-credit-card fs-4"></i>
-                                    </div>
+                    {{-- === RINGKASAN PER KELAS & PEMBAYARAN TERBARU === --}}
+                    <div class="row g-4">
+                        {{-- Ringkasan Per Kelas --}}
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header border-bottom py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-semibold mb-0">Ringkasan Per Kelas</h6>
+                                    <a href="{{ route('siswa.create') }}" class="btn btn-primary btn-sm px-2 py-1">
+                                        <i class="bx bx-user-plus fs-5"></i>
+                                    </a>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-lg-3">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p class="text-muted small mb-1">Tingkat Pembayaran</p>
-                                        <h4 class="mb-0 fw-bold">{{ $stats['tingkat_pembayaran'] }}%</h4>
-                                        <small class="text-success">+{{ $stats['peningkatan_bulan_lalu'] }}% dari bulan lalu</small>
-                                    </div>
-                                    <div class="bg-label-info rounded p-3">
-                                        <i class="bx bx-trending-up fs-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-lg-3">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p class="text-muted small mb-1">Tunggakan</p>
-                                        <h4 class="mb-0 fw-bold">{{ $stats['tunggakan'] }}</h4>
-                                        <small class="text-danger">{{ $stats['tagihan_belum_bayar'] }} tagihan belum dibayar</small>
-                                    </div>
-                                    <div class="bg-label-danger rounded p-3">
-                                        <i class="bx bx-error fs-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- === SECTION: CHARTS & OVERVIEW === --}}
-                <div class="row g-4 mb-4">
-                    {{-- Grafik Statistik Pembayaran --}}
-                    <div class="col-12 col-lg-6">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-bottom">
-                                <h5 class="card-title mb-0">Statistik Pembayaran</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="paymentChart" height="300"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Ringkasan Per Kelas --}}
-                    <div class="col-12 col-lg-6">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Ringkasan Per Kelas</h5>
-                                <a href="{{ route('siswa.create') }}" class="btn btn-primary btn-sm">
-                                    <i class="bx bx-user-plus me-1"></i> Tambah Siswa
-                                </a>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
+                                <div class="card-body pt-3">
                                     @foreach($kelasStats as $kelas)
-                                        <div class="col-12">
-                                            <div class="border rounded p-3">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="fw-semibold mb-0">{{ $kelas['nama'] }}</h6>
-                                                        <small class="text-muted">{{ $kelas['jumlah_siswa'] }} siswa</small>
-                                                    </div>
-                                                    <div class="d-flex gap-2">
-                                                        @if($kelas['lunas'] > 0)
-                                                            <span class="badge bg-label-success rounded-pill px-2 py-1">
-                                                                {{ $kelas['lunas'] }} Lunas
-                                                            </span>
-                                                        @endif
-                                                        @if($kelas['pending'] > 0)
-                                                            <span class="badge bg-label-warning rounded-pill px-2 py-1">
-                                                                {{ $kelas['pending'] }} Pending
-                                                            </span>
-                                                        @endif
-                                                        @if($kelas['belum_bayar'] > 0)
-                                                            <span class="badge bg-label-danger rounded-pill px-2 py-1">
-                                                                {{ $kelas['belum_bayar'] }} Belum
-                                                            </span>
-                                                        @endif
-                                                    </div>
-                                                </div>
+                                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <div>
+                                                <h6 class="fw-medium mb-0">{{ $kelas['nama'] }}</h6>
+                                                <small class="text-muted">{{ $kelas['jumlah_siswa'] }} siswa</small>
+                                            </div>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                @if($kelas['lunas'] > 0)
+                                                    <span class="badge bg-label-success">Lunas: {{ $kelas['lunas'] }}</span>
+                                                @endif
+                                                @if($kelas['pending'] > 0)
+                                                    <span class="badge bg-label-warning">Pending: {{ $kelas['pending'] }}</span>
+                                                @endif
+                                                @if($kelas['belum_bayar'] > 0)
+                                                    <span class="badge bg-label-danger">Belum: {{ $kelas['belum_bayar'] }}</span>
+                                                @endif
                                             </div>
                                         </div>
                                     @endforeach
-                                </div>
 
-                                <div class="row mt-4 pt-3 border-top">
-                                    <div class="col-4 text-center">
-                                        <h5 class="fw-bold text-success">{{ $stats['total_lunas'] }}</h5>
-                                        <small class="text-muted">Total Lunas</small>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <h5 class="fw-bold text-warning">{{ $stats['total_pending'] }}</h5>
-                                        <small class="text-muted">Pending</small>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <h5 class="fw-bold text-danger">{{ $stats['total_belum_bayar'] }}</h5>
-                                        <small class="text-muted">Belum Bayar</small>
+                                    <div class="d-flex justify-content-around mt-3 pt-2 border-top">
+                                        <div class="text-center">
+                                            <div class="fw-bold text-success">{{ $stats['total_lunas'] }}</div>
+                                            <small class="text-muted">Lunas</small>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="fw-bold text-warning">{{ $stats['total_pending'] }}</div>
+                                            <small class="text-muted">Pending</small>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="fw-bold text-danger">{{ $stats['total_belum_bayar'] }}</div>
+                                            <small class="text-muted">Belum Bayar</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {{-- === SECTION: RECENT ACTIVITIES === --}}
-                <div class="row g-4">
-                    {{-- Pembayaran Terbaru --}}
-                    <div class="col-12 col-lg-8">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-bottom">
-                                <h5 class="card-title mb-0">Pembayaran Terbaru</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Siswa</th>
-                                                <th>Kelas</th>
-                                                <th>Bulan</th>
-                                                <th>Jumlah</th>
-                                                <th>Tanggal</th>
-                                                <th>Status</th>
-                                                <th>Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($recentPayments as $payment)
-                                                <tr>
-                                                    <td class="fw-semibold">{{ $payment->siswa ? $payment->siswa->nama : '-' }}</td>
-                                                    <td>{{ $payment->siswa ? $payment->siswa->kelas : '-' }}</td>
-                                                    <td>{{ \Carbon\Carbon::parse($payment->tanggal_tagihan)->translatedFormat('F Y') }}</td>
-                                                    <td class="fw-bold">Rp {{ number_format($payment->total_biaya, 0, ',', '.') }}</td>
-                                                    <td>{{ \Carbon\Carbon::parse($payment->created_at)->format('d-m-Y') }}</td>
-                                                    <td>
-                                                        @if($payment->status === 'lunas')
-                                                            <span class="badge bg-label-success">Lunas</span>
-                                                        @elseif($payment->status === 'baru')
-                                                            <span class="badge bg-label-warning">Pending</span>
-                                                        @else
-                                                            <span class="badge bg-label-danger">Belum Bayar</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <a href="{{ route('tagihan.show', $payment->siswa_id) }}" class="btn btn-outline-secondary btn-sm">
-                                                            <i class="bx bx-show"></i>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="7" class="text-center py-4">
-                                                        <i class="bx bx-receipt fs-1 text-muted mb-2"></i>
-                                                        <p class="text-muted mb-0">Belum ada pembayaran terbaru</p>
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
+                        {{-- Pembayaran Terbaru --}}
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header border-bottom py-3">
+                                    <h6 class="fw-semibold mb-0">Pembayaran Terbaru</h6>
                                 </div>
-
-                                <div class="text-center mt-3">
-                                    <a href="{{ route('tagihan.index') }}" class="btn btn-outline-secondary btn-sm">
-                                        Lihat Semua Pembayaran
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Aktivitas Terbaru --}}
-                    <div class="col-12 col-lg-4">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-bottom">
-                                <h5 class="card-title mb-0">Aktivitas Terbaru</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="timeline">
-                                    @forelse($recentActivities as $activity)
-                                        <div class="timeline-item mb-3">
-                                            <div class="timeline-point bg-{{ $activity['type'] === 'payment' ? 'success' : ($activity['type'] === 'student' ? 'primary' : ($activity['type'] === 'reminder' ? 'warning' : 'danger')) }}"></div>
-                                            <div class="timeline-content">
-                                                <h6 class="mb-1">{{ $activity['title'] }}</h6>
-                                                <p class="text-muted small mb-1">{{ $activity['description'] }}</p>
-                                                <small class="text-muted">{{ $activity['created_at']->diffForHumans() }}</small>
-                                            </div>
-                                        </div>
-                                    @empty
-                                        <div class="text-center py-4">
-                                            <i class="bx bx-history fs-1 text-muted mb-2"></i>
-                                            <p class="text-muted mb-0">Belum ada aktivitas terbaru</p>
-                                        </div>
-                                    @endforelse
+                                <div class="card-body pt-3">
+                                    <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th scope="col">Siswa</th>
+                                                    <th scope="col">Kelas</th>
+                                                    <th scope="col">Status</th>
+                                                    <th scope="col">Jumlah</th>
+                                                    <th scope="col">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($recentPayments as $payment)
+                                                    <tr>
+                                                        <td class="fw-medium">{{ $payment->siswa?->nama ?? '-' }}</td>
+                                                        <td><small>{{ $payment->siswa?->kelas ?? '-' }}</small></td>
+                                                        <td>
+                                                            @php
+                                                                $status = match($payment->status) {
+                                                                    'lunas' => ['text' => 'Lunas', 'color' => 'success'],
+                                                                    'baru' => ['text' => 'Pending', 'color' => 'warning'],
+                                                                    default => ['text' => 'Belum', 'color' => 'danger']
+                                                                };
+                                                            @endphp
+                                                            <span class="badge bg-label-{{ $status['color'] }}">{{ $status['text'] }}</span>
+                                                        </td>
+                                                        <td class="fw-bold">{{ formatRupiah($payment->total_biaya, 0, ',', '.') }}</td>
+                                                        <td>
+                                                            <a href="{{ route('tagihan.show', $payment->siswa_id) }}" class="btn btn-xs btn-outline-secondary p-1">
+                                                                <i class="bx bx-show fs-5"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="text-center py-4 text-muted">
+                                                            <i class="bx bx-receipt fs-2 mb-1"></i><br>
+                                                            Tidak ada data
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <a href="{{ route('tagihan.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                                            Lihat Semua
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -290,91 +165,27 @@
             </div>
         </div>
     </div>
-</div>
 @endsection
 
 @push('styles')
 <style>
-    .timeline {
-        position: relative;
-        padding-left: 30px;
-    }
-
-    .timeline::before {
-        content: '';
-        position: absolute;
-        left: 8px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background-color: #e9ecef;
-    }
-
-    .timeline-item {
-        position: relative;
-        margin-bottom: 20px;
-    }
-
-    .timeline-point {
-        position: absolute;
-        left: -30px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        border: 3px solid #fff;
-    }
-
-    .timeline-content {
-        padding: 12px 16px;
-        background-color: #f8f9fa;
-        border-radius: 8px;
+    /* Optimasi untuk mobile */
+    @media (max-width: 767px) {
+        .card-body {
+            padding: 1rem !important;
+        }
+        .table th,
+        .table td {
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .btn-xs {
+            padding: 0.25rem 0.4rem !important;
+            font-size: 0.75rem !important;
+        }
+        .card-header {
+            padding: 0.75rem 1rem !important;
+        }
     }
 </style>
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('paymentChart').getContext('2d');
-        const paymentChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
-                datasets: [{
-                    label: 'Lunas (%)',
-                    data: [85, 90, 88, 92, 95, 87],
-                    backgroundColor: '#696cff',
-                    borderRadius: 4,
-                    barPercentage: 0.8,
-                }, {
-                    label: 'Belum Bayar (%)',
-                    data: [15, 10, 12, 8, 5, 13],
-                    backgroundColor: '#e9ecef',
-                    borderRadius: 4,
-                    barPercentage: 0.8,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'Persentase (%)'
-                        }
-                    }
-                }
-            }
-        });
-    });
-</script>
 @endpush

@@ -18,14 +18,12 @@ class BerandaOperatorController extends Controller
         $stats = $this->calculateStats($bulan, $tahun);
         $kelasStats = $this->getKelasStatsOptimized($bulan, $tahun);
         $recentPayments = $this->getRecentPaymentsOptimized();
-        $recentActivities = $this->getRecentActivities();
 
         return view('operator.beranda_index', [
             'title' => 'Dashboard Operator',
             'stats' => $stats,
             'kelasStats' => $kelasStats,
             'recentPayments' => $recentPayments,
-            'recentActivities' => $recentActivities,
         ]);
     }
 
@@ -185,33 +183,4 @@ class BerandaOperatorController extends Controller
         return $payments;
     }
 
-    private function getRecentActivities()
-    {
-        return collect([
-            [
-                'title' => 'Pembayaran diterima',
-                'description' => 'Ahmad Rizki - VII',
-                'type' => 'payment',
-                'created_at' => Carbon::now()->subMinutes(5),
-            ],
-            [
-                'title' => 'Siswa baru terdaftar',
-                'description' => 'Maya Putri - VIII',
-                'type' => 'student',
-                'created_at' => Carbon::now()->subHours(2),
-            ],
-            [
-                'title' => 'Reminder dikirim',
-                'description' => '5 siswa dengan tunggakan',
-                'type' => 'reminder',
-                'created_at' => Carbon::now()->subDays(1),
-            ],
-            [
-                'title' => 'Tagihan jatuh tempo',
-                'description' => 'SPP April 2025',
-                'type' => 'due',
-                'created_at' => Carbon::now()->subDays(3),
-            ],
-        ]);
-    }
 }
