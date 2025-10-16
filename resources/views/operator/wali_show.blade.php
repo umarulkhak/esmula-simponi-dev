@@ -24,7 +24,7 @@
                 <h5 class="mb-0">
                     {{ $title ?? 'Detail Wali Murid' }}
                 </h5>
-                <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ route('wali.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa fa-arrow-left me-1"></i> Kembali
                 </a>
             </div>

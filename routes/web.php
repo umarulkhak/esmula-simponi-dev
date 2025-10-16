@@ -99,16 +99,6 @@ Route::prefix('operator')
         Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])
             ->name('pembayaran.update.multiple');
 
-        // Resource controllers
-        Route::resource('user', UserController::class);
-        Route::resource('wali', WaliController::class);
-        Route::resource('siswa', SiswaController::class);
-        Route::resource('walisiswa', WaliSiswaController::class);
-        Route::resource('biaya', BiayaController::class);
-        Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
-        Route::resource('pembayaran', PembayaranController::class);
-        Route::resource('banksekolah', BankSekolahController::class);
-
         // Aksi khusus
         Route::delete('siswa/mass-destroy', [SiswaController::class, 'massDestroy'])
             ->name('siswa.massDestroy');
@@ -120,6 +110,20 @@ Route::prefix('operator')
             ->name('tagihan.destroySiswa');
         Route::get('/tagihan/export', [TagihanController::class, 'export'])
             ->name('tagihan.export');
+        Route::delete('wali/bulk-destroy', [WaliController::class, 'bulkDestroy'])->name('wali.bulk-destroy');
+        Route::delete('wali/destroy-all', [WaliController::class, 'destroyAll'])->name('wali.destroy-all');
+
+        // Resource controllers
+        Route::resource('user', UserController::class);
+        Route::resource('wali', WaliController::class);
+        Route::resource('siswa', SiswaController::class);
+        Route::resource('walisiswa', WaliSiswaController::class);
+        Route::resource('biaya', BiayaController::class);
+        Route::resource('tagihan', TagihanController::class)->except(['edit', 'update']);
+        Route::resource('pembayaran', PembayaranController::class);
+        Route::resource('banksekolah', BankSekolahController::class);
+
+
 
         // Route debug (hanya aktif di local)
         if (app()->environment('local')) {

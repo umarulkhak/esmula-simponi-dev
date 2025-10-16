@@ -222,4 +222,68 @@ class WaliController extends Controller
             'routePrefix' => $this->routePrefix,
         ]);
     }
+
+    /**
+     * Menghapus beberapa wali murid sekaligus.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:users,id',
+        ]);
+
+        // Jangan izinkan hapus akun penting
+        $protectedEmail = 'alkhak24@gmail.com';
+        $idsToKeep = Model::whereIn('id', $request->ids)
+                        ->where('email', $protectedEmail)
+                        ->pluck('id');
+
+        $idsToDelete = array_diff($request->ids, $idsToKeep->toArray());
+
+        if (empty($idsToDelete)) {
+            flash('🔒 Tidak ada data yang bisa dihapus (akun penting dilindungi).')->warning();
+            return redirect()->back();
+        }
+
+        $count = Model::wali()->whereIn('id', $idsToDelete)->delete();
+        flash("🗑️ {$count} wali berhasil dihapus")->success();
+        return redirect()->route($this->routePrefix . '.index');
+    }
+
+    /**
+     * Menghapus semua data wali murid.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroyAll(Request $request)
+    {
+        if ($request->confirm !== 'hapus-semua-wali') {
+            flash('⚠️ Konfirmasi diperlukan untuk menghapus semua data.')->warning();
+            return redirect()->route($this->routePrefix . '.index');
+        }
+
+        $protectedEmail = 'alkhak24@gmail.com';
+
+        // Hitung yang bisa dihapus
+        $countDeletable = Model::wali()->where('email', '!=', $protectedEmail)->count();
+        $countProtected = Model::wali()->where('email', $protectedEmail)->count();
+
+        if ($countDeletable > 0) {
+            Model::wali()->where('email', '!=', $protectedEmail)->delete();
+            flash("✅ {$countDeletable} wali berhasil dihapus.")->success();
+        } else {
+            flash('ℹ️ Tidak ada data wali yang bisa dihapus.')->info();
+        }
+
+        if ($countProtected > 0) {
+            flash("🔒 {$countProtected} akun penting tetap dilindungi.")->warning();
+        }
+
+        return redirect()->route($this->routePrefix . '.index');
+    }
 }

@@ -2,185 +2,187 @@
 |--------------------------------------------------------------------------
 | VIEW: Operator - Daftar Bank Sekolah
 |--------------------------------------------------------------------------
-| Penulis     : Umar Ulkhak (Modifikasi oleh AI Assistant)
-| Tujuan      : Menampilkan daftar rekening bank sekolah dengan fitur pencarian, aksi, dan pagination.
+| Penulis     : Umar Ulkhak (Diperbarui)
+| Tujuan      : Menampilkan daftar rekening bank sekolah dengan tampilan profesional.
 | Fitur       :
-|   - Tombol tambah data
-|   - Pencarian real-time (berdasarkan nama bank atau nomor rekening)
-|   - Tabel responsif dengan aksi: Edit, Hapus (icon-only style)
-|   - Format data bank: nama, nomor, atas nama, kode
-|   - Pagination Bootstrap
-|   - Responsif di mobile
-|   - UX Friendly: konfirmasi hapus, ikon, spacing konsisten
-|   - Clean Code: struktur blade rapi, komentar jelas
+|   - Tombol tambah data (ikon + teks)
+|   - Pencarian berdasarkan nama bank / nomor rekening
+|   - Tabel responsif dengan aksi ikon-only (Edit/Hapus)
+|   - Format data jelas: kode, nama bank, atas nama, nomor rekening
+|   - Responsif & UX-friendly
 |
-| Variabel yang diharapkan dari Controller:
-|   - $title       → Judul halaman
-|   - $routePrefix → Prefix route (misal: 'bank-sekolah')
-|   - $models     → Collection paginate bank sekolah
+| Variabel dari Controller:
+|   - $title, $routePrefix, $models
 |
 --}}
 
 @extends('layouts.app_sneat')
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ $title }}</h5>
-                    <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm">
-                        <i class="bx bx-plus me-1"></i> Tambah Data
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold">{{ $title }}</h5>
+                    <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm px-3">
+                        <i class="fa fa-plus me-1"></i> Tambah Data
                     </a>
                 </div>
+            </div>
+            <div class="card-body">
 
-                <div class="card-body">
-                    {{-- === SECTION: PENCARIAN === --}}
-                    <div class="mb-4">
-                        {!! Form::open([
-                            'route' => $routePrefix . '.index',
-                            'method' => 'GET',
-                            'class' => 'd-flex gap-2 flex-wrap align-items-end'
-                        ]) !!}
-                            <div style="flex: 1; min-width: 200px;">
-                                <label for="q" class="form-label visually-hidden">Cari Bank</label>
-                                <input
-                                    type="text"
-                                    name="q"
-                                    id="q"
-                                    class="form-control"
-                                    placeholder="🔍 Cari Nama Bank / Nomor Rekening..."
-                                    value="{{ request('q') }}"
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <button class="btn btn-outline-primary px-4" type="submit">
-                                <i class="bx bx-search"></i> Cari
+                {{-- Pencarian --}}
+                <div class="mb-4">
+                    {!! Form::open([
+                        'route' => $routePrefix . '.index',
+                        'method' => 'GET',
+                        'class' => 'row g-2'
+                    ]) !!}
+                        <div class="col-md-5">
+                            <input
+                                type="text"
+                                name="q"
+                                class="form-control form-control-sm"
+                                placeholder="Cari nama bank atau nomor rekening..."
+                                value="{{ request('q') }}"
+                                autocomplete="off"
+                            >
+                        </div>
+                        <div class="col-md-7 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm px-3">
+                                <i class="fa fa-search me-1"></i> Cari
                             </button>
                             @if(request('q'))
-                                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary">
-                                    <i class="bx bx-x"></i> Reset
+                                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                                    <i class="fa fa-times me-1"></i> Reset
                                 </a>
                             @endif
-                        {!! Form::close() !!}
-                    </div>
-
-                    {{-- === SECTION: TABEL DATA === --}}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="table-bank">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center" style="width: 5%">#</th>
-                                    <th>Kode</th>
-                                    <th>Nama Bank</th>
-                                    <th>Atas Nama</th>
-                                    <th>Nomor Rekening</th>
-                                    <th class="text-center" style="width: 120px;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($models as $item)
-                                    <tr>
-                                        <td class="text-center fw-medium">
-                                            {{ $loop->iteration + ($models->firstItem() - 1) }}
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-label-secondary rounded-pill px-2 py-1">
-                                                {{ $item->kode ?? '–' }}
-                                            </span>
-                                        </td>
-                                        <td class="fw-semibold">{{ $item->nama_bank }}</td>
-                                        <td>{{ $item->nama_rekening }}</td>
-                                        <td class="font-monospace">{{ $item->nomor_rekening }}</td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-1">
-                                                {{-- Tombol Edit --}}
-                                                <a href="{{ route($routePrefix . '.edit', $item->id) }}"
-                                                   class="btn btn-outline-warning btn-sm d-inline-flex align-items-center justify-content-center"
-                                                   title="Edit Bank: {{ $item->nama_bank }}">
-                                                    <i class="fa fa-edit"></i>
-                                                </a>
-
-                                                {{-- Tombol Hapus --}}
-                                                <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
-                                                      method="POST"
-                                                      class="d-inline"
-                                                      onsubmit="return confirm('⚠️ Yakin ingin menghapus bank: {{ $item->nama_bank }}?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center"
-                                                            title="Hapus Bank: {{ $item->nama_bank }}">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5">
-                                            <i class="bx bx-empty fs-1 text-muted mb-2 d-block"></i>
-                                            <p class="text-muted mb-0">Data tidak ditemukan.</p>
-                                            @if(request('q'))
-                                                <small class="d-block mt-1">
-                                                    <a href="{{ route($routePrefix . '.index') }}" class="text-primary">
-                                                        Lihat semua data
-                                                    </a>
-                                                </small>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {{-- === SECTION: PAGINATION === --}}
-                    @if($models->hasPages())
-                        <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <small class="text-muted">
-                                Menampilkan {{ $models->firstItem() }}–{{ $models->lastItem() }} dari {{ $models->total() }} data
-                            </small>
-                            <div>
-                                {!! $models->links() !!}
-                            </div>
                         </div>
-                    @endif
+                    {!! Form::close() !!}
                 </div>
+
+                {{-- Tabel Data --}}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%">#</th>
+                                <th>Kode</th>
+                                <th>Nama Bank</th>
+                                <th>Atas Nama</th>
+                                <th>Nomor Rekening</th>
+                                <th style="width: 100px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($models as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration + ($models->firstItem() - 1) }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border border-secondary rounded-pill px-2 py-1 fs-6">
+                                            {{ $item->kode ?? '–' }}
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">{{ $item->nama_bank }}</td>
+                                    <td>{{ $item->nama_rekening }}</td>
+                                    <td class="font-monospace">{{ $item->nomor_rekening }}</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            {{-- Edit --}}
+                                            <a href="{{ route($routePrefix . '.edit', $item->id) }}"
+                                               class="btn btn-icon btn-outline-warning btn-sm"
+                                               title="Edit {{ $item->nama_bank }}"
+                                               aria-label="Edit {{ $item->nama_bank }}">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+
+                                            {{-- Hapus --}}
+                                            <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
+                                                  method="POST"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Yakin ingin menghapus bank: {{ $item->nama_bank }}?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="btn btn-icon btn-outline-danger btn-sm"
+                                                        title="Hapus {{ $item->nama_bank }}"
+                                                        aria-label="Hapus {{ $item->nama_bank }}">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        Tidak ada data bank ditemukan.
+                                        @if(request('q'))
+                                            <br><a href="{{ route($routePrefix . '.index') }}" class="text-primary mt-1 d-inline">Lihat semua data</a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Pagination --}}
+                @if($models->hasPages())
+                    <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            Menampilkan {{ $models->firstItem() }}–{{ $models->lastItem() }} dari {{ $models->total() }} data
+                        </small>
+                        <div>
+                            {{ $models->links() }}
+                        </div>
+                    </div>
+                @endif
+
             </div>
         </div>
     </div>
+</div>
 @endsection
 
 @push('styles')
-    <style>
-        /* Hover effect lebih smooth */
-        #table-bank tbody tr:hover {
-            background-color: #f8f9fa;
-            transition: background-color 0.2s ease;
-        }
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f9fafb !important;
+    }
 
-        /* Tombol aksi lebih kotak dan proporsional */
-        .btn-sm.d-inline-flex {
-            width: 36px;
-            height: 36px;
-        }
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
 
-        /* Nomor rekening tampil monospace agar mudah dibaca */
-        .font-monospace {
-            font-family: var(--bs-font-monospace);
-        }
-    </style>
+    .btn-icon i {
+        margin: 0;
+    }
+
+    .btn-icon:hover {
+        transform: scale(1.05);
+        transition: transform 0.1s ease;
+    }
+
+    .font-monospace {
+        font-family: var(--bs-font-monospace);
+        font-size: 0.95rem;
+    }
+</style>
 @endpush
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('q');
-            if (searchInput && !searchInput.value) {
-                searchInput.focus();
-            }
-        });
-    </script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.querySelector('input[name="q"]');
+        if (input && !input.value) input.focus();
+    });
+</script>
 @endpush

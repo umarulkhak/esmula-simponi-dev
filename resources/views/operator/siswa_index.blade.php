@@ -28,10 +28,10 @@
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{{ $title }}</h5>
+                <h5 class="mb-0 fw-semibold">{{ $title }}</h5>
                 {{-- Tombol Tambah — selalu muncul di kanan atas --}}
-                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm">
-                    <i class="bx bx-plus me-1"></i> Tambah Data
+                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm px-3">
+                    <i class="fa fa-plus me-1"></i> Tambah Data
                 </a>
             </div>
             <div class="card-body">
@@ -41,28 +41,28 @@
                     {!! Form::open([
                         'route' => $routePrefix . '.index',
                         'method' => 'GET',
-                        'class' => 'd-flex gap-2 flex-wrap align-items-end'
+                        'class' => 'row g-2'
                     ]) !!}
-                        <div style="flex: 1; min-width: 200px;">
-                            <label for="q" class="form-label visually-hidden">Cari Siswa</label>
+                        <div class="col-md-5">
                             <input
                                 type="text"
                                 name="q"
-                                id="q"
-                                class="form-control"
-                                placeholder="🔍 Cari Nama Siswa..."
+                                class="form-control form-control-sm"
+                                placeholder="Cari nama atau nisn siswa..."
                                 value="{{ request('q') }}"
                                 autocomplete="off"
                             >
                         </div>
-                        <button class="btn btn-outline-primary px-4" type="submit">
-                            <i class="bx bx-search"></i> Cari
-                        </button>
-                        @if(request('q'))
-                            <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary">
-                                <i class="bx bx-x"></i> Reset
-                            </a>
-                        @endif
+                        <div class="col-md-7 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm px-3">
+                                <i class="fa fa-search me-1"></i> Cari
+                            </button>
+                            @if(request('q'))
+                                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                                    <i class="fa fa-times me-1"></i> Reset
+                                </a>
+                            @endif
+                        </div>
                     {!! Form::close() !!}
                 </div>
 
@@ -75,13 +75,13 @@
                     </form>
 
                     <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-selected" disabled>
-                        <i class="bx bx-trash me-1"></i> Hapus Terpilih
+                        <i class="fa fa-trash me-1"></i> Hapus Terpilih
                     </button>
 
                     @if($models->total() > 0 && !request('q'))
-                        <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-all"
+                        <button type="button" class="btn btn-outline-dark btn-sm" id="btn-delete-all"
                                 onclick="confirmDeleteAll()">
-                            <i class="bx bx-trash me-1"></i> Hapus Semua
+                            <i class="fa fa-ban me-1"></i> Hapus Semua
                         </button>
                     @endif
                 </div>
@@ -100,7 +100,7 @@
                                 <th>NISN</th>
                                 <th>Kelas</th>
                                 <th>Angkatan</th>
-                                <th>Dibuat Oleh</th>
+                                <th>Dibuat</th>
                                 <th class="text-center" style="width: 120px;">Aksi</th>
                             </tr>
                         </thead>
@@ -132,14 +132,14 @@
 
                                             {{-- Tombol Detail --}}
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
-                                               class="btn btn-outline-info btn-sm d-inline-flex align-items-center justify-content-center"
+                                               class="btn btn-icon btn-outline-info btn-sm"
                                                title="Lihat Detail Siswa: {{ $item->nama }}">
                                                 <i class="fa fa-eye"></i>
                                             </a>
 
                                             {{-- Tombol Edit --}}
                                             <a href="{{ route($routePrefix . '.edit', $item->id) }}"
-                                               class="btn btn-outline-warning btn-sm d-inline-flex align-items-center justify-content-center"
+                                               class="btn btn-icon btn-outline-warning btn-sm"
                                                title="Edit Data Siswa: {{ $item->nama }}">
                                                 <i class="fa fa-edit"></i>
                                             </a>
@@ -152,7 +152,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
-                                                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center"
+                                                        class="btn btn-icon btn-outline-danger btn-sm"
                                                         title="Hapus Data Siswa: {{ $item->nama }}">
                                                     <i class="fa fa-trash"></i>
                                                 </button>
@@ -164,7 +164,7 @@
                             @empty
                                 <tr>
                                     <td colspan="9" class="text-center py-5">
-                                        <i class="bx bx-empty fs-1 text-muted mb-2 d-block"></i>
+                                        <i class="fa fa-empty fs-1 text-muted mb-2 d-block"></i>
                                         <p class="text-muted mb-0">Data tidak ditemukan.</p>
                                         @if(request('q'))
                                             <small class="d-block mt-1">
@@ -200,17 +200,20 @@
 
 @push('styles')
 <style>
-    /* Optional: hover effect lebih smooth */
-    #table-siswa tbody tr:hover {
-        background-color: #f8f9fa;
-        transition: background-color 0.2s ease;
+    .table-hover tbody tr:hover {
+        background-color: #f9fafb !important;
     }
-
-    /* Optional: tombol aksi lebih kotak dan proporsional */
-    .btn-sm.d-inline-flex {
+    .btn-icon {
         width: 36px;
         height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
     }
+    .btn-icon i { margin: 0; }
+    .btn-icon:hover { transform: scale(1.05); transition: transform 0.1s ease; }
 </style>
 @endpush
 
