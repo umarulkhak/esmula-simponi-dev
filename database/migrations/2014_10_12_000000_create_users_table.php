@@ -20,6 +20,12 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+
+            // Tambahkan kolom tambahan sesuai model & struktur tabel
+            $table->enum('akses', ['wali', 'operator', 'admin'])->nullable(); // Sesuaikan dengan struktur
+            $table->string('nohp', 255)->nullable();
+            $table->dateTime('nohp_verified_at')->nullable();
+
             $table->timestamps();
         });
     }
