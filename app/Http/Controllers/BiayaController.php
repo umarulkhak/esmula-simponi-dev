@@ -6,63 +6,32 @@ use App\Http\Requests\StoreBiayaRequest;
 use App\Http\Requests\UpdateBiayaRequest;
 use App\Models\Biaya as Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Controller untuk manajemen data Biaya.
  *
  * Mengatur operasi CRUD (Create, Read, Update, Delete) data biaya.
- * Menggunakan implicit model binding untuk validasi & keamanan otomatis.
- * Semua flash message menyertakan konteks (nama biaya) untuk UX lebih baik.
+ * Termasuk proteksi penghapusan jika biaya sedang digunakan di tagihan.
  *
  * @author  Umar Ulkhak
- * @date    27 Agustus 2025
- * @updated 5 April 2025 — Tambah dokumentasi & UX improvement
  */
 class BiayaController extends Controller
 {
-    /**
-     * Prefix path untuk view operator.
-     */
     private string $viewPath = 'operator.';
-
-    /**
-     * Prefix route untuk biaya (tanpa group name prefix).
-     * Contoh: 'biaya.index', 'biaya.create', dll.
-     */
     private string $routePrefix = 'biaya';
-
-    /**
-     * Nama view untuk halaman index.
-     */
     private string $viewIndex = 'biaya_index';
-
-    /**
-     * Nama view untuk form tambah/edit.
-     */
     private string $viewForm = 'biaya_form';
-
-    /**
-     * Nama view untuk halaman detail.
-     */
     private string $viewShow = 'biaya_show';
 
-    /**
-     * Menampilkan daftar biaya dengan fitur pencarian.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\View\View
-     */
     public function index(Request $request)
     {
-        // Bangun query dasar dengan relasi user
         $query = Model::with('user');
 
-        // Jika ada pencarian, gunakan searchable trait
         if ($request->filled('q')) {
             $query = $query->search($request->q);
         }
 
-        // Ambil data dengan pagination
         $models = $query->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
@@ -72,11 +41,6 @@ class BiayaController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan form tambah data biaya.
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
         return view($this->viewPath . $this->viewForm, [
@@ -88,31 +52,15 @@ class BiayaController extends Controller
         ]);
     }
 
-    /**
-     * Menyimpan data biaya baru ke database.
-     *
-     * @param  \App\Http\Requests\StoreBiayaRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(StoreBiayaRequest $request)
     {
         $validated = $request->validated();
-
-        // Simpan ke database
         $biaya = Model::create($validated);
 
-        // Flash message sukses dengan nama biaya
         flash("✅ Biaya '{$biaya->nama}' berhasil disimpan")->success();
-
         return redirect()->route($this->routePrefix . '.index');
     }
 
-    /**
-     * Menampilkan form edit data biaya.
-     *
-     * @param  \App\Models\Biaya  $biaya
-     * @return \Illuminate\View\View
-     */
     public function edit(Model $biaya)
     {
         return view($this->viewPath . $this->viewForm, [
@@ -124,24 +72,12 @@ class BiayaController extends Controller
         ]);
     }
 
-    /**
-     * Memperbarui data biaya di database.
-     *
-     * @param  \App\Http\Requests\UpdateBiayaRequest  $request
-     * @param  \App\Models\Biaya  $biaya
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(UpdateBiayaRequest $request, Model $biaya)
     {
         $validated = $request->validated();
-
-        // Simpan nama lama untuk flash message
         $namaLama = $biaya->nama;
-
-        // Update data biaya
         $biaya->update($validated);
 
-        // Flash message sukses dengan detail perubahan
         $pesan = "✅ Biaya berhasil diperbarui";
         if ($namaLama !== $validated['nama']) {
             $pesan .= " ({$namaLama} → {$validated['nama']})";
@@ -150,36 +86,66 @@ class BiayaController extends Controller
         }
 
         flash($pesan)->success();
-
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menghapus data biaya dari database.
-     *
-     * @param  \App\Models\Biaya  $biaya
-     * @return \Illuminate\Http\RedirectResponse
+     * Hapus satu biaya — dengan proteksi jika dipakai di tagihan.
      */
     public function destroy(Model $biaya)
     {
-        // Simpan nama biaya untuk flash message
-        $namaBiaya = $biaya->nama;
+        if ($biaya->tagihans()->exists()) {
+            flash("❌ Tidak bisa menghapus biaya '{$biaya->nama}' karena sedang digunakan di tagihan.")->error();
+            return back();
+        }
 
-        // Hapus data biaya
+        $namaBiaya = $biaya->nama;
         $biaya->delete();
 
-        // Flash message sukses dengan nama biaya
         flash("🗑️ Biaya '{$namaBiaya}' berhasil dihapus")->success();
-
         return redirect()->route($this->routePrefix . '.index');
     }
 
     /**
-     * Menampilkan detail data biaya.
-     *
-     * @param  \App\Models\Biaya  $biaya
-     * @return \Illuminate\View\View
+     * Hapus massal: terpilih atau semua — dengan proteksi integritas data.
      */
+    public function massDestroy(Request $request)
+    {
+        $request->validate([
+            'ids'         => 'nullable|array',
+            'ids.*'       => 'exists:biayas,id',
+            'delete_all'  => 'nullable|boolean',
+        ]);
+
+        if ($request->has('delete_all') && $request->delete_all == '1') {
+            // Ambil semua nama biaya sebelum hapus
+            $deletedNames = Model::pluck('nama')->toArray();
+
+            Model::truncate();
+            flash("🗑️ Semua (" . count($deletedNames) . ") biaya berhasil dihapus: " . implode(', ', $deletedNames))->success();
+        } elseif ($request->filled('ids')) {
+            $ids = $request->ids;
+            $ids = array_map('intval', array_filter($ids, 'is_numeric'));
+            if (empty($ids)) {
+                flash("⚠️ Tidak ada ID valid yang dipilih.")->warning();
+                return back();
+            }
+
+            // Ambil nama biaya yang akan dihapus
+            $deletedNames = Model::whereIn('id', $ids)->pluck('nama')->toArray();
+
+            // Hapus data
+            Model::whereIn('id', $ids)->delete();
+
+            // Tampilkan nama biaya yang dihapus
+            flash("🗑️ " . count($deletedNames) . " biaya berhasil dihapus: " . implode(', ', $deletedNames))->success();
+        } else {
+            flash("⚠️ Tidak ada data yang dipilih untuk dihapus.")->warning();
+        }
+
+        return redirect()->route($this->routePrefix . '.index');
+    }
+
     public function show(Model $biaya)
     {
         return view($this->viewPath . $this->viewShow, [

@@ -24,12 +24,12 @@
 
           {{-- Wali Murid & Nama Siswa — 2 kolom di desktop --}}
           <div class="col-12 col-lg-6">
-            <label for="wali_id" class="form-label fw-semibold">Wali Murid <span class="text-danger">*</span></label>
+            <label for="wali_id" class="form-label fw-semibold">Wali Murid</label>
             {!! Form::select('wali_id', $wali, null, [
               'class' => 'form-select select2' . ($errors->has('wali_id') ? ' is-invalid' : ''),
               'placeholder' => 'Pilih Wali Murid',
               'id' => 'wali_id',
-              'required'
+            //   'required'
             ]) !!}
             @error('wali_id')
               <div class="invalid-feedback d-block">{{ $message }}</div>

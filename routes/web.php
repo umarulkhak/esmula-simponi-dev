@@ -102,6 +102,8 @@ Route::prefix('operator')
         // Aksi khusus
         Route::delete('siswa/mass-destroy', [SiswaController::class, 'massDestroy'])
             ->name('siswa.massDestroy');
+        Route::delete('biaya/mass-destroy', [BiayaController::class, 'massDestroy'])
+            ->name('biaya.massDestroy');
         Route::delete('pembayaran/mass-destroy', [PembayaranController::class, 'massDestroy'])
             ->name('pembayaran.massDestroy');
         Route::post('/tagihan/{tagihan}/bayar', [TagihanController::class, 'bayar'])

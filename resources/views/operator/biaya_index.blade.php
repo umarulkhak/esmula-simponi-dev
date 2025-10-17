@@ -3,21 +3,20 @@
 | VIEW: Operator - Daftar Biaya
 |--------------------------------------------------------------------------
 | Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan daftar biaya dengan fitur pencarian, aksi, dan pagination.
+| Tujuan      : Menampilkan daftar biaya dengan fitur pencarian, aksi massal, pagination.
 | Fitur       :
 |   - Tombol tambah data
-|   - Pencarian real-time (berdasarkan nama biaya)
-|   - Tabel responsif dengan aksi: Edit, Hapus (icon-only style)
+|   - Pencarian berdasarkan nama biaya
+|   - Tabel responsif dengan aksi: Edit, Hapus (icon-only)
+|   - Hapus massal & hapus semua (opsional)
 |   - Format rupiah otomatis
 |   - Pagination Bootstrap
-|   - Responsif di mobile
-|   - UX Friendly: konfirmasi hapus, ikon, spacing konsisten
-|   - Clean Code: struktur blade rapi, komentar jelas
+|   - Responsif & UX friendly
 |
-| Variabel yang diharapkan dari Controller:
-|   - $title       → Judul halaman
-|   - $routePrefix → Prefix route (misal: 'biaya')
-|   - $models     → Collection paginate biaya
+| Variabel dari Controller:
+|   - $title
+|   - $routePrefix (misal: 'operator.biaya')
+|   - $models → paginate collection
 |
 --}}
 
@@ -28,10 +27,9 @@
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{{ $title }}</h5>
-                {{-- Tombol Tambah — selalu muncul di kanan atas --}}
-                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm">
-                    <i class="bx bx-plus me-1"></i> Tambah Data
+                <h5 class="mb-0 fw-semibold">{{ $title }}</h5>
+                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm px-3">
+                    <i class="fa fa-plus me-1"></i> Tambah Data
                 </a>
             </div>
             <div class="card-body">
@@ -41,29 +39,45 @@
                     {!! Form::open([
                         'route' => $routePrefix . '.index',
                         'method' => 'GET',
-                        'class' => 'd-flex gap-2 flex-wrap align-items-end'
+                        'class' => 'row g-2'
                     ]) !!}
-                        <div style="flex: 1; min-width: 200px;">
-                            <label for="q" class="form-label visually-hidden">Cari Biaya</label>
+                        <div class="col-md-5">
                             <input
                                 type="text"
                                 name="q"
-                                id="q"
-                                class="form-control"
-                                placeholder="🔍 Cari Nama Biaya..."
+                                class="form-control form-control-sm"
+                                placeholder="Cari nama biaya..."
                                 value="{{ request('q') }}"
                                 autocomplete="off"
                             >
                         </div>
-                        <button class="btn btn-outline-primary px-4" type="submit">
-                            <i class="bx bx-search"></i> Cari
-                        </button>
-                        @if(request('q'))
-                            <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary">
-                                <i class="bx bx-x"></i> Reset
-                            </a>
-                        @endif
+                        <div class="col-md-7 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm px-3">
+                                <i class="fa fa-search me-1"></i> Cari
+                            </button>
+                            @if(request('q'))
+                                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                                    <i class="fa fa-x me-1"></i> Reset
+                                </a>
+                            @endif
+                        </div>
                     {!! Form::close() !!}
+                </div>
+
+                {{-- === SECTION: TOMBOL AKSI MASSAL === --}}
+                <div class="mb-3 d-flex gap-2 flex-wrap">
+                    {{-- Tidak perlu form tersembunyi lagi --}}
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-selected" disabled>
+                        <i class="fa fa-trash me-1"></i> Hapus Terpilih
+                    </button>
+
+                    {{-- Opsional: Hapus semua --}}
+                    {{-- @if($models->total() > 0 && !request('q'))
+                        <button type="button" class="btn btn-outline-dark btn-sm" id="btn-delete-all"
+                                onclick="confirmDeleteAll()">
+                            <i class="bx bx-ban me-1"></i> Hapus Semua
+                        </button>
+                    @endif --}}
                 </div>
 
                 {{-- === SECTION: TABEL DATA === --}}
@@ -71,6 +85,9 @@
                     <table class="table table-hover align-middle" id="table-biaya">
                         <thead class="table-light">
                             <tr>
+                                <th class="text-center" style="width: 5%">
+                                    <input type="checkbox" id="select-all">
+                                </th>
                                 <th class="text-center" style="width: 5%">#</th>
                                 <th>Nama Biaya</th>
                                 <th>Jumlah</th>
@@ -81,6 +98,9 @@
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="biaya_ids[]" value="{{ $item->id }}" class="biaya-checkbox">
+                                    </td>
                                     <td class="text-center fw-medium">
                                         {{ $loop->iteration + ($models->firstItem() - 1) }}
                                     </td>
@@ -93,34 +113,32 @@
                                     <td>{{ $item->user->name ?? '–' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
-
-                                            {{-- Tombol Edit --}}
+                                            {{-- Edit --}}
                                             <a href="{{ route($routePrefix . '.edit', $item->id) }}"
-                                               class="btn btn-outline-warning btn-sm d-inline-flex align-items-center justify-content-center"
-                                               title="Edit Biaya: {{ $item->nama }}">
+                                               class="btn btn-icon btn-outline-warning btn-sm"
+                                               title="Edit: {{ $item->nama }}">
                                                 <i class="fa fa-edit"></i>
                                             </a>
 
-                                            {{-- Tombol Hapus --}}
+                                            {{-- Hapus --}}
                                             <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
                                                   method="POST"
                                                   class="d-inline"
-                                                  onsubmit="return confirm('⚠️ Yakin ingin menghapus biaya: {{ $item->nama }}?')">
+                                                  onsubmit="return confirm('⚠️ Yakin hapus biaya: {{ $item->nama }}?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
-                                                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center"
-                                                        title="Hapus Biaya: {{ $item->nama }}">
+                                                        class="btn btn-icon btn-outline-danger btn-sm"
+                                                        title="Hapus: {{ $item->nama }}">
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </form>
-
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5">
+                                    <td colspan="6" class="text-center py-5">
                                         <i class="bx bx-empty fs-1 text-muted mb-2 d-block"></i>
                                         <p class="text-muted mb-0">Data tidak ditemukan.</p>
                                         @if(request('q'))
@@ -157,24 +175,110 @@
 
 @push('styles')
 <style>
-    /* Hover effect lebih smooth — sama dengan siswa */
-    #table-biaya tbody tr:hover {
-        background-color: #f8f9fa;
-        transition: background-color 0.2s ease;
+    .table-hover tbody tr:hover {
+        background-color: #f9fafb !important;
     }
-
-    /* Tombol aksi lebih kotak dan proporsional — sama dengan siswa */
-    .btn-sm.d-inline-flex {
+    .btn-icon {
         width: 36px;
         height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    .btn-icon i { margin: 0; }
+    .btn-icon:hover {
+        transform: scale(1.05);
+        transition: transform 0.1s ease;
     }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-    // Fokus ke input pencarian saat halaman load — sama dengan siswa
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.biaya-checkbox');
+        const deleteSelectedBtn = document.getElementById('btn-delete-selected');
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateDeleteButton();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateDeleteButton);
+        });
+
+        function updateDeleteButton() {
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            deleteSelectedBtn.disabled = !anyChecked;
+        }
+
+        // ✅ PERBAIKAN UTAMA: Kirim sebagai form dengan input array
+        deleteSelectedBtn.addEventListener('click', function () {
+            const selected = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            if (selected.length === 0) return;
+
+            if (!confirm(`⚠️ Yakin ingin menghapus ${selected.length} biaya yang dipilih?`)) {
+                return;
+            }
+
+            // Buat form dinamis
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ route($routePrefix . '.massDestroy') }}";
+            form.style.display = 'none';
+
+            // CSRF Token
+            const csrf = document.createElement('input');
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+
+            // Method spoofing (DELETE)
+            const method = document.createElement('input');
+            method.name = '_method';
+            method.value = 'DELETE';
+            form.appendChild(method);
+
+            // Kirim setiap ID sebagai input array: ids[]
+            selected.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]'; // ⬅️ INI KUNCI: Laravel akan parse jadi array
+                input.value = id;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        // ✅ Hapus semua — tetap pakai cara yang sama (lebih konsisten)
+        window.confirmDeleteAll = function () {
+            if (!confirm('⚠️ YAKIN hapus SEMUA biaya? Tindakan ini tidak bisa dibatalkan!')) return;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ route($routePrefix . '.massDestroy') }}";
+            form.style.display = 'none';
+
+            form.innerHTML = `
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="_method" value="DELETE">
+                <input type="hidden" name="delete_all" value="1">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        };
+
         const searchInput = document.getElementById('q');
         if (searchInput && !searchInput.value) {
             searchInput.focus();

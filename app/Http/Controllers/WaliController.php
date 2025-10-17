@@ -63,7 +63,7 @@ class WaliController extends Controller
         }
 
         // Ambil data dengan pagination
-        $models = $query->latest()->paginate(50);
+        $models = $query->latest()->paginate(20);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
