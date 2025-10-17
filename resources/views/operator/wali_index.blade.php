@@ -5,8 +5,7 @@
 | Penulis     : Umar Ulkhak
 | Fitur       :
 |   - Bulk delete (hapus terpilih)
-|   - Hapus semua (dengan konfirmasi)
-|   - Tetap profesional & tidak lebay
+|   - Tampilan profesional & konsisten dengan daftar siswa
 |
 --}}
 
@@ -56,7 +55,7 @@
                     {!! Form::close() !!}
                 </div>
 
-                {{-- Form Bulk Delete --}}
+                {{-- Form Bulk Delete (hidden) --}}
                 {!! Form::open([
                     'route' => $routePrefix . '.bulk-destroy',
                     'method' => 'DELETE',
@@ -66,30 +65,10 @@
                     @csrf
                 {!! Form::close() !!}
 
-                {{-- Form Hapus Semua --}}
-                {!! Form::open([
-                    'route' => $routePrefix . '.destroy-all',
-                    'method' => 'DELETE',
-                    'id' => 'destroy-all-form',
-                    'style' => 'display:none;'
-                ]) !!}
-                    @csrf
-                    <input type="hidden" name="confirm" value="hapus-semua-wali">
-                {!! Form::close() !!}
-
                 {{-- Tombol Aksi Massal --}}
                 <div class="d-flex gap-2 mb-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="select-all">
-                        <label class="form-check-label" for="select-all">Pilih Semua</label>
-                    </div>
-
                     <button type="button" class="btn btn-outline-danger btn-sm" id="btn-bulk-delete" disabled>
                         <i class="fa fa-trash me-1"></i> Hapus Terpilih
-                    </button>
-
-                    <button type="button" class="btn btn-outline-dark btn-sm" id="btn-destroy-all">
-                        <i class="fa fa-ban me-1"></i> Hapus Semua
                     </button>
                 </div>
 
@@ -98,25 +77,21 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 5%">
-                                    <div class="form-check mb-0">
-                                        <input class="form-check-input" type="checkbox" id="select-header" style="margin-top: 0;">
-                                    </div>
+                                <th class="text-center" style="width: 5%">
+                                    <input type="checkbox" id="select-header">
                                 </th>
                                 <th>Nama</th>
                                 <th>No. HP</th>
                                 <th>Email</th>
                                 <th>Akses</th>
-                                <th style="width: 120px;">Aksi</th>
+                                <th class="text-center" style="width: 120px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($models as $item)
                                 <tr>
-                                    <td>
-                                        <div class="form-check mb-0">
-                                            <input class="form-check-input bulk-item" type="checkbox" name="ids[]" value="{{ $item->id }}">
-                                        </div>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="ids[]" value="{{ $item->id }}" class="bulk-item">
                                     </td>
                                     <td class="fw-medium">{{ $item->name }}</td>
                                     <td>{{ $item->nohp ?: '–' }}</td>
@@ -126,8 +101,8 @@
                                             {{ ucfirst($item->akses) }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="d-flex gap-1">
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
                                                class="btn btn-icon btn-outline-info btn-sm"
                                                title="Detail {{ $item->name }}">
@@ -201,36 +176,50 @@
     }
     .btn-icon i { margin: 0; }
     .btn-icon:hover { transform: scale(1.05); transition: transform 0.1s ease; }
+
+    /* Tambahkan CSS untuk memastikan checkbox sejajar */
+    .table th input[type="checkbox"],
+    .table td input[type="checkbox"] {
+        margin: 0;
+        vertical-align: middle;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const selectAll = document.getElementById('select-all');
     const selectHeader = document.getElementById('select-header');
     const bulkItems = document.querySelectorAll('.bulk-item');
     const btnBulkDelete = document.getElementById('btn-bulk-delete');
-    const btnDestroyAll = document.getElementById('btn-destroy-all');
     const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const destroyAllForm = document.getElementById('destroy-all-form');
 
-    // Sync header checkbox
+    // Header checkbox mengontrol semua item
     selectHeader.addEventListener('change', () => {
-        selectAll.checked = selectHeader.checked;
         bulkItems.forEach(el => el.checked = selectHeader.checked);
         updateBulkButton();
     });
 
-    // Sync "Pilih Semua"
-    selectAll.addEventListener('change', () => {
-        bulkItems.forEach(el => el.checked = selectAll.checked);
-        updateBulkButton();
-    });
-
-    // Update status tombol hapus terpilih
+    // Setiap checkbox item memengaruhi status tombol & header
     bulkItems.forEach(el => {
-        el.addEventListener('change', updateBulkButton);
+        el.addEventListener('change', () => {
+            const checkedItems = document.querySelectorAll('.bulk-item:checked');
+            const totalItems = bulkItems.length;
+            const checkedCount = checkedItems.length;
+
+            // Update header checkbox state
+            if (checkedCount === 0) {
+                selectHeader.checked = false;
+                selectHeader.indeterminate = false;
+            } else if (checkedCount === totalItems) {
+                selectHeader.checked = true;
+                selectHeader.indeterminate = false;
+            } else {
+                selectHeader.indeterminate = true;
+            }
+
+            updateBulkButton();
+        });
     });
 
     function updateBulkButton() {
@@ -245,9 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!confirm(`Yakin ingin menghapus ${checked.length} wali yang dipilih?`)) return;
 
-        const form = bulkDeleteForm;
-        // ✅ Pastikan _method=DELETE tetap ada!
-        form.innerHTML = `
+        // Reset form dan tambahkan input dinamis
+        bulkDeleteForm.innerHTML = `
             @csrf
             <input type="hidden" name="_method" value="DELETE">
         `;
@@ -257,29 +245,17 @@ document.addEventListener('DOMContentLoaded', () => {
             input.type = 'hidden';
             input.name = 'ids[]';
             input.value = el.value;
-            form.appendChild(input);
+            bulkDeleteForm.appendChild(input);
         });
 
-        form.submit();
+        bulkDeleteForm.submit();
     });
 
-    // Hapus semua
-    btnDestroyAll.addEventListener('click', () => {
-        if (!confirm('⚠️ PERINGATAN: Ini akan menghapus SEMUA data wali!\n\nKetik "HAPUS SEMUA" di bawah untuk konfirmasi.')) return;
-
-        const userInput = prompt('Ketik "HAPUS SEMUA" untuk melanjutkan:');
-        if (userInput && userInput.trim().toUpperCase() === 'HAPUS SEMUA') {
-            if (confirm('⚠️ Terakhir kali: Yakin ingin menghapus SEMUA wali?')) {
-                destroyAllForm.submit();
-            }
-        } else {
-            alert('Konfirmasi gagal. Operasi dibatalkan.');
-        }
-    });
-
-    // Fokus pencarian
+    // Fokus ke input pencarian saat halaman dimuat
     const searchInput = document.querySelector('input[name="q"]');
-    if (searchInput && !searchInput.value) searchInput.focus();
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
 });
 </script>
 @endpush

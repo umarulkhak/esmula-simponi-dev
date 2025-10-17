@@ -78,12 +78,12 @@
                         <i class="fa fa-trash me-1"></i> Hapus Terpilih
                     </button>
 
-                    @if($models->total() > 0 && !request('q'))
+                    {{-- @if($models->total() > 0 && !request('q'))
                         <button type="button" class="btn btn-outline-dark btn-sm" id="btn-delete-all"
                                 onclick="confirmDeleteAll()">
                             <i class="fa fa-ban me-1"></i> Hapus Semua
                         </button>
-                    @endif
+                    @endif --}}
                 </div>
 
                 {{-- === SECTION: TABEL DATA === --}}
