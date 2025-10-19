@@ -20,7 +20,7 @@
                     {{-- Foto Siswa (Kiri) --}}
                     <div class="flex-shrink-0 text-center">
                         @php
-                            $fotoPath = ($siswa->foto && \Storage::exists($siswa->foto))
+                            $fotoPath = $siswa->foto
                                 ? \Storage::url($siswa->foto)
                                 : asset('images/no-image.png');
                         @endphp

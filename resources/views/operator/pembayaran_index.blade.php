@@ -171,7 +171,7 @@
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
                                             <a href="{{ route('pembayaran.show', $item->id) }}"
-                                               class="btn btn-icon btn-outline-primary btn-sm"
+                                               class="btn btn-icon btn-outline-info btn-sm"
                                                title="Lihat detail">
                                                 <i class="fa fa-eye"></i>
                                             </a>
@@ -191,7 +191,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <<tr>
+                                <tr>
                                     <td colspan="9" class="py-5">
                                         <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 300px;">
                                             <i class="fa fa-database fa-2x text-muted mb-2"></i>

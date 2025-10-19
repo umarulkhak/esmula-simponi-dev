@@ -261,7 +261,7 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <a href="{{ route($routePrefix . '.show', $item->siswa->id) }}"
-                                                   class="btn btn-icon btn-outline-primary btn-sm"
+                                                   class="btn btn-icon btn-outline-info btn-sm"
                                                    title="Lihat semua tagihan">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
