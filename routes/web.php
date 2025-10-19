@@ -112,6 +112,7 @@ Route::prefix('operator')
             ->name('tagihan.destroySiswa');
         Route::get('/tagihan/export', [TagihanController::class, 'export'])
             ->name('tagihan.export');
+        Route::delete('/tagihan/mass-destroy', [TagihanController::class, 'massDestroy'])->name('tagihan.massDestroy');
         Route::delete('wali/bulk-destroy', [WaliController::class, 'bulkDestroy'])->name('wali.bulk-destroy');
         Route::delete('wali/destroy-all', [WaliController::class, 'destroyAll'])->name('wali.destroy-all');
 

@@ -20,11 +20,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * - Menampilkan daftar tagihan terbaru per siswa
  * - Membuat tagihan massal berdasarkan filter siswa & biaya
  * - Menampilkan detail tagihan per siswa
- * - Menghapus tagihan (per item atau seluruhnya per siswa)
+ * - Menghapus tagihan (per item, massal, atau seluruhnya per siswa)
  *
  * @author  Umar Ulkhak
  * @date    6 September 2025
- * @updated 9 September 2025 — Dokumentasi lengkap, clean code, siap produksi
+ * @updated 20 Oktober 2025 — Tambah filter status & kelas, hapus massal
  */
 class TagihanController extends Controller
 {
@@ -54,43 +54,49 @@ class TagihanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tagihan::with(['user', 'siswa', 'tagihanDetails']);
+        // Buat query dasar
+        $baseQuery = Tagihan::with(['user', 'siswa', 'tagihanDetails']);
 
-        // Filter berdasarkan bulan & tahun
+        // Filter bulan & tahun
         if ($request->filled(['bulan', 'tahun'])) {
-            $query->whereMonth('tanggal_tagihan', $request->bulan)
-                  ->whereYear('tanggal_tagihan', $request->tahun);
+            $baseQuery->whereMonth('tanggal_tagihan', $request->bulan)
+                      ->whereYear('tanggal_tagihan', $request->tahun);
         } else {
             // Ambil tagihan terbaru per siswa
             $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
                 ->groupBy('siswa_id');
-            $query->whereIn('id', $latestPerSiswa->pluck('latest_id'));
+            $baseQuery->whereIn('id', $latestPerSiswa->pluck('latest_id'));
         }
 
-        // Pencarian global
+        // Filter status
+        if ($request->filled('status')) {
+            $baseQuery->where('status', $request->status);
+        }
+
+        // Filter kelas
+        if ($request->filled('kelas')) {
+            $baseQuery->whereHas('siswa', fn($q) => $q->where('kelas', $request->kelas));
+        }
+
+        // Pencarian
         if ($request->filled('q')) {
-            $query->search($request->q);
+            $baseQuery->search($request->q);
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $models */
-        $models = $query->latest()->paginate(50);
+        // 💡 BUAT SALINAN QUERY UNTUK STATISTIK — JANGAN PAGINATE DULU!
+        $statsQuery = clone $baseQuery;
 
-        // ✅ Ambil semua data sebagai collection — HANYA 1 QUERY
-        $tagihanCollection = $models->getCollection();
-
-        // ✅ HITUNG STATISTIK DARI COLLECTION — 0 QUERY TAMBAHAN
-        $totalSiswa = $tagihanCollection->unique('siswa_id')->count();
-        $totalLunas = $tagihanCollection->where('status', 'lunas')->count();
-        $totalBelum = $tagihanCollection->where('status', 'baru')->count();
-        $totalTagihan = $tagihanCollection->count();
-
+        // Hitung statistik dari SEMUA data yang difilter (bukan hanya halaman saat ini)
+        $totalSiswa = $statsQuery->distinct('siswa_id')->count('siswa_id');
+        $totalLunas = $statsQuery->where('status', 'lunas')->count();
+        $totalBelum = $statsQuery->where('status', 'baru')->count();
+        $totalTagihan = $statsQuery->count();
         $persentase = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
 
-        // ✅ Hitung statistik bulan lalu — dengan query terpisah (wajar, karena data beda periode)
+        // Statistik periode sebelumnya
         $bulan = $request->filled(['bulan', 'tahun']) ? $request->bulan : now()->format('m');
         $tahun = $request->filled(['bulan', 'tahun']) ? $request->tahun : now()->format('Y');
-
-        $prevMonth = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonth();
+        $prevMonth = Carbon::create($tahun, $bulan, 1)->subMonth();
 
         $prevQuery = Tagihan::query();
 
@@ -102,13 +108,22 @@ class TagihanController extends Controller
                       ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
         }
 
-        // ✅ Untuk statistik bulan lalu — tetap pakai query (karena data beda)
-        $statPrevQuery = clone $prevQuery;
-        $totalSiswaPrev = $statPrevQuery->distinct('siswa_id')->count('siswa_id');
-        $lunasPrev = (clone $statPrevQuery)->where('status', 'lunas')->count();
-        $belumPrev = (clone $statPrevQuery)->where('status', 'baru')->count();
-        $totalTagihanPrev = $statPrevQuery->count();
+        // Terapkan filter tambahan ke periode sebelumnya juga
+        if ($request->filled('status')) {
+            $prevQuery->where('status', $request->status);
+        }
+        if ($request->filled('kelas')) {
+            $prevQuery->whereHas('siswa', fn($q) => $q->where('kelas', $request->kelas));
+        }
+
+        $totalSiswaPrev = $prevQuery->distinct('siswa_id')->count('siswa_id');
+        $lunasPrev = (clone $prevQuery)->where('status', 'lunas')->count();
+        $belumPrev = (clone $prevQuery)->where('status', 'baru')->count();
+        $totalTagihanPrev = $prevQuery->count();
         $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
+
+        // 💡 BARU SEKARANG PAGINATE UNTUK TABEL
+        $models = $baseQuery->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
             'models'         => $models,
@@ -321,6 +336,84 @@ class TagihanController extends Controller
                 ->route($this->routePrefix . '.index')
                 ->with('error', 'Gagal menghapus tagihan: ' . $e->getMessage());
         }
+    }
+
+    // =======================
+    // MASS DESTROY (HAPUS BANYAK)
+    // =======================
+    //**
+    /* Menghapus beberapa tagihan sekaligus berdasarkan ID.
+    *
+    * @param  \Illuminate\Http\Request  $request
+    * @return \Illuminate\Http\RedirectResponse
+    */
+    public function massDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:App\Models\Tagihan,id',
+        ]);
+
+        $ids = $request->ids;
+        $count = count($ids);
+
+        // Ambil data tagihan yang akan dihapus (untuk info flash)
+        $tagihans = Tagihan::with('siswa')
+            ->whereIn('id', $ids)
+            ->get();
+
+        // Kelompokkan berdasarkan siswa
+        $siswaList = $tagihans->groupBy('siswa_id')->map(function ($group) {
+            $siswa = $group->first()->siswa;
+            return [
+                'nama' => $siswa?->nama ?? 'Siswa Tidak Diketahui',
+                'kelas' => $siswa?->kelas ?? '–',
+            ];
+        })->values();
+
+        $jumlahSiswa = $siswaList->count();
+
+        DB::transaction(function () use ($ids) {
+            foreach ($ids as $id) {
+                $tagihan = Tagihan::findOrFail($id);
+                $tagihan->tagihanDetails()->delete();
+                $tagihan->delete();
+            }
+        });
+
+        // 🔥 Buat pesan flash yang informatif tapi rapi
+        if ($jumlahSiswa === 0) {
+            $message = "Berhasil menghapus <strong>{$count} tagihan</strong>.";
+        } elseif ($jumlahSiswa === 1) {
+            $siswa = $siswaList[0];
+            $message = "Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$siswa['nama']} ({$siswa['kelas']})</strong>.";
+        } else {
+            // Ambil maksimal 5 siswa pertama
+            $tampilkan = $siswaList->take(5);
+            $daftarSiswa = $tampilkan->map(fn($s) => "<li>{$s['nama']} ({$s['kelas']})</li>")->join('');
+
+            if ($jumlahSiswa <= 5) {
+                $message = "
+                    <div class='flash-message-content'>
+                        <p> Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$jumlahSiswa} siswa</strong>:</p>
+                        <ul class='flash-list'>{$daftarSiswa}</ul>
+                    </div>
+                ";
+            } else {
+                $sisanya = $jumlahSiswa - 5;
+                $message = "
+                    <div class='flash-message-content'>
+                        <p> Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$jumlahSiswa} siswa</strong>, di antaranya:</p>
+                        <ul class='flash-list'>{$daftarSiswa}</ul>
+                        <p>... dan <strong>{$sisanya} siswa lainnya</strong>.</p>
+                    </div>
+                ";
+            }
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', $message);
     }
 
     /**
