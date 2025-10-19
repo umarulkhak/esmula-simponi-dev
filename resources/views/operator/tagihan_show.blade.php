@@ -51,7 +51,7 @@
                                     <tr>
                                         <td class="fw-semibold text-muted">Kelas</td>
                                         <td>
-                                            <span class="badge bg-label-{{ $siswa->kelas == 'VII' ? 'success' : ($siswa->kelas == 'VIII' ? 'warning' : 'danger') }} rounded-pill px-2 py-1">
+                                            <span class="badge bg-label-{{ $siswa->kelas == 'VII' ? 'primary' : ($siswa->kelas == 'VIII' ? 'success' : 'danger') }} rounded-pill px-2 py-1">
                                                 {{ $siswa->kelas }}
                                             </span>
                                         </td>
@@ -89,6 +89,12 @@
                             </thead>
                             <tbody>
                                 @forelse ($tagihan as $item)
+                                    @php
+                                        $periode = $item->tanggal_tagihan
+                                            ? \Carbon\Carbon::parse($item->tanggal_tagihan)->translatedFormat('M Y')
+                                            : 'Tanpa Periode';
+                                    @endphp
+
                                     @foreach($item->tagihanDetails as $detail)
                                         <tr>
                                             <td>{{ $loop->parent->iteration }}.{{ $loop->iteration }}</td>
@@ -107,51 +113,65 @@
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                @if($item->status != 'lunas')
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-success"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#bayarModal{{ $item->id }}"
-                                                        title="Bayar Tagihan">
-                                                        <i class="fa fa-check me-1"></i> Bayar
-                                                    </button>
-                                                @else
-                                                    <span class="text-muted">–</span>
+                                                @if($loop->first) {{-- Hanya tampilkan aksi di baris pertama detail --}}
+                                                    <div class="d-flex justify-content-center gap-1">
+                                                        @if($item->status != 'lunas')
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-icon btn-outline-success btn-sm"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#bayarModal{{ $item->id }}"
+                                                                title="Bayar Tagihan">
+                                                                <i class="fa fa-check"></i>
+                                                            </button>
+                                                        @endif
+                                                        <form action="{{ route('tagihan.destroySingle', $item->id) }}"
+                                                              method="POST"
+                                                              class="d-inline"
+                                                              onsubmit="return confirm('⚠️ Yakin hapus tagihan ini?\n{{ $siswa->nama }} - {{ $periode }}')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit"
+                                                                    class="btn btn-icon btn-outline-danger btn-sm"
+                                                                    title="Hapus tagihan">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 @endif
                                             </td>
                                         </tr>
+                                    @endforeach
 
-                                        {{-- Modal Bayar --}}
-                                        @if($item->status != 'lunas')
-                                            <div class="modal fade" id="bayarModal{{ $item->id }}" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Konfirmasi Pembayaran</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <form action="{{ route('tagihan.bayar', $item->id) }}" method="POST">
-                                                            @csrf
-                                                            <div class="modal-body">
-                                                                <p>Yakin ingin menandai tagihan ini sebagai <strong>LUNAS</strong>?</p>
-                                                                <div class="mb-3">
-                                                                    <label class="form-label">Tanggal Bayar <span class="text-danger">*</span></label>
-                                                                    <input type="date" name="tanggal_bayar" class="form-control" value="{{ now()->toDateString() }}" required>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                                                                <button type="submit" class="btn btn-success">
-                                                                    <i class="fa fa-check me-1"></i> Konfirmasi Bayar
-                                                                </button>
-                                                            </div>
-                                                        </form>
+                                    {{-- Modal Bayar --}}
+                                    @if($item->status != 'lunas')
+                                        <div class="modal fade" id="bayarModal{{ $item->id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Konfirmasi Pembayaran</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
+                                                    <form action="{{ route('tagihan.bayar', $item->id) }}" method="POST">
+                                                        @csrf
+                                                        <div class="modal-body">
+                                                            <p>Yakin ingin menandai tagihan ini sebagai <strong>LUNAS</strong>?</p>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Tanggal Bayar <span class="text-danger">*</span></label>
+                                                                <input type="date" name="tanggal_bayar" class="form-control" value="{{ now()->toDateString() }}" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                                                            <button type="submit" class="btn btn-success">
+                                                                <i class="fa fa-check me-1"></i> Konfirmasi Bayar
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
-                                        @endif
-                                    @endforeach
+                                        </div>
+                                    @endif
                                 @empty
                                     <tr>
                                         <td colspan="6" class="text-center py-5">
@@ -175,6 +195,19 @@
 <style>
     .badge {
         font-size: 0.85rem;
+    }
+    .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+    }
+    .btn-icon:hover {
+        transform: scale(1.05);
+        transition: transform 0.1s ease;
     }
 </style>
 @endpush

@@ -89,8 +89,9 @@
                                     </div>
                                 @else
                                     @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
-                                        {!! Form::open(['route' => 'pembayaran.update.multiple', 'method' => 'PUT', 'class' => 'table-form']) !!}
-                                        @csrf
+                                        <form action="{{ route('pembayaran.update.multiple') }}" method="POST" class="table-form">
+                                            @csrf
+                                            @method('PUT')
                                     @endif
 
                                     <div class="table-responsive">
@@ -105,6 +106,7 @@
                                                     <th>Biaya</th>
                                                     <th class="text-end">Jumlah</th>
                                                     <th class="text-center">Status</th>
+                                                    <th class="text-center" style="width: 80px;">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -116,6 +118,9 @@
                                                         $biayaPreview = $biayas->take(2)->implode(', ');
                                                         $biayaLain = $biayas->count() > 2 ? ' +'.($biayas->count() - 2).' lainnya' : '';
                                                         $biayaFull = $biayas->implode(', ');
+                                                        $periode = $pembayaran->tagihan?->tanggal_tagihan
+                                                            ? \Carbon\Carbon::parse($pembayaran->tagihan->tanggal_tagihan)->translatedFormat('M Y')
+                                                            : 'Tanpa Periode';
                                                     @endphp
                                                     <tr class="border-bottom">
                                                         <td class="text-center align-middle">
@@ -129,7 +134,6 @@
                                                         <td class="align-middle">
                                                             {{ $pembayaran->tanggal_bayar ? \Carbon\Carbon::parse($pembayaran->tanggal_bayar)->translatedFormat('d M Y') : '–' }}
                                                         </td>
-                                                        {{-- KOLOM TANGGAL KONFIRMASI --}}
                                                         <td class="align-middle">
                                                             @if($pembayaran->tanggal_konfirmasi)
                                                                 {{ \Carbon\Carbon::parse($pembayaran->tanggal_konfirmasi)->translatedFormat('d M Y') }}
@@ -180,6 +184,20 @@
                                                                 </span>
                                                             @endif
                                                         </td>
+                                                        <td class="text-center align-middle">
+                                                            <form action="{{ route('pembayaran.destroySingle', $pembayaran->id) }}"
+                                                                  method="POST"
+                                                                  class="d-inline"
+                                                                  onsubmit="return confirm('⚠️ Yakin hapus pembayaran ini?\n{{ $siswa->nama }} - {{ $periode }}\nJumlah: {{ formatRupiah($pembayaran->jumlah_dibayar) }}')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit"
+                                                                        class="btn btn-icon btn-outline-danger btn-sm"
+                                                                        title="Hapus pembayaran">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
@@ -187,6 +205,7 @@
                                                 <tr class="bg-light">
                                                     <td colspan="6" class="text-end py-3">Total Pembayaran:</td>
                                                     <td class="text-end py-3">{{ formatRupiah($totalJumlah) }}</td>
+                                                    <td></td>
                                                     <td></td>
                                                 </tr>
                                             </tfoot>
@@ -200,7 +219,7 @@
                                             </button>
                                             <small class="text-muted ms-2">Pilih minimal 1 pembayaran untuk dikonfirmasi.</small>
                                         </div>
-                                        {!! Form::close() !!}
+                                        </form>
                                     @endif
                                 @endif
                             </div>
@@ -212,9 +231,9 @@
     </div>
 </div>
 
-{{-- MODAL DETAIL TRANSFER - DIPERBAIKI: LEBAR & PROFESIONAL --}}
+{{-- MODAL DETAIL TRANSFER --}}
 <div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg"> {{-- ✅ modal-lg untuk lebar --}}
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content rounded-3 border-0 shadow">
             <div class="modal-header bg-light py-3 px-4">
                 <h6 class="modal-title fw-bold text-primary"><i class="bx bx-transfer-alt me-1"></i> Detail Transfer</h6>
@@ -222,7 +241,6 @@
             </div>
             <div class="modal-body p-4">
                 <div class="row g-4">
-                    <!-- Rekening Pengirim & Sekolah dalam 2 kolom -->
                     <div class="col-md-6">
                         <div class="d-flex align-items-center mb-2">
                             <i class="bx bx-user-circle text-primary fs-5 me-2"></i>
@@ -245,8 +263,6 @@
                             <p class="mb-0"><i class="bx bx-building me-1 text-muted"></i> <strong>Bank:</strong> <span id="sekolah-bank">–</span></p>
                         </div>
                     </div>
-
-                    <!-- Bukti Pembayaran (full width) -->
                     <div class="col-12">
                         <div class="d-flex align-items-center mb-2">
                             <i class="bx bx-image-alt text-primary fs-5 me-2"></i>
@@ -330,4 +346,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+@endpush
+
+@push('styles')
+<style>
+    .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+    }
+    .btn-icon:hover {
+        transform: scale(1.05);
+        transition: transform 0.1s ease;
+    }
+</style>
 @endpush

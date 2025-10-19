@@ -170,7 +170,7 @@
                                 <label class="form-label small">Cari Siswa</label>
                                 <div class="input-group input-group-sm">
                                     <input type="text" name="q" class="form-control" placeholder="Nama/NISN..."
-                                           value="{{ request('q') }}">
+                                        value="{{ request('q') }}">
                                     <button type="submit" class="btn btn-outline-primary">
                                         <i class="fa fa-filter me-1"></i> Filter
                                     </button>

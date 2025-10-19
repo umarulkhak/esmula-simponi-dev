@@ -110,9 +110,14 @@ Route::prefix('operator')
             ->name('tagihan.bayar');
         Route::delete('/tagihan/siswa/{siswa}', [TagihanController::class, 'destroySiswa'])
             ->name('tagihan.destroySiswa');
+        Route::delete('/tagihan/{id}/destroy-single', [TagihanController::class, 'destroySingle'])
+            ->name('tagihan.destroySingle');
         Route::get('/tagihan/export', [TagihanController::class, 'export'])
             ->name('tagihan.export');
         Route::delete('/tagihan/mass-destroy', [TagihanController::class, 'massDestroy'])->name('tagihan.massDestroy');
+        Route::delete('/pembayaran/mass-destroy', [PembayaranController::class, 'massDestroy'])->name('pembayaran.massDestroy');
+        Route::delete('/pembayaran/{id}/destroy-single', [PembayaranController::class, 'destroySingle'])
+            ->name('pembayaran.destroySingle');
         Route::delete('wali/bulk-destroy', [WaliController::class, 'bulkDestroy'])->name('wali.bulk-destroy');
         Route::delete('wali/destroy-all', [WaliController::class, 'destroyAll'])->name('wali.destroy-all');
 
@@ -161,11 +166,6 @@ Route::prefix('wali')
         // Beranda wali
         Route::get('beranda', [BerandaWaliController::class, 'index'])
             ->name('beranda');
-
-        // Update pembayaran massal
-        Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])
-            ->name('pembayaran.update.multiple');
-
         // Resource controllers (terbatas)
         Route::resource('siswa', WaliMuridSiswaController::class)
             ->only(['index', 'show', 'edit', 'update']);

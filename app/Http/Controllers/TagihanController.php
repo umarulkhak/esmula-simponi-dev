@@ -60,7 +60,7 @@ class TagihanController extends Controller
         // Filter bulan & tahun
         if ($request->filled(['bulan', 'tahun'])) {
             $baseQuery->whereMonth('tanggal_tagihan', $request->bulan)
-                      ->whereYear('tanggal_tagihan', $request->tahun);
+                    ->whereYear('tanggal_tagihan', $request->tahun);
         } else {
             // Ambil tagihan terbaru per siswa
             $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
@@ -80,7 +80,10 @@ class TagihanController extends Controller
 
         // Pencarian
         if ($request->filled('q')) {
-            $baseQuery->search($request->q);
+            $baseQuery->whereHas('siswa', function ($q) use ($request) {
+                $q->where('nama', 'like', '%' . $request->q . '%')
+                ->orWhere('nisn', 'like', '%' . $request->q . '%');
+            });
         }
 
         // 💡 BUAT SALINAN QUERY UNTUK STATISTIK — JANGAN PAGINATE DULU!
@@ -102,10 +105,10 @@ class TagihanController extends Controller
 
         if ($request->filled(['bulan', 'tahun'])) {
             $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
-                      ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+                    ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
         } else {
             $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
-                      ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+                    ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
         }
 
         // Terapkan filter tambahan ke periode sebelumnya juga
@@ -415,6 +418,29 @@ class TagihanController extends Controller
             ->back()
             ->with('success', $message);
     }
+    /**
+     * Hapus SATU tagihan dan detailnya.
+     */
+    public function destroySingle($id)
+    {
+        $tagihan = Tagihan::with('siswa')->find($id);
+
+        if (!$tagihan) {
+            return redirect()->back()->with('error', 'Tagihan tidak ditemukan atau sudah dihapus.');
+        }
+
+        $siswaNama = optional($tagihan->siswa)->nama ?? 'Siswa Tidak Diketahui';
+        $periode = $tagihan->tanggal_tagihan
+            ? \Carbon\Carbon::parse($tagihan->tanggal_tagihan)->translatedFormat('M Y')
+            : 'Tanpa Periode';
+
+        DB::transaction(function () use ($tagihan) {
+            $tagihan->tagihanDetails()->delete();
+            $tagihan->delete();
+        });
+
+        return redirect()->back()->with('success', "Tagihan atas nama {$siswaNama} ({$periode}) berhasil dihapus.");
+    }
 
     /**
      * Menandai tagihan sebagai LUNAS oleh operator.
@@ -440,6 +466,7 @@ class TagihanController extends Controller
             'tanggal_bayar'    => $tanggalBayar,
             'tanggal_konfirmasi' => $tanggalBayar,
             'jumlah_dibayar'   => $tagihan->tagihanDetails->sum('jumlah_biaya'),
+            'metode_pembayaran' => 'manual',
             'status_konfirmasi'=> 'sudah',
         ]);
 

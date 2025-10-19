@@ -21,6 +21,7 @@ class Pembayaran extends Model
         'kode_bank_pengirim',
         'bank_sekolah_id',
         'tanggal_bayar',
+        'tanggal_konfirmasi',
         'status_konfirmasi',
         'jumlah_dibayar',
         'bukti_bayar',

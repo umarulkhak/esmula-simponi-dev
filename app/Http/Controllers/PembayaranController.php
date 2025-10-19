@@ -12,7 +12,6 @@ class PembayaranController extends Controller
 {
     public function index()
     {
-        // Ambil data per siswa (tanpa grup periode)
         $query = DB::table('pembayarans as p')
             ->select(
                 DB::raw('MAX(p.id) as id'),
@@ -28,27 +27,45 @@ class PembayaranController extends Controller
             )
             ->join('tagihans as t', 'p.tagihan_id', '=', 't.id')
             ->join('siswas as s', 't.siswa_id', '=', 's.id')
-            ->join('users as u', 'p.wali_id', '=', 'u.id')
+            ->leftJoin('users as u', 'p.wali_id', '=', 'u.id')
             ->groupBy(
                 's.id',
                 's.nama',
                 's.nisn',
                 's.kelas',
                 's.angkatan',
-                'u.name'
+                'p.wali_id'
             );
 
-        if (request('bulan') && request('tahun')) {
-            $query->whereRaw('MONTH(p.tanggal_bayar) = ?', [request('bulan')])
-                  ->whereRaw('YEAR(p.tanggal_bayar) = ?', [request('tahun')]);
-        } elseif (request('tahun')) {
+        // Filter Bulan
+        if (request('bulan')) {
+            $query->whereRaw('MONTH(p.tanggal_bayar) = ?', [request('bulan')]);
+        }
+
+        // Filter Tahun
+        if (request('tahun')) {
             $query->whereRaw('YEAR(p.tanggal_bayar) = ?', [request('tahun')]);
         }
 
+        // Filter Status Konfirmasi
+        if (request('status')) {
+            if (request('status') === 'belum') {
+                $query->where('p.status_konfirmasi', 'belum');
+            } elseif (request('status') === 'sudah') {
+                $query->where('p.status_konfirmasi', 'sudah');
+            }
+        }
+
+        // Filter Kelas
+        if (request('kelas')) {
+            $query->where('s.kelas', request('kelas'));
+        }
+
+        // Filter Cari Siswa
         if (request('q')) {
             $query->where(function ($q) {
                 $q->where('s.nama', 'like', '%' . request('q') . '%')
-                  ->orWhere('s.nisn', 'like', '%' . request('q') . '%');
+                ->orWhere('s.nisn', 'like', '%' . request('q') . '%');
             });
         }
 
@@ -287,5 +304,94 @@ class PembayaranController extends Controller
 
         flash($pesan)->success();
         return back();
+    }
+
+    /**
+     * Hapus SEMUA pembayaran milik siswa dari 1 baris di index.
+     */
+    public function destroy(Pembayaran $pembayaran)
+    {
+        $siswa = $pembayaran->tagihan?->siswa;
+
+        if (!$siswa) {
+            return redirect()->back()->with('error', 'Data siswa tidak ditemukan.');
+        }
+
+        $namaSiswa = $siswa->nama;
+
+        DB::transaction(function () use ($siswa) {
+            // Hapus semua pembayaran milik siswa ini
+            Pembayaran::whereHas('tagihan', function ($q) use ($siswa) {
+                $q->where('siswa_id', $siswa->id);
+            })->delete();
+
+            // Kembalikan semua tagihan siswa ke status 'baru'
+            Tagihan::where('siswa_id', $siswa->id)->update(['status' => 'baru']);
+        });
+
+        return redirect()->back()->with('success', "Semua pembayaran atas nama {$namaSiswa} berhasil dihapus.");
+    }
+
+    /**
+     * Hapus SEMUA pembayaran untuk beberapa siswa (massal).
+     */
+    public function massDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'Tidak ada data yang dipilih.');
+        }
+
+        // Ambil ID siswa unik dari pembayaran yang dipilih
+        $siswaIds = DB::table('pembayarans as p')
+            ->join('tagihans as t', 'p.tagihan_id', '=', 't.id')
+            ->whereIn('p.id', $ids)
+            ->pluck('t.siswa_id')
+            ->unique();
+
+        if ($siswaIds->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada data valid untuk dihapus.');
+        }
+
+        DB::transaction(function () use ($siswaIds) {
+            // Hapus semua pembayaran milik siswa-siswa ini
+            Pembayaran::whereHas('tagihan', function ($q) use ($siswaIds) {
+                $q->whereIn('siswa_id', $siswaIds);
+            })->delete();
+
+            // Kembalikan semua tagihan mereka ke 'baru'
+            Tagihan::whereIn('siswa_id', $siswaIds)->update(['status' => 'baru']);
+        });
+
+        return redirect()->back()->with('success', 'Berhasil menghapus semua pembayaran untuk ' . $siswaIds->count() . ' siswa.');
+    }
+        /**
+     * Hapus SATU pembayaran dan kembalikan status tagihannya ke 'baru'.
+     */
+    public function destroySingle($id)
+    {
+        $pembayaran = Pembayaran::with('tagihan.siswa')->find($id);
+
+        if (!$pembayaran) {
+            return redirect()->back()->with('error', 'Pembayaran tidak ditemukan atau sudah dihapus.');
+        }
+
+        $siswaNama = optional($pembayaran->tagihan?->siswa)->nama ?? 'Siswa Tidak Diketahui';
+        $periode = $pembayaran->tagihan?->tanggal_tagihan
+            ? \Carbon\Carbon::parse($pembayaran->tagihan->tanggal_tagihan)->translatedFormat('M Y')
+            : 'Tanpa Periode';
+
+        DB::transaction(function () use ($pembayaran) {
+            $tagihan = $pembayaran->tagihan;
+            $pembayaran->delete();
+
+            if ($tagihan) {
+                $tagihan->status = 'baru';
+                $tagihan->save();
+            }
+        });
+
+        return redirect()->back()->with('success', "Pembayaran atas nama {$siswaNama} ({$periode}) berhasil dihapus.");
     }
 }
