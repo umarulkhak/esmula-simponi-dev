@@ -374,7 +374,7 @@ class PembayaranController extends Controller
         $pembayaran = Pembayaran::with('tagihan.siswa')->find($id);
 
         if (!$pembayaran) {
-            return redirect()->back()->with('error', 'Pembayaran tidak ditemukan atau sudah dihapus.');
+            return redirect()->route('pembayaran.index')->with('error', 'Pembayaran tidak ditemukan atau sudah dihapus.');
         }
 
         $siswaNama = optional($pembayaran->tagihan?->siswa)->nama ?? 'Siswa Tidak Diketahui';
@@ -392,6 +392,6 @@ class PembayaranController extends Controller
             }
         });
 
-        return redirect()->back()->with('success', "Pembayaran atas nama {$siswaNama} ({$periode}) berhasil dihapus.");
+        return redirect()->route('pembayaran.index')->with('success', "Pembayaran atas nama {$siswaNama} ({$periode}) berhasil dihapus.");
     }
 }

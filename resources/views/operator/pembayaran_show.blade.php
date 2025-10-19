@@ -30,7 +30,7 @@
 
             <div class="card-body">
 
-                {{-- STATUS PEMBAYARAN - DIPERBAIKI --}}
+                {{-- STATUS PEMBAYARAN --}}
                 <div class="row g-4 mb-4">
                     <div class="col-12">
                         <div class="card border rounded-3 shadow-sm">
@@ -88,8 +88,9 @@
                                         Belum ada pembayaran.
                                     </div>
                                 @else
+                                    {{-- FORM KONFIRMASI MASSAL (HANYA JIKA ADA PEMBAYARAN BELUM DIKONFIRMASI) --}}
                                     @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
-                                        <form action="{{ route('pembayaran.update.multiple') }}" method="POST" class="table-form">
+                                        <form action="{{ route('pembayaran.update.multiple') }}" method="POST" id="form-konfirmasi">
                                             @csrf
                                             @method('PUT')
                                     @endif
@@ -185,18 +186,18 @@
                                                             @endif
                                                         </td>
                                                         <td class="text-center align-middle">
-                                                            <form action="{{ route('pembayaran.destroySingle', $pembayaran->id) }}"
-                                                                  method="POST"
-                                                                  class="d-inline"
-                                                                  onsubmit="return confirm('⚠️ Yakin hapus pembayaran ini?\n{{ $siswa->nama }} - {{ $periode }}\nJumlah: {{ formatRupiah($pembayaran->jumlah_dibayar) }}')">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit"
-                                                                        class="btn btn-icon btn-outline-danger btn-sm"
-                                                                        title="Hapus pembayaran">
-                                                                    <i class="fa fa-trash"></i>
-                                                                </button>
-                                                            </form>
+                                                            <!-- TOMBOL HAPUS: TANPA NESTED FORM -->
+                                                            <button type="button"
+                                                                    class="btn btn-icon btn-outline-danger btn-sm"
+                                                                    title="Hapus pembayaran"
+                                                                    onclick="hapusPembayaran(
+                                                                        {{ $pembayaran->id }},
+                                                                        `{{ addslashes($siswa->nama) }}`,
+                                                                        `{{ addslashes($periode) }}`,
+                                                                        `{{ addslashes(formatRupiah($pembayaran->jumlah_dibayar)) }}`
+                                                                    )">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 @endforeach
@@ -219,7 +220,7 @@
                                             </button>
                                             <small class="text-muted ms-2">Pilih minimal 1 pembayaran untuk dikonfirmasi.</small>
                                         </div>
-                                        </form>
+                                    </form> <!-- Tutup form di sini -->
                                     @endif
                                 @endif
                             </div>
@@ -291,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Checkbox handler
+    // Checkbox handler untuk tombol konfirmasi
     const checkboxes = document.querySelectorAll('.pembayaran-checkbox');
     const btn = document.querySelector('#btn-konfirmasi');
 
@@ -345,6 +346,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Fungsi hapus pembayaran (tanpa nested form)
+function hapusPembayaran(id, nama, periode, jumlah) {
+    const msg = `⚠️ Yakin hapus pembayaran ini?\n${nama} - ${periode}\nJumlah: ${jumlah}`;
+    if (!confirm(msg)) return;
+
+    // Buat form dinamis
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/operator/pembayaran/${id}/destroy-single`;
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+
+    const method = document.createElement('input');
+    method.type = 'hidden';
+    method.name = '_method';
+    method.value = 'DELETE';
+
+    form.appendChild(csrf);
+    form.appendChild(method);
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 @endpush
 
