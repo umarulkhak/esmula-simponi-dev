@@ -13,9 +13,9 @@
                             <p class="text-muted mb-0 small">Selamat datang di Simponi SMP Muhammadiyah Larangan</p>
                         </div>
                         <div class="d-flex flex-wrap gap-2">
-                            {{-- <a href="#" class="btn btn-outline-secondary btn-sm px-3">
-                                <i class="bx bx-file me-1"></i> Export
-                            </a> --}}
+                            <a href="{{ route('tagihan.export.dashboard') }}" class="btn btn-outline-secondary btn-sm px-3" target="_blank">
+                                <i class="bx bx-file me-1"></i> Export Excel
+                            </a>
                             <a href="{{ route('tagihan.create') }}" class="btn btn-primary btn-sm px-3">
                                 <i class="bx bx-calendar-plus me-1"></i> Tagihan Baru
                             </a>

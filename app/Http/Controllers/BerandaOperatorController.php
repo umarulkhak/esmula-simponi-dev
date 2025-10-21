@@ -7,6 +7,8 @@ use App\Models\Siswa;
 use App\Models\Tagihan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Exports\TagihanSiswaExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class BerandaOperatorController extends Controller
 {
@@ -181,6 +183,13 @@ class BerandaOperatorController extends Controller
         }
 
         return $payments;
+    }
+    /**
+     * Export Laporan Tagihan Siswa ke Excel
+     */
+    public function exportTagihanSiswa()
+    {
+        return Excel::download(new TagihanSiswaExport(), 'laporan_tagihan_siswa_' . now()->format('Y-m-d_H-i-s') . '.xlsx');
     }
 
 }

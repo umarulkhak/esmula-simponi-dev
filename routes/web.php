@@ -92,6 +92,7 @@ Route::prefix('operator')
     ->middleware(['auth', 'auth.operator'])
     ->group(function () {
         // Beranda operator
+        Route::get('/operator/tagihan/export', [BerandaOperatorController::class, 'exportTagihanSiswa'])->name('tagihan.export.dashboard');
         Route::get('beranda', [BerandaOperatorController::class, 'index'])
             ->name('operator.beranda');
 
