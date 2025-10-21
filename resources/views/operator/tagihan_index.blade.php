@@ -7,7 +7,7 @@
 | Fitur       :
 |   - Dashboard ringkasan (lebih compact)
 |   - Filter: bulan, tahun, status, kelas, pencarian
-|   - Hapus massal (checkbox + tombol)
+|   - Hapus massal (checkbox + tombol) → HAPUS SEMUA TAGIHAN PER SISWA
 |   - Tabel responsif dengan aksi ikon-only
 |   - Pagination & flash message
 |   - UX konsisten dengan view siswa
@@ -265,15 +265,16 @@
                                                    title="Lihat semua tagihan">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
-                                                <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
+                                                {{-- 🔥 DIUBAH: Hapus SEMUA tagihan siswa --}}
+                                                <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
                                                       method="POST"
                                                       class="d-inline"
-                                                      onsubmit="return confirm('⚠️ Yakin hapus tagihan ini?\n{{ $item->siswa->nama }} - {{ $item->tanggal_tagihan->translatedFormat('M Y') }}')">
+                                                      onsubmit="return confirm('⚠️ Yakin hapus SEMUA tagihan untuk {{ $item->siswa->nama }}?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
                                                             class="btn btn-icon btn-outline-danger btn-sm"
-                                                            title="Hapus tagihan">
+                                                            title="Hapus semua tagihan siswa">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -283,16 +284,18 @@
                                 @endif
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
-                                        <i class="fa fa-database fa-2x text-muted mb-2 d-block"></i>
-                                        <p class="text-muted mb-0">Tidak ada data tagihan.</p>
-                                        @if(request()->anyFilled(['q', 'bulan', 'tahun', 'status', 'kelas']))
-                                            <small class="d-block mt-1">
-                                                <a href="{{ route($routePrefix . '.index') }}" class="text-primary">
-                                                    Lihat semua data
-                                                </a>
-                                            </small>
-                                        @endif
+                                    <td colspan="8" class="py-5" style="min-height: 300px;">
+                                        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center">
+                                            <i class="fa fa-database fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted mb-2">Tidak ada data tagihan.</p>
+                                            @if(request()->anyFilled(['q', 'bulan', 'tahun', 'status', 'kelas']))
+                                                <small class="mt-1">
+                                                    <a href="{{ route($routePrefix . '.index') }}" class="text-primary">
+                                                        Lihat semua data
+                                                    </a>
+                                                </small>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforelse
@@ -396,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (selected.length === 0) return;
 
-        if (!confirm(`⚠️ Yakin ingin menghapus ${selected.length} tagihan yang dipilih?`)) {
+        if (!confirm(`⚠️ Yakin ingin menghapus SEMUA tagihan untuk ${selected.length} siswa yang dipilih?`)) {
             return;
         }
 
@@ -406,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <input type="hidden" name="_method" value="DELETE">
         `;
 
-        // 🔥 TAMBAHKAN INPUT BARU UNTUK SETIAP ID
+        // 🔥 TAMBAHKAN INPUT BARU UNTUK SETIAP ID (akan diproses sebagai siswa unik di controller)
         selected.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';

@@ -57,12 +57,16 @@ class TagihanController extends Controller
         // Buat query dasar
         $baseQuery = Tagihan::with(['user', 'siswa', 'tagihanDetails']);
 
-        // Filter bulan & tahun
-        if ($request->filled(['bulan', 'tahun'])) {
-            $baseQuery->whereMonth('tanggal_tagihan', $request->bulan)
-                    ->whereYear('tanggal_tagihan', $request->tahun);
+        /// Filter bulan &/atau tahun secara independen
+        if ($request->filled('bulan') || $request->filled('tahun')) {
+            if ($request->filled('bulan')) {
+                $baseQuery->whereMonth('tanggal_tagihan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $baseQuery->whereYear('tanggal_tagihan', $request->tahun);
+            }
         } else {
-            // Ambil tagihan terbaru per siswa
+            // TANPA filter bulan/tahun → tampilkan hanya TAGIHAN TERBARU PER SISWA
             $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
                 ->groupBy('siswa_id');
             $baseQuery->whereIn('id', $latestPerSiswa->pluck('latest_id'));
@@ -342,63 +346,60 @@ class TagihanController extends Controller
     }
 
     // =======================
-    // MASS DESTROY (HAPUS BANYAK)
+    // MASS DESTROY (HAPUS BANYAK → SEMUA TAGIHAN PER SISWA)
     // =======================
-    //**
-    /* Menghapus beberapa tagihan sekaligus berdasarkan ID.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\RedirectResponse
-    */
+    /**
+     * Menghapus SEMUA tagihan untuk setiap siswa yang terpilih.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function massDestroy(Request $request)
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'exists:App\Models\Tagihan,id',
+            'ids.*' => 'exists:tagihans,id',
         ]);
 
-        $ids = $request->ids;
-        $count = count($ids);
+        // Ambil semua siswa_id unik dari tagihan yang dipilih
+        $siswaIds = Tagihan::whereIn('id', $request->ids)
+            ->pluck('siswa_id')
+            ->unique()
+            ->filter() // hapus null jika ada
+            ->values()
+            ->toArray();
 
-        // Ambil data tagihan yang akan dihapus (untuk info flash)
-        $tagihans = Tagihan::with('siswa')
-            ->whereIn('id', $ids)
-            ->get();
+        if (empty($siswaIds)) {
+            return redirect()->back()->with('error', 'Tidak ada tagihan valid untuk dihapus.');
+        }
 
-        // Kelompokkan berdasarkan siswa
-        $siswaList = $tagihans->groupBy('siswa_id')->map(function ($group) {
-            $siswa = $group->first()->siswa;
-            return [
-                'nama' => $siswa?->nama ?? 'Siswa Tidak Diketahui',
-                'kelas' => $siswa?->kelas ?? '–',
-            ];
-        })->values();
-
+        // Ambil data siswa untuk pesan flash
+        $siswaList = Siswa::whereIn('id', $siswaIds)->get();
         $jumlahSiswa = $siswaList->count();
 
-        DB::transaction(function () use ($ids) {
-            foreach ($ids as $id) {
-                $tagihan = Tagihan::findOrFail($id);
-                $tagihan->tagihanDetails()->delete();
-                $tagihan->delete();
+        DB::transaction(function () use ($siswaIds) {
+            foreach ($siswaIds as $siswaId) {
+                $tagihans = Tagihan::with('tagihanDetails')->where('siswa_id', $siswaId)->get();
+                foreach ($tagihans as $tagihan) {
+                    $tagihan->tagihanDetails()->delete();
+                    $tagihan->delete();
+                }
             }
         });
 
         // 🔥 Buat pesan flash yang informatif tapi rapi
-        if ($jumlahSiswa === 0) {
-            $message = "Berhasil menghapus <strong>{$count} tagihan</strong>.";
-        } elseif ($jumlahSiswa === 1) {
-            $siswa = $siswaList[0];
-            $message = "Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$siswa['nama']} ({$siswa['kelas']})</strong>.";
+        if ($jumlahSiswa === 1) {
+            $siswa = $siswaList->first();
+            $message = "Berhasil menghapus semua tagihan untuk <strong>{$siswa->nama} ({$siswa->kelas})</strong>.";
         } else {
             // Ambil maksimal 5 siswa pertama
             $tampilkan = $siswaList->take(5);
-            $daftarSiswa = $tampilkan->map(fn($s) => "<li>{$s['nama']} ({$s['kelas']})</li>")->join('');
+            $daftarSiswa = $tampilkan->map(fn($s) => "<li>{$s->nama} ({$s->kelas})</li>")->join('');
 
             if ($jumlahSiswa <= 5) {
                 $message = "
                     <div class='flash-message-content'>
-                        <p> Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$jumlahSiswa} siswa</strong>:</p>
+                        <p>Berhasil menghapus semua tagihan untuk <strong>{$jumlahSiswa} siswa</strong>:</p>
                         <ul class='flash-list'>{$daftarSiswa}</ul>
                     </div>
                 ";
@@ -406,7 +407,7 @@ class TagihanController extends Controller
                 $sisanya = $jumlahSiswa - 5;
                 $message = "
                     <div class='flash-message-content'>
-                        <p> Berhasil menghapus <strong>{$count} tagihan</strong> untuk <strong>{$jumlahSiswa} siswa</strong>, di antaranya:</p>
+                        <p>Berhasil menghapus semua tagihan untuk <strong>{$jumlahSiswa} siswa</strong>, di antaranya:</p>
                         <ul class='flash-list'>{$daftarSiswa}</ul>
                         <p>... dan <strong>{$sisanya} siswa lainnya</strong>.</p>
                     </div>
