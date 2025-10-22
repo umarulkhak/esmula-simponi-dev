@@ -93,6 +93,7 @@ Route::prefix('operator')
     ->group(function () {
         // Beranda operator
         Route::get('/operator/tagihan/export', [BerandaOperatorController::class, 'exportTagihanSiswa'])->name('tagihan.export.dashboard');
+        Route::get('/siswa/export', [SiswaController::class, 'export'])->name('siswa.export');
         Route::get('beranda', [BerandaOperatorController::class, 'index'])
             ->name('operator.beranda');
 
@@ -121,6 +122,8 @@ Route::prefix('operator')
             ->name('pembayaran.destroySingle');
         Route::delete('wali/bulk-destroy', [WaliController::class, 'bulkDestroy'])->name('wali.bulk-destroy');
         Route::delete('wali/destroy-all', [WaliController::class, 'destroyAll'])->name('wali.destroy-all');
+        Route::get('/operator/invoice/cetak/{siswa}', [PembayaranController::class, 'cetakInvoiceOperator'])
+         ->name('operator.invoice.cetak');
 
         // Resource controllers
         Route::resource('user', UserController::class);

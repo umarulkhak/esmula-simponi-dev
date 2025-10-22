@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StorePembayaranRequest;
-use App\Models\Pembayaran;
+use App\Models\Siswa;
 use App\Models\Tagihan;
-use Illuminate\Support\Facades\DB;
+use App\Models\Pembayaran;
+use App\Models\BankSekolah;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Http\Requests\StorePembayaranRequest;
 
 class PembayaranController extends Controller
 {
@@ -393,5 +397,66 @@ class PembayaranController extends Controller
         });
 
         return redirect()->route('pembayaran.index')->with('success', "Pembayaran atas nama {$siswaNama} ({$periode}) berhasil dihapus.");
+    }
+    public function cetakInvoiceOperator(Siswa $siswa)
+    {
+        // Hanya operator yang boleh akses
+        if (!auth()->check() || auth()->user()->akses !== 'operator') {
+                abort(403, 'Hanya operator yang dapat mencetak invoice.');
+            }
+
+        $tagihanList = $siswa->tagihan()
+            ->with(['tagihanDetails', 'pembayaran'])
+            ->get();
+
+        // Hitung total dan cek kelengkapan pembayaran
+        $grandTotal = $tagihanList->sum(fn($t) => $t->tagihanDetails->sum('jumlah_biaya'));
+        $semuaDikonfirmasi = true;
+
+        foreach ($tagihanList as $tagihan) {
+            $totalDibayar = $tagihan->pembayaran
+                ->where('status_konfirmasi', 'sudah')
+                ->sum('jumlah_dibayar');
+            $subtotal = $tagihan->tagihanDetails->sum('jumlah_biaya');
+            if ($totalDibayar < $subtotal) {
+                $semuaDikonfirmasi = false;
+                break;
+            }
+        }
+
+        // Hanya izinkan cetak jika semua lunas & dikonfirmasi
+        if (!$semuaDikonfirmasi) {
+            return redirect()->back()->with('error', 'Invoice hanya dapat dicetak setelah semua tagihan lunas dan dikonfirmasi.');
+        }
+
+        // Data pendukung
+        $banksekolah = BankSekolah::all();
+        $now = now();
+        $invNumber = "INV/ESMULA/{$now->year}/" . str_pad($now->month, 2, '0', STR_PAD_LEFT) . '/' . str_pad($now->day, 2, '0', STR_PAD_LEFT);
+
+        // QR Code
+        $qrData = "NISN:{$siswa->nisn}|INV:{$invNumber}|TGL:" . now()->format('Y-m-d');
+        $qrCodeBase64 = base64_encode(QrCode::format('png')->generate($qrData));
+
+        // Logo
+        $logoPath = public_path('sneat/assets/img/logo-esmula.png');
+        $logoBase64 = file_exists($logoPath)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+            : null;
+
+        // Render PDF (gunakan view yang sama seperti wali)
+        $pdf = Pdf::loadView('wali.invoice-pdf', compact(
+            'siswa',
+            'tagihanList',
+            'banksekolah',
+            'grandTotal',
+            'semuaDikonfirmasi',
+            'invNumber',
+            'qrCodeBase64',
+            'logoBase64'
+        ));
+
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream("invoice-{$siswa->nisn}-operator.pdf");
     }
 }

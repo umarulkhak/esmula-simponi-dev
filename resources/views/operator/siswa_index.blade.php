@@ -29,10 +29,16 @@
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-semibold">{{ $title }}</h5>
-                {{-- Tombol Tambah — selalu muncul di kanan atas --}}
-                <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm px-3">
-                    <i class="fa fa-plus me-1"></i> Tambah Data
-                </a>
+                <div class="d-flex gap-2">
+                    {{-- Tombol Export --}}
+                    <a href="{{ route('siswa.export') }}" class="btn btn-outline-secondary btn-sm px-3" target="_blank">
+                        <i class="bx bx-file me-1"></i> Export Excel
+                    </a>
+                    {{-- Tombol Tambah --}}
+                    <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary btn-sm px-3">
+                        <i class="fa fa-plus me-1"></i> Tambah Data
+                    </a>
+                </div>
             </div>
             <div class="card-body">
 

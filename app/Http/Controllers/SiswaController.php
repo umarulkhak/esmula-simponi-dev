@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreSiswaRequest;
 use App\Http\Requests\UpdateSiswaRequest;
+use App\Exports\SiswaExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Controller untuk manajemen data Siswa.
@@ -258,5 +260,9 @@ class SiswaController extends Controller
         if (!empty($path) && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
+    }
+    public function export()
+    {
+        return Excel::download(new SiswaExport, 'data_siswa_' . now()->format('Y-m-d_H-i-s') . '.xlsx');
     }
 }

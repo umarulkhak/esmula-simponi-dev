@@ -77,6 +77,17 @@
                         <div class="card border rounded-3">
                             <div class="card-header d-flex justify-content-between align-items-center py-3">
                                 <h6 class="mb-0 fw-semibold"><i class="bx bx-receipt me-1"></i> Riwayat Pembayaran</h6>
+
+                                @if($statusPembayaran === 'Lunas')
+                                    <a href="{{ route('operator.invoice.cetak', $siswa) }}"
+                                    class="btn btn-icon btn-outline-primary btn-sm ms-2"
+                                    target="_blank"
+                                    title="Cetak Invoice"
+                                    style="width: 36px; height: 36px; padding: 0; font-size: 1rem;">
+                                        <i class="bx bx-printer"></i>
+                                    </a>
+                                @endif
+
                                 @if ($pembayaranGroup->contains(fn($p) => $p->status_konfirmasi == 'belum'))
                                     <small class="text-muted">Centang untuk konfirmasi</small>
                                 @endif
@@ -389,6 +400,14 @@ function hapusPembayaran(id, nama, periode, jumlah) {
     .btn-icon:hover {
         transform: scale(1.05);
         transition: transform 0.1s ease;
+    }
+        .btn-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
     }
 </style>
 @endpush
