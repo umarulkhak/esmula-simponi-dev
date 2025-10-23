@@ -54,25 +54,26 @@ class TagihanController extends Controller
      */
     public function index(Request $request)
     {
-        // Buat query dasar
+        // Query dasar untuk tagihan
         $baseQuery = Tagihan::with(['user', 'siswa', 'tagihanDetails']);
 
-        /// Filter bulan &/atau tahun secara independen
-        if ($request->filled('bulan') || $request->filled('tahun')) {
-            if ($request->filled('bulan')) {
-                $baseQuery->whereMonth('tanggal_tagihan', $request->bulan);
-            }
-            if ($request->filled('tahun')) {
-                $baseQuery->whereYear('tanggal_tagihan', $request->tahun);
-            }
+        // Filter hanya berdasarkan TAHUN (bulan dihapus)
+        if ($request->filled('tahun')) {
+            $baseQuery->whereYear('tanggal_tagihan', $request->tahun);
+
+            // Ambil TAGIHAN TERBARU PER SISWA pada tahun tersebut
+            $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
+                ->whereYear('tanggal_tagihan', $request->tahun)
+                ->groupBy('siswa_id');
+            $baseQuery->whereIn('id', $latestPerSiswa->pluck('latest_id'));
         } else {
-            // TANPA filter bulan/tahun → tampilkan hanya TAGIHAN TERBARU PER SISWA
+            // Jika tidak ada filter tahun → ambil tagihan terbaru per siswa secara global
             $latestPerSiswa = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
                 ->groupBy('siswa_id');
             $baseQuery->whereIn('id', $latestPerSiswa->pluck('latest_id'));
         }
 
-        // Filter status
+        // Filter status tagihan (opsional: 'baru', 'lunas')
         if ($request->filled('status')) {
             $baseQuery->where('status', $request->status);
         }
@@ -90,32 +91,45 @@ class TagihanController extends Controller
             });
         }
 
-        // 💡 BUAT SALINAN QUERY UNTUK STATISTIK — JANGAN PAGINATE DULU!
+        // 💡 Salin query untuk statistik
         $statsQuery = clone $baseQuery;
 
-        // Hitung statistik dari SEMUA data yang difilter (bukan hanya halaman saat ini)
-        $totalSiswa = $statsQuery->distinct('siswa_id')->count('siswa_id');
-        $totalLunas = $statsQuery->where('status', 'lunas')->count();
-        $totalBelum = $statsQuery->where('status', 'baru')->count();
-        $totalTagihan = $statsQuery->count();
-        $persentase = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
+        // === STATISTIK SAAT INI ===
+        // Total siswa AKTIF (dari tabel siswa)
+        $totalSiswaAktif = Siswa::where('status', 'aktif')->count();
 
-        // Statistik periode sebelumnya
-        $bulan = $request->filled(['bulan', 'tahun']) ? $request->bulan : now()->format('m');
-        $tahun = $request->filled(['bulan', 'tahun']) ? $request->tahun : now()->format('Y');
-        $prevMonth = Carbon::create($tahun, $bulan, 1)->subMonth();
+        // Hitung jumlah SISWA UNIK yang sudah LUNAS (sesuai filter tahun)
+        $totalLunasSiswa = $statsQuery
+            ->where('status', 'lunas')
+            ->distinct('siswa_id')
+            ->count('siswa_id');
 
+        // Belum bayar = total siswa aktif - yang sudah lunas
+        $totalBelumBayar = $totalSiswaAktif - $totalLunasSiswa;
+
+        // Persentase pembayaran
+        $persentase = $totalSiswaAktif > 0 ? round(($totalLunasSiswa / $totalSiswaAktif) * 100, 1) : 0;
+
+        // === STATISTIK PERIODE SEBELUMNYA (tahun lalu) ===
+        $tahunSekarang = $request->filled('tahun') ? $request->tahun : now()->year;
+        $tahunSebelumnya = $tahunSekarang - 1;
+
+        // Query untuk tahun sebelumnya
         $prevQuery = Tagihan::query();
 
-        if ($request->filled(['bulan', 'tahun'])) {
-            $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
-                    ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+        // Ambil tagihan terbaru per siswa pada tahun sebelumnya
+        $latestPrev = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
+            ->whereYear('tanggal_tagihan', $tahunSebelumnya)
+            ->groupBy('siswa_id');
+
+        if ($latestPrev->exists()) {
+            $prevQuery->whereIn('id', $latestPrev->pluck('latest_id'));
         } else {
-            $prevQuery->whereMonth('tanggal_tagihan', $prevMonth->format('m'))
-                    ->whereYear('tanggal_tagihan', $prevMonth->format('Y'));
+            // Jika tidak ada data tahun lalu, biarkan kosong
+            $prevQuery->whereRaw('1 = 0');
         }
 
-        // Terapkan filter tambahan ke periode sebelumnya juga
+        // Terapkan filter tambahan ke periode sebelumnya
         if ($request->filled('status')) {
             $prevQuery->where('status', $request->status);
         }
@@ -123,31 +137,34 @@ class TagihanController extends Controller
             $prevQuery->whereHas('siswa', fn($q) => $q->where('kelas', $request->kelas));
         }
 
-        $totalSiswaPrev = $prevQuery->distinct('siswa_id')->count('siswa_id');
-        $lunasPrev = (clone $prevQuery)->where('status', 'lunas')->count();
-        $belumPrev = (clone $prevQuery)->where('status', 'baru')->count();
-        $totalTagihanPrev = $prevQuery->count();
-        $persentasePrev = $totalTagihanPrev > 0 ? round(($lunasPrev / $totalTagihanPrev) * 100, 1) : 0;
+        // Hitung statistik tahun lalu
+        $lunasPrevSiswa = (clone $prevQuery)
+            ->where('status', 'lunas')
+            ->distinct('siswa_id')
+            ->count('siswa_id');
 
-        // 💡 BARU SEKARANG PAGINATE UNTUK TABEL
+        $belumPrevBayar = $totalSiswaAktif - $lunasPrevSiswa; // asumsi total siswa aktif tetap
+        $persentasePrev = $totalSiswaAktif > 0 ? round(($lunasPrevSiswa / $totalSiswaAktif) * 100, 1) : 0;
+
+        // === PAGINASI UNTUK TABEL ===
         $models = $baseQuery->latest()->paginate(50);
 
         return view($this->viewPath . $this->viewIndex, [
-            'models'         => $models,
-            'routePrefix'    => $this->routePrefix,
-            'title'          => 'Data Tagihan',
-            'totalSiswa'     => $totalSiswa,
-            'totalLunas'     => $totalLunas,
-            'totalBelum'     => $totalBelum,
-            'persentase'     => $persentase,
-            'totalSiswaPrev' => $totalSiswaPrev,
-            'lunasPrev'      => $lunasPrev,
-            'belumPrev'      => $belumPrev,
-            'persentasePrev' => $persentasePrev,
-            'diffSiswa'      => $totalSiswa - $totalSiswaPrev,
-            'diffLunas'      => $totalLunas - $lunasPrev,
-            'diffBelum'      => $totalBelum - $belumPrev,
-            'diffPersen'     => $persentase - $persentasePrev,
+            'models'           => $models,
+            'routePrefix'      => $this->routePrefix,
+            'title'            => 'Data Tagihan',
+            'totalSiswa'       => $totalSiswaAktif,
+            'totalLunas'       => $totalLunasSiswa,
+            'totalBelum'       => $totalBelumBayar,
+            'persentase'       => $persentase,
+            'totalSiswaPrev'   => $totalSiswaAktif,
+            'lunasPrev'        => $lunasPrevSiswa,
+            'belumPrev'        => $belumPrevBayar,
+            'persentasePrev'   => $persentasePrev,
+            'diffSiswa'        => 0,
+            'diffLunas'        => $totalLunasSiswa - $lunasPrevSiswa,
+            'diffBelum'        => $totalBelumBayar - $belumPrevBayar,
+            'diffPersen'       => $persentase - $persentasePrev,
         ]);
     }
 

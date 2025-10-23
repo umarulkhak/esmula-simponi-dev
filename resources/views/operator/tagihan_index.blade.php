@@ -6,7 +6,7 @@
 | Tujuan      : Menampilkan daftar tagihan dengan dashboard ringkasan, filter lengkap, dan aksi massal.
 | Fitur       :
 |   - Dashboard ringkasan (lebih compact)
-|   - Filter: bulan, tahun, status, kelas, pencarian
+|   - Filter: tahun, status, kelas, pencarian (bulan dihapus)
 |   - Hapus massal (checkbox + tombol) → HAPUS SEMUA TAGIHAN PER SISWA
 |   - Tabel responsif dengan aksi ikon-only
 |   - Pagination & flash message
@@ -126,22 +126,10 @@
                             'method' => 'GET',
                             'class' => 'row g-2 align-items-end'
                         ]) !!}
-                            <div class="col-12 col-md-2">
-                                <label class="form-label small">Bulan</label>
-                                <select name="bulan" class="form-select form-select-sm">
-                                    <option value="">Semua</option>
-                                    @for ($i = 1; $i <= 12; $i++)
-                                        <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}"
-                                            {{ request('bulan') == str_pad($i, 2, '0', STR_PAD_LEFT) ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
-                                        </option>
-                                    @endfor
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-12 col-md-3">
                                 <label class="form-label small">Tahun</label>
                                 <select name="tahun" class="form-select form-select-sm">
-                                    <option value="">Semua</option>
+                                    <option value="">Semua Tahun</option>
                                     @for ($y = date('Y'); $y >= 2022; $y--)
                                         <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>
                                             {{ $y }}
@@ -149,7 +137,7 @@
                                     @endfor
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-12 col-md-3">
                                 <label class="form-label small">Status</label>
                                 <select name="status" class="form-select form-select-sm">
                                     <option value="">Semua</option>
@@ -157,7 +145,7 @@
                                     <option value="lunas" {{ request('status') == 'lunas' ? 'selected' : '' }}>Lunas</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-2">
+                            <div class="col-12 col-md-3">
                                 <label class="form-label small">Kelas</label>
                                 <select name="kelas" class="form-select form-select-sm">
                                     <option value="">Semua</option>
@@ -166,15 +154,14 @@
                                     <option value="IX" {{ request('kelas') == 'IX' ? 'selected' : '' }}>IX</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-4">
+                            <div class="col-12 col-md-3">
                                 <label class="form-label small">Cari Siswa</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" name="q" class="form-control" placeholder="Nama/NISN..."
-                                        value="{{ request('q') }}">
+                                    <input type="text" name="q" class="form-control" placeholder="Nama/NISN..." value="{{ request('q') }}">
                                     <button type="submit" class="btn btn-outline-primary">
                                         <i class="fa fa-filter me-1"></i> Filter
                                     </button>
-                                    @if(request()->anyFilled(['q', 'bulan', 'tahun', 'status', 'kelas']))
+                                    @if(request()->anyFilled(['q', 'tahun', 'status', 'kelas']))
                                         <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary">
                                             <i class="fa fa-times me-1"></i> Reset
                                         </a>
@@ -190,9 +177,7 @@
                     <form id="form-mass-delete" method="POST" style="display: none;">
                         @csrf
                         @method('DELETE')
-                        {{-- Input hidden akan diisi ulang oleh JS --}}
                     </form>
-
                     <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-selected" disabled>
                         <i class="fa fa-trash me-1"></i> Hapus Terpilih
                     </button>
@@ -265,7 +250,6 @@
                                                    title="Lihat semua tagihan">
                                                     <i class="fa fa-eye"></i>
                                                 </a>
-                                                {{-- 🔥 DIUBAH: Hapus SEMUA tagihan siswa --}}
                                                 <form action="{{ route($routePrefix . '.destroySiswa', $item->siswa->id) }}"
                                                       method="POST"
                                                       class="d-inline"
@@ -288,7 +272,7 @@
                                         <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center">
                                             <i class="fa fa-database fa-3x text-muted mb-3"></i>
                                             <p class="text-muted mb-2">Tidak ada data tagihan.</p>
-                                            @if(request()->anyFilled(['q', 'bulan', 'tahun', 'status', 'kelas']))
+                                            @if(request()->anyFilled(['q', 'tahun', 'status', 'kelas']))
                                                 <small class="mt-1">
                                                     <a href="{{ route($routePrefix . '.index') }}" class="text-primary">
                                                         Lihat semua data
@@ -403,13 +387,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // 🔥 HAPUS INPUT LAMA
         formMassDelete.innerHTML = `
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <input type="hidden" name="_method" value="DELETE">
         `;
 
-        // 🔥 TAMBAHKAN INPUT BARU UNTUK SETIAP ID (akan diproses sebagai siswa unik di controller)
         selected.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';
