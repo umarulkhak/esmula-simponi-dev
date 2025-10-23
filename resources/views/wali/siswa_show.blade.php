@@ -13,31 +13,31 @@
             <div class="card-body">
 
                 {{-- === SECTION: FOTO PROFILE === --}}
-                    <div class="col-12 text-center">
-                        @php
-                            $fotoPath = $model->foto ? \Storage::url($model->foto) : asset('images/no-image.png');
-                        @endphp
+                <div class="col-12 text-center">
+                    @php
+                        $fotoPath = $model->foto ? \Storage::url($model->foto) : asset('images/no-image.png');
+                    @endphp
 
-                        <div class="mb-3 position-relative d-inline-block">
-                            <img
-                                src="{{ $fotoPath }}"
-                                onerror="this.src='{{ asset('images/no-image.png') }}'"
-                                alt="Foto Profil {{ $model->nama }}"
-                                class="img-fluid rounded shadow-sm"
-                                style="max-width: 100%; max-height: 280px; object-fit: cover; border: 3px solid #f8f9fa;">
-                            <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-2 shadow-sm">
-                                <i class="bx bx-image text-muted fs-5"></i>
-                            </div>
-                        </div>
-
-                        <div class="mt-2">
-                            <span class="badge bg-label-primary rounded-pill px-3 py-1">
-                                ID: #{{ $model->id }}
-                            </span>
+                    <div class="mb-3 position-relative d-inline-block">
+                        <img
+                            src="{{ $fotoPath }}"
+                            onerror="this.src='{{ asset('images/no-image.png') }}'"
+                            alt="Foto Profil {{ $model->nama }}"
+                            class="img-fluid rounded shadow-sm"
+                            style="max-width: 100%; max-height: 280px; object-fit: cover; border: 3px solid #f8f9fa;">
+                        <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-2 shadow-sm">
+                            <i class="bx bx-image text-muted fs-5"></i>
                         </div>
                     </div>
 
-                {{-- === DETAIL DATA (TETAP SAMA) === --}}
+                    <div class="mt-2">
+                        <span class="badge bg-label-primary rounded-pill px-3 py-1">
+                            ID: #{{ $model->id }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- === DETAIL DATA === --}}
                 <div class="row g-3">
 
                     {{-- NISN --}}
@@ -66,6 +66,34 @@
                             <div>
                                 <small class="text-muted">Angkatan</small>
                                 <div class="fw-medium">{{ $model->angkatan }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 🔹 STATUS SISWA 🔹 --}}
+                    <div class="col-12">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0 me-3 mt-1">
+                                <div class="bg-label-{{ $model->status === 'lulus' ? 'secondary' : 'success' }} rounded p-2">
+                                    <i class="fa {{ $model->status === 'lulus' ? 'fa-user-graduate' : 'fa-check-circle' }} fs-5"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <small class="text-muted">Status Siswa</small>
+                                <div class="fw-medium">
+                                    @if($model->status === 'lulus')
+                                        <span class="badge bg-label-secondary">
+                                            </i> LULUS
+                                        </span>
+                                        @if($model->tahun_lulus)
+                                            <small class="text-muted d-block mt-1">Tahun Lulus: {{ $model->tahun_lulus }}</small>
+                                        @endif
+                                    @else
+                                        <span class="badge bg-label-success">
+                                            Aktif
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>

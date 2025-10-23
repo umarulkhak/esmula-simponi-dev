@@ -22,14 +22,13 @@
 
         <div class="row g-3">
 
-          {{-- Wali Murid & Nama Siswa — 2 kolom di desktop --}}
+          {{-- Wali Murid & Nama Siswa --}}
           <div class="col-12 col-lg-6">
             <label for="wali_id" class="form-label fw-semibold">Wali Murid</label>
             {!! Form::select('wali_id', $wali, null, [
               'class' => 'form-select select2' . ($errors->has('wali_id') ? ' is-invalid' : ''),
               'placeholder' => 'Pilih Wali Murid',
               'id' => 'wali_id',
-            //   'required'
             ]) !!}
             @error('wali_id')
               <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -51,7 +50,7 @@
             @enderror
           </div>
 
-          {{-- NISN & Kelas — 2 kolom di desktop --}}
+          {{-- NISN & Kelas --}}
           <div class="col-12 col-lg-6">
             <label for="nisn" class="form-label fw-semibold">NISN</label>
             {!! Form::text('nisn', null, [
@@ -85,7 +84,7 @@
             <div class="form-text">Pilih tingkat kelas: VII, VIII, atau IX.</div>
           </div>
 
-          {{-- Tahun Angkatan & Foto — 2 kolom di desktop --}}
+          {{-- Tahun Angkatan & Status Siswa --}}
           <div class="col-12 col-lg-6">
             <label for="angkatan" class="form-label fw-semibold">Tahun Angkatan <span class="text-danger">*</span></label>
             {!! Form::selectRange('angkatan', 2023, date('Y') + 1, null, [
@@ -98,7 +97,31 @@
             @enderror
           </div>
 
+          {{-- 🔹 FIELD BARU: STATUS SISWA 🔹 --}}
           <div class="col-12 col-lg-6">
+            <label for="status" class="form-label fw-semibold">Status Siswa <span class="text-danger">*</span></label>
+            {!! Form::select('status', [
+                'aktif' => 'Aktif',
+                'lulus' => 'Lulus',
+                'tidak_aktif' => 'Tidak Aktif (DO)'
+            ], null, [
+                'class' => 'form-select' . ($errors->has('status') ? ' is-invalid' : ''),
+                'id' => 'status',
+                'required'
+            ]) !!}
+            @error('status')
+              <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+            <div class="form-text">
+              Pilih status akademik siswa.
+              @if($method === 'PUT' && $model->status === 'lulus')
+                <strong class="text-warning">Siswa ini sudah lulus.</strong>
+              @endif
+            </div>
+          </div>
+
+          {{-- Foto --}}
+          <div class="col-12">
             <label for="foto" class="form-label fw-semibold">Foto Siswa</label>
             <div class="border rounded p-3 mb-2 bg-light text-center">
                 @php
@@ -125,7 +148,7 @@
 
         </div>
 
-        {{-- Tombol Aksi — tetap full width --}}
+        {{-- Tombol Aksi --}}
         <div class="d-flex gap-2 mt-4 flex-wrap">
           {!! Form::submit($button, ['class' => 'btn btn-primary px-4']) !!}
           <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">Batal</a>
@@ -142,26 +165,6 @@
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-
-    // Preview foto real-time
-    const fotoInput = document.getElementById('foto');
-    const previewImg = document.getElementById('preview-foto');
-
-    if (fotoInput && previewImg) {
-      fotoInput.addEventListener('change', function (e) {
-        const file = e.target.files[0];
-        if (file && /^image\//.test(file.type)) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            previewImg.src = evt.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          previewImg.src = "{{ asset('images/no-image.png') }}";
-        }
-      });
-    }
-
     // Validasi Bootstrap
     const forms = document.querySelectorAll('.needs-validation');
     Array.from(forms).forEach(form => {
@@ -174,7 +177,7 @@
       }, false);
     });
 
-    // Optional: Inisialisasi Select2 jika dipakai
+    // Optional: Select2
     if (typeof $ !== 'undefined' && $.fn.select2) {
       $('.select2').select2({
         width: '100%',

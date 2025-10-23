@@ -53,9 +53,23 @@
                                     </span>
                                 </div>
 
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <small class="text-muted">Angkatan:</small>
                                     <p class="mb-0">{{ $item->angkatan }}</p>
+                                </div>
+
+                                {{-- 🔹 STATUS SISWA 🔹 --}}
+                                <div class="mb-3">
+                                    <small class="text-muted">Status:</small><br>
+                                    @if($item->status === 'lulus')
+                                        <span class="badge bg-label-secondary rounded-pill px-2 py-1">
+                                            <i class="bx bx-graduation me-1"></i> LULUS
+                                        </span>
+                                    @else
+                                        <span class="badge bg-label-success rounded-pill px-2 py-1">
+                                            <i class="bx bx-check-circle me-1"></i> Aktif
+                                        </span>
+                                    @endif
                                 </div>
 
                                 <!-- Aksi: Hanya Detail & Edit -->
@@ -107,4 +121,3 @@
     }
 </style>
 @endpush
-

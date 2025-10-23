@@ -100,6 +100,9 @@ Route::prefix('operator')
         // Update pembayaran massal
         Route::put('/pembayaran/update-multiple', [PembayaranController::class, 'updateMultiple'])
             ->name('pembayaran.update.multiple');
+        // Form promosi siswa
+        Route::get('siswa/promosi', [SiswaController::class, 'promosiForm'])->name('siswa.promosi.form');
+        Route::post('siswa/promosi', [SiswaController::class, 'prosesPromosi'])->name('siswa.promosi.proses');
 
         // Aksi khusus
         Route::delete('siswa/mass-destroy', [SiswaController::class, 'massDestroy'])

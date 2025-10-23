@@ -29,6 +29,8 @@ class Siswa extends Model
         'angkatan',
         'foto',
         'user_id',
+        'status',
+        'tahun_lulus',
     ];
 
     /**
@@ -71,5 +73,28 @@ class Siswa extends Model
                   ->whereYear('tanggal_tagihan', $tahun);
             }
         ]);
+    }
+    /**
+     * Scope untuk mengambil hanya siswa aktif.
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'aktif');
+    }
+
+    /**
+     * Scope untuk mengambil hanya siswa yang sudah lulus.
+     */
+    public function scopeLulus($query)
+    {
+        return $query->where('status', 'lulus');
+    }
+
+    /**
+     * Menampilkan label status yang lebih manusiawi.
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->status === 'lulus' ? 'LULUS' : 'Aktif';
     }
 }

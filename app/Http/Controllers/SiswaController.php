@@ -45,6 +45,21 @@ class SiswaController extends Controller
     {
         $query = Model::with('wali', 'user');
 
+        // 🔹 Filter berdasarkan status
+        // Jika tidak ada input 'status', default ke 'aktif'
+        // Jika 'status' dikirim tapi kosong (''), tampilkan SEMUA
+        if ($request->filled('status')) {
+            $statusValue = $request->status;
+            if ($statusValue !== '') {
+                $query->where('status', $statusValue);
+            }
+            // Jika $statusValue === '', maka tidak ada where → tampilkan semua
+        } else {
+            // 🔸 Default: hanya tampilkan siswa aktif
+            $query->where('status', 'aktif');
+        }
+
+        // Filter pencarian
         if ($request->filled('q')) {
             $query = $query->search($request->q);
         }
@@ -264,5 +279,72 @@ class SiswaController extends Controller
     public function export()
     {
         return Excel::download(new SiswaExport, 'data_siswa_' . now()->format('Y-m-d_H-i-s') . '.xlsx');
+    }
+
+    // =========================================================================
+    // PROMOSI & KELULUSAN
+    // =========================================================================
+
+    public function promosiForm()
+    {
+        $jumlahVII = Model::where('kelas', 'VII')->where('status', 'aktif')->count();
+        $jumlahVIII = Model::where('kelas', 'VIII')->where('status', 'aktif')->count();
+        $jumlahIX = Model::where('kelas', 'IX')->where('status', 'aktif')->count();
+
+        return view($this->viewPath . 'siswa_promosi', [
+            'title' => 'Promosi & Kelulusan Siswa',
+            'jumlahVII' => $jumlahVII,
+            'jumlahVIII' => $jumlahVIII,
+            'jumlahIX' => $jumlahIX,
+            'tahunSekarang' => now()->year,
+        ]);
+    }
+
+    public function prosesPromosi(Request $request)
+    {
+        // Validasi: hanya operator
+        if (auth()->user()->akses !== 'operator') {
+            abort(403);
+        }
+
+        // Validasi konfirmasi
+        $request->validate([
+            'confirm' => 'required|accepted',
+        ], [
+            'confirm.accepted' => 'Anda harus mencentang konfirmasi untuk melanjutkan.'
+        ]);
+
+        \DB::beginTransaction();
+        try {
+            $tahunSekarang = now()->year;
+
+            // ✅ UPDATE SEMUA DALAM SATU QUERY — BERDASARKAN KONDISI AWAL
+            Model::where('status', 'aktif')
+                ->update([
+                    'kelas' => \DB::raw("CASE
+                        WHEN kelas = 'VII' THEN 'VIII'
+                        WHEN kelas = 'VIII' THEN 'IX'
+                        ELSE kelas
+                    END"),
+                    'status' => \DB::raw("CASE
+                        WHEN kelas = 'IX' THEN 'lulus'
+                        ELSE status
+                    END"),
+                    'tahun_lulus' => \DB::raw("CASE
+                        WHEN kelas = 'IX' THEN {$tahunSekarang}
+                        ELSE tahun_lulus
+                    END")
+                ]);
+
+            \DB::commit();
+
+            flash("✅ Promosi & kelulusan berhasil! Tahun ajaran baru dimulai.")->success();
+            return redirect()->route($this->routePrefix . '.index');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            flash("❌ Gagal memproses promosi: " . $e->getMessage())->error();
+            return back();
+        }
     }
 }

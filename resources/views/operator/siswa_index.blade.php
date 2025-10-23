@@ -3,21 +3,7 @@
 | VIEW: Operator - Daftar Siswa
 |--------------------------------------------------------------------------
 | Penulis     : Umar Ulkhak
-| Tujuan      : Menampilkan daftar siswa dengan fitur pencarian, aksi, pagination, dan hapus massal.
-| Fitur       :
-|   - Tombol tambah data
-|   - Pencarian real-time (berdasarkan nama siswa)
-|   - Tabel responsif dengan aksi: Edit, Detail, Hapus (icon-only style)
-|   - Pagination Bootstrap
-|   - Hapus beberapa data sekaligus & hapus semua
-|   - Responsif di mobile
-|   - UX Friendly: konfirmasi hapus, ikon, spacing konsisten
-|   - Clean Code: struktur blade rapi, komentar jelas
-|
-| Variabel yang diharapkan dari Controller:
-|   - $title     → Judul halaman
-|   - $routePrefix → Prefix route (misal: 'operator.siswa')
-|   - $models    → Collection paginate siswa
+| Tujuan      : Menampilkan daftar siswa dengan filter status, pencarian, aksi, pagination.
 |
 --}}
 
@@ -30,6 +16,13 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-semibold">{{ $title }}</h5>
                 <div class="d-flex gap-2">
+                    {{-- 🔹 TOMBOL PROMOSI — HANYA UNTUK OPERATOR 🔹 --}}
+                    @if(auth()->check() && auth()->user()->akses === 'operator')
+                        <a href="{{ route('siswa.promosi.form') }}" class="btn btn-outline-success btn-sm px-3">
+                            <i class="bx bx-up-arrow-circle me-1"></i> Promosi & Kelulusan
+                        </a>
+                    @endif
+
                     {{-- Tombol Export --}}
                     <a href="{{ route('siswa.export') }}" class="btn btn-outline-secondary btn-sm px-3" target="_blank">
                         <i class="bx bx-file me-1"></i> Export Excel
@@ -42,28 +35,42 @@
             </div>
             <div class="card-body">
 
-                {{-- === SECTION: PENCARIAN === --}}
+                {{-- === SECTION: PENCARIAN & FILTER === --}}
                 <div class="mb-4">
                     {!! Form::open([
                         'route' => $routePrefix . '.index',
                         'method' => 'GET',
                         'class' => 'row g-2'
                     ]) !!}
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <input
                                 type="text"
                                 name="q"
                                 class="form-control form-control-sm"
-                                placeholder="Cari nama atau nisn siswa..."
+                                placeholder="Cari nama atau NISN..."
                                 value="{{ request('q') }}"
                                 autocomplete="off"
                             >
                         </div>
-                        <div class="col-md-7 d-flex gap-2">
+                        <div class="col-md-3">
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Semua Status</option>
+                                <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>
+                                    Aktif
+                                </option>
+                                <option value="lulus" {{ request('status') == 'lulus' ? 'selected' : '' }}>
+                                    Lulus
+                                </option>
+                                <option value="tidak_aktif" {{ request('status') == 'tidak_aktif' ? 'selected' : '' }}>
+                                    Tidak Aktif (DO)
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-5 d-flex gap-2">
                             <button type="submit" class="btn btn-outline-primary btn-sm px-3">
-                                <i class="fa fa-search me-1"></i> Cari
+                                <i class="fa fa-filter me-1"></i> Terapkan Filter
                             </button>
-                            @if(request('q'))
+                            @if(request()->anyFilled(['q', 'status']))
                                 <a href="{{ route($routePrefix . '.index') }}" class="btn btn-outline-secondary btn-sm px-3">
                                     <i class="fa fa-times me-1"></i> Reset
                                 </a>
@@ -83,13 +90,6 @@
                     <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-selected" disabled>
                         <i class="fa fa-trash me-1"></i> Hapus Terpilih
                     </button>
-
-                    {{-- @if($models->total() > 0 && !request('q'))
-                        <button type="button" class="btn btn-outline-dark btn-sm" id="btn-delete-all"
-                                onclick="confirmDeleteAll()">
-                            <i class="fa fa-ban me-1"></i> Hapus Semua
-                        </button>
-                    @endif --}}
                 </div>
 
                 {{-- === SECTION: TABEL DATA === --}}
@@ -106,7 +106,7 @@
                                 <th>NISN</th>
                                 <th>Kelas</th>
                                 <th>Angkatan</th>
-                                <th>Dibuat</th>
+                                <th class="text-center">Status</th>
                                 <th class="text-center" style="width: 120px;">Aksi</th>
                             </tr>
                         </thead>
@@ -132,50 +132,55 @@
                                         </span>
                                     </td>
                                     <td>{{ $item->angkatan }}</td>
-                                    <td>{{ $item->user->name ?? '–' }}</td>
+                                    <td class="text-center">
+                                        @php
+                                            $statusMap = [
+                                                'aktif' => ['label' => 'Aktif', 'color' => 'success', 'icon' => 'bx-check-circle'],
+                                                'lulus' => ['label' => 'LULUS', 'color' => 'secondary', 'icon' => 'bx-graduation'],
+                                                'tidak_aktif' => ['label' => 'Tidak Aktif', 'color' => 'danger', 'icon' => 'bx-x-circle'],
+                                            ];
+                                            $statusData = $statusMap[$item->status] ?? ['label' => 'Tidak Diketahui', 'color' => 'light', 'icon' => 'bx-help-circle'];
+                                        @endphp
+                                        <span class="badge bg-label-{{ $statusData['color'] }} rounded-pill px-2 py-1">
+                                            <i class="bx {{ $statusData['icon'] }} me-1"></i> {{ $statusData['label'] }}
+                                        </span>
+                                    </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
-
-                                            {{-- Tombol Detail --}}
                                             <a href="{{ route($routePrefix . '.show', $item->id) }}"
                                                class="btn btn-icon btn-outline-info btn-sm"
-                                               title="Lihat Detail Siswa: {{ $item->nama }}">
+                                               title="Detail: {{ $item->nama }}">
                                                 <i class="fa fa-eye"></i>
                                             </a>
-
-                                            {{-- Tombol Edit --}}
                                             <a href="{{ route($routePrefix . '.edit', $item->id) }}"
                                                class="btn btn-icon btn-outline-warning btn-sm"
-                                               title="Edit Data Siswa: {{ $item->nama }}">
+                                               title="Edit: {{ $item->nama }}">
                                                 <i class="fa fa-edit"></i>
                                             </a>
-
-                                            {{-- Tombol Hapus --}}
                                             <form action="{{ route($routePrefix . '.destroy', $item->id) }}"
                                                   method="POST"
                                                   class="d-inline"
-                                                  onsubmit="return confirm('⚠️ Yakin ingin menghapus data siswa: {{ $item->nama }}?')">
+                                                  onsubmit="return confirm('⚠️ Hapus {{ $item->nama }}?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
                                                         class="btn btn-icon btn-outline-danger btn-sm"
-                                                        title="Hapus Data Siswa: {{ $item->nama }}">
+                                                        title="Hapus: {{ $item->nama }}">
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </form>
-
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
                                     <td colspan="9" class="text-center py-5">
-                                        <i class="fa fa-empty fs-1 text-muted mb-2 d-block"></i>
-                                        <p class="text-muted mb-0">Data tidak ditemukan.</p>
-                                        @if(request('q'))
+                                        <i class="bx bx-empty fs-1 text-muted mb-2 d-block"></i>
+                                        <p class="text-muted mb-0">Tidak ada data siswa.</p>
+                                        @if(request()->anyFilled(['q', 'status']))
                                             <small class="d-block mt-1">
                                                 <a href="{{ route($routePrefix . '.index') }}" class="text-primary">
-                                                    Lihat semua data
+                                                    Lihat semua siswa aktif
                                                 </a>
                                             </small>
                                         @endif
@@ -186,18 +191,15 @@
                     </table>
                 </div>
 
-                {{-- === SECTION: PAGINATION === --}}
+                {{-- === PAGINATION === --}}
                 @if($models->hasPages())
                     <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <small class="text-muted">
                             Menampilkan {{ $models->firstItem() }} - {{ $models->lastItem() }} dari {{ $models->total() }} data
                         </small>
-                        <div>
-                            {!! $models->links() !!}
-                        </div>
+                        <div>{!! $models->links() !!}</div>
                     </div>
                 @endif
-
             </div>
         </div>
     </div>
@@ -206,16 +208,10 @@
 
 @push('styles')
 <style>
-    .table-hover tbody tr:hover {
-        background-color: #f9fafb !important;
-    }
+    .table-hover tbody tr:hover { background-color: #f9fafb !important; }
     .btn-icon {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 36px; height: 36px; padding: 0;
+        display: flex; align-items: center; justify-content: center;
         font-size: 0.9rem;
     }
     .btn-icon i { margin: 0; }
@@ -229,78 +225,36 @@
         const selectAll = document.getElementById('select-all');
         const checkboxes = document.querySelectorAll('.siswa-checkbox');
         const deleteSelectedBtn = document.getElementById('btn-delete-selected');
-        const formMassDelete = document.getElementById('form-mass-delete');
-        const selectedIdsInput = document.getElementById('selected-ids');
 
-        // Toggle semua checkbox
         if (selectAll) {
-            selectAll.addEventListener('change', function () {
-                checkboxes.forEach(cb => cb.checked = this.checked);
-                updateDeleteButton();
+            selectAll.addEventListener('change', () => {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                deleteSelectedBtn.disabled = !selectAll.checked;
             });
         }
 
-        // Update status tombol hapus terpilih
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateDeleteButton);
+            cb.addEventListener('change', () => {
+                const anyChecked = Array.from(checkboxes).some(c => c.checked);
+                deleteSelectedBtn.disabled = !anyChecked;
+            });
         });
 
-        function updateDeleteButton() {
-            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-            deleteSelectedBtn.disabled = !anyChecked;
-        }
-
-        // Submit hapus terpilih
         deleteSelectedBtn.addEventListener('click', function () {
-            const selected = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
+            const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (!selected.length) return;
 
-            if (selected.length === 0) return;
+            if (!confirm(`⚠️ Yakin hapus ${selected.length} siswa terpilih?`)) return;
 
-            if (!confirm(`⚠️ Yakin ingin menghapus ${selected.length} data siswa yang dipilih?`)) {
-                return;
-            }
-
-            selectedIdsInput.value = JSON.stringify(selected);
-            formMassDelete.action = "{{ route($routePrefix . '.massDestroy') }}";
-            formMassDelete.submit();
+            const form = document.getElementById('form-mass-delete');
+            document.getElementById('selected-ids').value = JSON.stringify(selected);
+            form.action = "{{ route($routePrefix . '.massDestroy') }}";
+            form.submit();
         });
 
-        // Fungsi hapus semua
-        window.confirmDeleteAll = function () {
-            if (!confirm('⚠️ YAKIN ingin menghapus SEMUA data siswa? Tindakan ini tidak bisa dibatalkan!')) {
-                return;
-            }
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{{ route($routePrefix . '.massDestroy') }}";
-            form.style.display = 'none';
-
-            const csrf = document.createElement('input');
-            csrf.name = '_token';
-            csrf.value = '{{ csrf_token() }}';
-            form.appendChild(csrf);
-
-            const method = document.createElement('input');
-            method.name = '_method';
-            method.value = 'DELETE';
-            form.appendChild(method);
-
-            const allFlag = document.createElement('input');
-            allFlag.name = 'delete_all';
-            allFlag.value = '1';
-            form.appendChild(allFlag);
-
-            document.body.appendChild(form);
-            form.submit();
-        };
-
-        // Fokus ke input pencarian saat halaman load
-        const searchInput = document.getElementById('q');
-        if (searchInput && !searchInput.value) {
-            searchInput.focus();
-        }
+        // Fokus ke input pencarian
+        const searchInput = document.querySelector('input[name="q"]');
+        if (searchInput && !searchInput.value) searchInput.focus();
     });
 </script>
 @endpush

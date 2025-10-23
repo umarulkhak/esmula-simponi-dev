@@ -107,7 +107,34 @@
                                     </div>
                                 </div>
 
-                                {{-- Baris 3 --}}
+                                {{-- 🔹 BARIS BARU: STATUS SISWA 🔹 --}}
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        @php
+                                            $statusConfig = match($model->status) {
+                                                'lulus' => ['color' => 'secondary', 'icon' => 'bx-graduation', 'label' => 'LULUS'],
+                                                'tidak_aktif' => ['color' => 'danger', 'icon' => 'bx-x-circle', 'label' => 'Tidak Aktif'],
+                                                default => ['color' => 'success', 'icon' => 'bx-check-circle', 'label' => 'Aktif'],
+                                            };
+                                        @endphp
+                                        <div class="flex-shrink-0 bg-label-{{ $statusConfig['color'] }} rounded p-2 me-3">
+                                            <i class="bx {{ $statusConfig['icon'] }} fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small text-muted">Status Siswa</div>
+                                            <div class="fw-semibold">
+                                                <span class="badge bg-label-{{ $statusConfig['color'] }} rounded-pill px-3 py-1">
+                                                    <i class="bx {{ $statusConfig['icon'] }} me-1"></i> {{ $statusConfig['label'] }}
+                                                </span>
+                                                @if($model->status === 'lulus' && $model->tahun_lulus)
+                                                    <small class="text-muted d-block mt-1">Tahun Lulus: {{ $model->tahun_lulus }}</small>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Baris 3 (Wali Murid) --}}
                                 <div class="col-12 col-md-6">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-shrink-0 bg-label-warning rounded p-2 me-3">
@@ -201,17 +228,13 @@
 
 @push('styles')
 <style>
-    /* Optional: hover effect untuk card */
     .card:hover {
         box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
         transition: all 0.3s ease;
     }
-
-    /* Optional: animasi saat load */
     .fade-in {
         animation: fadeIn 0.5s ease-in;
     }
-
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -222,25 +245,7 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Optional: Tambahkan animasi saat halaman load
         document.querySelector('.card').classList.add('fade-in');
     });
 </script>
 @endpush
-
-{{--
-|--------------------------------------------------------------------------
-| VIEW: Detail Siswa (Diperbaiki untuk Path Foto Lama)
-|--------------------------------------------------------------------------
-| Penulis     : Umar Ulkhak
-| Perbaikan   :
-|   - Foto dengan path 'public/foto_siswa/...' kini ditampilkan dengan benar
-|   - Gunakan fallback otomatis jika gambar broken
-|   - Tidak lagi mengecek Storage::exists() yang salah disk
-|
-| Variabel yang diharapkan:
-|   - $model      → Instance model Siswa
-|   - $title      → Judul halaman (opsional)
-|   - $routePrefix → Prefix route (misal: 'wali.siswa')
-|
---}}
