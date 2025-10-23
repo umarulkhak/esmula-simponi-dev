@@ -103,6 +103,7 @@ Route::prefix('operator')
         // Form promosi siswa
         Route::get('siswa/promosi', [SiswaController::class, 'promosiForm'])->name('siswa.promosi.form');
         Route::post('siswa/promosi', [SiswaController::class, 'prosesPromosi'])->name('siswa.promosi.proses');
+        Route::post('siswa/promosi/rollback', [SiswaController::class, 'rollbackPromosi'])->name('siswa.promosi.rollback');
 
         // Aksi khusus
         Route::delete('siswa/mass-destroy', [SiswaController::class, 'massDestroy'])

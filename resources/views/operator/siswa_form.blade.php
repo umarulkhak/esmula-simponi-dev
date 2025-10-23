@@ -125,7 +125,9 @@
             <label for="foto" class="form-label fw-semibold">Foto Siswa</label>
             <div class="border rounded p-3 mb-2 bg-light text-center">
                 @php
-                    $fotoPath = $model->foto ? \Storage::url($model->foto) : asset('images/no-image.png');
+                    $fotoPath = $model->foto
+                                ? \Storage::url($model->foto)
+                                : asset('images/no-image.png');
                 @endphp
               <img
                 src="{{ $fotoPath }}"

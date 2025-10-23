@@ -45,17 +45,13 @@ class SiswaController extends Controller
     {
         $query = Model::with('wali', 'user');
 
-        // 🔹 Filter berdasarkan status
-        // Jika tidak ada input 'status', default ke 'aktif'
-        // Jika 'status' dikirim tapi kosong (''), tampilkan SEMUA
+        // Filter status
         if ($request->filled('status')) {
             $statusValue = $request->status;
             if ($statusValue !== '') {
                 $query->where('status', $statusValue);
             }
-            // Jika $statusValue === '', maka tidak ada where → tampilkan semua
         } else {
-            // 🔸 Default: hanya tampilkan siswa aktif
             $query->where('status', 'aktif');
         }
 
@@ -66,10 +62,23 @@ class SiswaController extends Controller
 
         $models = $query->latest()->paginate(20);
 
+        // 🔹 HITUNG STATISTIK (SELALU HITUNG SEMUA DATA, TIDAK TERGANTUNG FILTER)
+        $allSiswa = Model::all();
+        // 🔹 HITUNG STATISTIK YANG KONSISTEN DENGAN LOGIKA STATUS
+        $stats = [
+            'kelas_vii' => $allSiswa->where('kelas', 'VII')->where('status', 'aktif')->count(),
+            'kelas_viii' => $allSiswa->where('kelas', 'VIII')->where('status', 'aktif')->count(),
+            'kelas_ix' => $allSiswa->where('kelas', 'IX')->where('status', 'aktif')->count(),
+            'lulus' => $allSiswa->where('status', 'lulus')->count(),
+            'tidak_aktif' => $allSiswa->where('status', 'tidak_aktif')->count(),
+            'total_aktif' => $allSiswa->where('status', 'aktif')->count(), // untuk card "Siswa Aktif"
+        ];
+
         return view($this->viewPath . $this->viewIndex, [
             'models'      => $models,
             'routePrefix' => $this->routePrefix,
             'title'       => 'Data Siswa',
+            'stats'       => $stats,
         ]);
     }
 
@@ -302,12 +311,12 @@ class SiswaController extends Controller
 
     public function prosesPromosi(Request $request)
     {
-        // Validasi: hanya operator
+        // 🔒 Pastikan hanya operator yang bisa memproses
         if (auth()->user()->akses !== 'operator') {
-            abort(403);
+            abort(403, 'Hanya operator yang boleh melakukan promosi siswa.');
         }
 
-        // Validasi konfirmasi
+        // ✅ Validasi konfirmasi
         $request->validate([
             'confirm' => 'required|accepted',
         ], [
@@ -318,27 +327,50 @@ class SiswaController extends Controller
         try {
             $tahunSekarang = now()->year;
 
-            // ✅ UPDATE SEMUA DALAM SATU QUERY — BERDASARKAN KONDISI AWAL
-            Model::where('status', 'aktif')
+            // Hitung jumlah siswa sebelum promosi (untuk laporan)
+            $jumlahVII   = Model::where('kelas', 'VII')->where('status', 'aktif')->count();
+            $jumlahVIII  = Model::where('kelas', 'VIII')->where('status', 'aktif')->count();
+            $jumlahIX    = Model::where('kelas', 'IX')->where('status', 'aktif')->count();
+
+            // ⚠️ Urutan HARUS dari atas ke bawah agar tidak tumpang tindih
+            // 1️⃣ Luluskan kelas IX
+            Model::where('kelas', 'IX')
+                ->where('status', 'aktif')
                 ->update([
-                    'kelas' => \DB::raw("CASE
-                        WHEN kelas = 'VII' THEN 'VIII'
-                        WHEN kelas = 'VIII' THEN 'IX'
-                        ELSE kelas
-                    END"),
-                    'status' => \DB::raw("CASE
-                        WHEN kelas = 'IX' THEN 'lulus'
-                        ELSE status
-                    END"),
-                    'tahun_lulus' => \DB::raw("CASE
-                        WHEN kelas = 'IX' THEN {$tahunSekarang}
-                        ELSE tahun_lulus
-                    END")
+                    'status' => 'lulus',
+                    'tahun_lulus' => $tahunSekarang,
                 ]);
+
+            // 2️⃣ Naikkan kelas VIII → IX
+            Model::where('kelas', 'VIII')
+                ->where('status', 'aktif')
+                ->update(['kelas' => 'IX']);
+
+            // 3️⃣ Naikkan kelas VII → VIII
+            Model::where('kelas', 'VII')
+                ->where('status', 'aktif')
+                ->update(['kelas' => 'VIII']);
 
             \DB::commit();
 
-            flash("✅ Promosi & kelulusan berhasil! Tahun ajaran baru dimulai.")->success();
+            // 🟩 Pesan notifikasi hasil
+            $pesan = "✅ Promosi & kelulusan tahun {$tahunSekarang} berhasil!<br>";
+            $pesan .= "<ul class='mb-0'>";
+            if ($jumlahIX > 0) {
+                $pesan .= "<li>{$jumlahIX} siswa kelas IX ditandai sebagai <strong>LULUS</strong></li>";
+            }
+            if ($jumlahVIII > 0) {
+                $pesan .= "<li>{$jumlahVIII} siswa kelas VIII naik ke kelas IX</li>";
+            }
+            if ($jumlahVII > 0) {
+                $pesan .= "<li>{$jumlahVII} siswa kelas VII naik ke kelas VIII</li>";
+            }
+            if ($jumlahVII == 0 && $jumlahVIII == 0 && $jumlahIX == 0) {
+                $pesan .= "<li>Tidak ada siswa aktif yang diproses.</li>";
+            }
+            $pesan .= "</ul>";
+
+            flash($pesan)->success();
             return redirect()->route($this->routePrefix . '.index');
 
         } catch (\Exception $e) {
@@ -347,4 +379,62 @@ class SiswaController extends Controller
             return back();
         }
     }
+
+    public function rollbackPromosi(Request $request)
+    {
+        if (auth()->user()->akses !== 'operator') {
+            abort(403, 'Hanya operator yang boleh melakukan rollback promosi.');
+        }
+
+        $request->validate([
+            'confirm_rollback' => 'required|accepted',
+        ], [
+            'confirm_rollback.accepted' => 'Anda harus mencentang konfirmasi sebelum rollback.',
+        ]);
+
+        \DB::beginTransaction();
+        try {
+            $tahunSekarang = now()->year;
+
+            // 🔹 1️⃣ Kembalikan siswa yang LULUS (IX sebelumnya)
+            $jumlahLulus = Model::where('status', 'lulus')
+                ->where('tahun_lulus', $tahunSekarang)
+                ->update([
+                    'status' => 'aktif',
+                    'kelas'  => 'IX',
+                    'tahun_lulus' => null,
+                ]);
+
+            // 🔹 2️⃣ Kembalikan siswa yang sebelumnya naik ke IX → jadi VIII
+            $jumlahIX = Model::where('kelas', 'IX')
+                ->where('status', 'aktif')
+                ->update(['kelas' => 'VIII']);
+
+            // 🔹 3️⃣ Kembalikan siswa yang sebelumnya naik ke VIII → jadi VII
+            $jumlahVIII = Model::where('kelas', 'VIII')
+                ->where('status', 'aktif')
+                ->update(['kelas' => 'VII']);
+
+            \DB::commit();
+
+            // 🔹 Pesan hasil
+            $pesan = "🔁 Rollback promosi & kelulusan tahun {$tahunSekarang} berhasil.<br><ul class='mb-0'>";
+            if ($jumlahLulus > 0) $pesan .= "<li>{$jumlahLulus} siswa dikembalikan dari status LULUS ke kelas IX</li>";
+            if ($jumlahIX > 0) $pesan .= "<li>{$jumlahIX} siswa kelas IX dikembalikan ke VIII</li>";
+            if ($jumlahVIII > 0) $pesan .= "<li>{$jumlahVIII} siswa kelas VIII dikembalikan ke VII</li>";
+            if ($jumlahLulus == 0 && $jumlahIX == 0 && $jumlahVIII == 0)
+                $pesan .= "<li>Tidak ada data yang diubah.</li>";
+            $pesan .= "</ul>";
+
+            flash($pesan)->success();
+            return redirect()->route($this->routePrefix . '.index');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            flash("❌ Gagal melakukan rollback: " . $e->getMessage())->error();
+            return back();
+        }
+    }
+
+
 }

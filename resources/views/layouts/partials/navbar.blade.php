@@ -131,7 +131,7 @@
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="#"><i class="fa fa-user me-2"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa fa-cog me-2"></i> Settings</a></li>
-          <li>
+          {{-- <li>
             <a class="dropdown-item" href="#">
               <span class="d-flex align-items-center">
                 <i class="fa fa-credit-card me-2"></i>
@@ -139,7 +139,7 @@
                 <span class="badge bg-danger ms-2">4</span>
               </span>
             </a>
-          </li>
+          </li> --}}
           <li><hr class="dropdown-divider"></li>
           <li>
             <a class="dropdown-item" href="{{ route('logout') }}">

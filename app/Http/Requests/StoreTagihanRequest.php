@@ -33,5 +33,23 @@ class StoreTagihanRequest extends FormRequest
             'keterangan'          => 'nullable|string|max:255',
         ];
     }
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $data = $validator->getData();
+
+            $query = \App\Models\Siswa::where('status', 'aktif');
+            if (!empty($data['kelas'])) {
+                $query->where('kelas', $data['kelas']);
+            }
+            if (!empty($data['angkatan'])) {
+                $query->where('angkatan', $data['angkatan']);
+            }
+
+            if ($query->count() === 0) {
+                $validator->errors()->add('kelas', 'Tidak ada siswa aktif yang sesuai dengan filter yang dipilih.');
+            }
+        });
+    }
 
 }

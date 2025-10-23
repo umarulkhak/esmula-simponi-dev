@@ -479,18 +479,16 @@ class TagihanController extends Controller
             ->with('success', 'Tagihan berhasil ditandai sebagai LUNAS.');
     }
 
-    // =======================
-    // HELPER PRIVATE
-    // =======================
     /**
      * Memfilter siswa berdasarkan kelas dan/atau angkatan.
+     * Hanya mengambil siswa dengan status 'aktif'.
      *
      * @param  array  $data
      * @return \Illuminate\Database\Eloquent\Collection
      */
     private function filterSiswa(array $data): \Illuminate\Database\Eloquent\Collection
     {
-        return Siswa::query()
+        return Siswa::where('status', 'aktif') // 🔑 FILTER UTAMA: hanya siswa aktif
             ->when(!empty($data['kelas']), fn($q) => $q->where('kelas', $data['kelas']))
             ->when(!empty($data['angkatan']), fn($q) => $q->where('angkatan', $data['angkatan']))
             ->get();

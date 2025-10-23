@@ -33,6 +33,63 @@
                     </a>
                 </div>
             </div>
+
+            {{-- 🔹 DASHBOARD STATISTIK KECIL 🔹 --}}
+            <div class="card-body border-bottom">
+                <div class="row g-3">
+
+                    {{-- Kelas VII (Aktif) --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-info rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['kelas_vii'] }}</div>
+                            <div class="small">Kelas VII</div>
+                        </div>
+                    </div>
+
+                    {{-- Kelas VIII (Aktif) --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-warning rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['kelas_viii'] }}</div>
+                            <div class="small">Kelas VIII</div>
+                        </div>
+                    </div>
+
+                    {{-- Kelas IX (Aktif) --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-primary rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['kelas_ix'] }}</div>
+                            <div class="small">Kelas IX</div>
+                        </div>
+                    </div>
+
+                    {{-- Lulus --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-secondary rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['lulus'] }}</div>
+                            <div class="small">Lulus</div>
+                        </div>
+                    </div>
+
+                    {{-- Tidak Aktif (DO) --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-danger rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['tidak_aktif'] }}</div>
+                            <div class="small">Tidak Aktif</div>
+                        </div>
+                    </div>
+
+                    {{-- Total Siswa Aktif --}}
+                    <div class="col-6 col-md-2">
+                        <div class="bg-label-success rounded p-3 text-center">
+                            <div class="fs-5 fw-bold">{{ $stats['total_aktif'] }}</div>
+                            <div class="small">Siswa Aktif</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {{-- === ISI UTAMA === --}}
             <div class="card-body">
 
                 {{-- === SECTION: PENCARIAN & FILTER === --}}
@@ -127,7 +184,7 @@
                                     <td class="fw-semibold">{{ $item->nama }}</td>
                                     <td>{{ $item->nisn ?? '–' }}</td>
                                     <td>
-                                        <span class="badge bg-label-{{ $item->kelas == 'VII' ? 'success' : ($item->kelas == 'VIII' ? 'warning' : 'danger') }} rounded-pill">
+                                        <span class="badge bg-label-{{ $item->kelas == 'VII' ? 'info' : ($item->kelas == 'VIII' ? 'warning' : 'primary') }} rounded-pill">
                                             {{ $item->kelas }}
                                         </span>
                                     </td>
