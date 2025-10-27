@@ -14,12 +14,12 @@ class SiswaSeeder extends Seeder
     {
         // 🔹 Pastikan ada user operator (ID 1)
         $operator = User::firstOrCreate(
-            ['email' => 'admin@sekolah.local'],
+            ['email' => 'alkhak24@gmail.com'],
             [
-                'name'     => 'Operator Sekolah',
-                'email'    => 'admin@sekolah.local',
-                'password' => Hash::make('password123456'),
-                'akses'    => 'operator',
+                'name'     => 'Umar Ulkhak',
+                'email'    => 'alkhak24@gmail.com',
+                'password' => Hash::make('Khak240799'),
+                'akses'    => 'admin',
             ]
         );
 
