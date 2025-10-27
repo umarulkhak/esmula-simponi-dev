@@ -31,8 +31,8 @@ class BerandaOperatorController extends Controller
 
     private function calculateStats($bulan, $tahun)
     {
-        // Total siswa
-        $totalSiswa = Siswa::count();
+        // Total siswa AKTIF saja
+        $totalSiswa = Siswa::where('status', 'aktif')->count();
 
         // Total pembayaran bulan ini (lunas)
         $pembayaranBulanIni = DB::table('tagihans as t')
@@ -94,7 +94,7 @@ class BerandaOperatorController extends Controller
 
         return [
             'total_siswa' => $totalSiswa,
-            'siswa_baru' => 0,
+            'siswa_baru' => 0, // bisa dikembangkan jika ada logika "baru"
             'pembayaran_bulan_ini' => (int) $pembayaranBulanIni,
             'pertumbuhan_bulan_lalu' => $pertumbuhan,
             'tingkat_pembayaran' => $tingkatPembayaran,
@@ -109,9 +109,9 @@ class BerandaOperatorController extends Controller
 
     private function getKelasStatsOptimized($bulan, $tahun)
     {
-        // Ambil data per kelas dengan 1 query
+        // Ambil data per kelas dengan 1 query, hanya siswa aktif
         $actual = DB::table('siswas')
-            ->select('siswas.kelas') // ✅ Tambahkan prefix 'siswas.'
+            ->select('siswas.kelas')
             ->selectRaw('COUNT(*) as jumlah_siswa')
             ->selectRaw('SUM(CASE WHEN t.status = "lunas" THEN 1 ELSE 0 END) as lunas')
             ->selectRaw('SUM(CASE WHEN t.status = "baru" THEN 1 ELSE 0 END) as pending')
@@ -121,8 +121,9 @@ class BerandaOperatorController extends Controller
                     ->whereRaw('MONTH(t.tanggal_tagihan) = ?', [$bulan])
                     ->whereRaw('YEAR(t.tanggal_tagihan) = ?', [$tahun]);
             })
-            ->groupBy('siswas.kelas') // ✅ Prefix di sini juga
-            ->orderBy('siswas.kelas') // ✅ Dan di sini
+            ->where('siswas.status', 'aktif') // ✅ hanya siswa aktif
+            ->groupBy('siswas.kelas')
+            ->orderBy('siswas.kelas')
             ->get()
             ->keyBy('kelas');
 
@@ -140,7 +141,8 @@ class BerandaOperatorController extends Controller
                     'belum_bayar' => (int) $data->belum_bayar,
                 ];
             } else {
-                $jumlah = Siswa::where('kelas', $kelas)->count();
+                // Hitung siswa aktif per kelas jika tidak ada tagihan
+                $jumlah = Siswa::where('kelas', $kelas)->where('status', 'aktif')->count();
                 $result[] = [
                     'nama' => $kelas,
                     'jumlah_siswa' => $jumlah,
@@ -184,6 +186,7 @@ class BerandaOperatorController extends Controller
 
         return $payments;
     }
+
     /**
      * Export Laporan Tagihan Siswa ke Excel
      */
@@ -191,5 +194,4 @@ class BerandaOperatorController extends Controller
     {
         return Excel::download(new TagihanSiswaExport(), 'laporan_tagihan_siswa_' . now()->format('Y-m-d_H-i-s') . '.xlsx');
     }
-
 }
