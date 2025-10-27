@@ -5,16 +5,28 @@
 
     RewriteEngine On
 
+    # ───────────────────────────────────────
+    # 1. Sajikan asset dari folder /public
+    # ───────────────────────────────────────
+    RewriteCond %{REQUEST_URI} ^/(sneat|js|font|css|images|build|storage|uploads|favicon\.ico|robots\.txt) [NC]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # ───────────────────────────────────────
+    # 2. Aturan Laravel default (jangan diubah)
+    # ───────────────────────────────────────
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    # Redirect Trailing Slashes
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Front Controller
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
