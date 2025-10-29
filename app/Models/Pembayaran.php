@@ -101,7 +101,7 @@ class Pembayaran extends Model
     }
     public function waliBank(): BelongsTo
     {
-        return $this->belongsTo(walibank::class);
+        return $this->belongsTo(WaliBank::class);
     }
 
 }
