@@ -26,10 +26,38 @@
                     <div class="row g-3 mb-4">
                         @php
                             $statsList = [
-                                ['label' => 'Total Siswa', 'value' => number_format($stats['total_siswa']), 'desc' => '+'.$stats['siswa_baru'].' baru', 'color' => 'primary', 'icon' => 'bx-user'],
-                                ['label' => 'Pembayaran Bulan Ini', 'value' => 'Rp '.number_format($stats['pembayaran_bulan_ini'], 0, ',', '.'), 'desc' => '+'.$stats['pertumbuhan_bulan_lalu'].'%', 'color' => 'success', 'icon' => 'bx-credit-card'],
-                                ['label' => 'Tingkat Pembayaran', 'value' => $stats['tingkat_pembayaran'].'%', 'desc' => '+'.$stats['peningkatan_bulan_lalu'].'%', 'color' => 'info', 'icon' => 'bx-trending-up'],
-                                ['label' => 'Tunggakan', 'value' => $stats['tunggakan'], 'desc' => $stats['tagihan_belum_bayar'].' tagihan', 'color' => 'danger', 'icon' => 'bx-error-circle'],
+                                [
+                                    'label' => 'Total Siswa',
+                                    'value' => number_format($stats['total_siswa']),
+                                    'desc' => ($stats['diff_siswa'] >= 0 ? '+' : '') . $stats['diff_siswa'],
+                                    'color' => 'primary',
+                                    'icon' => 'bx-user',
+                                    'desc_class' => $stats['diff_siswa'] >= 0 ? 'text-success' : 'text-danger'
+                                ],
+                                [
+                                    'label' => 'Lunas',
+                                    'value' => $stats['total_lunas'],
+                                    'desc' => ($stats['diff_siswa'] >= 0 ? '+' : '') . ($stats['total_lunas'] - ($stats['total_siswa'] - $stats['total_belum_bayar'] - $stats['total_lunas'])), // fallback
+                                    'color' => 'success',
+                                    'icon' => 'bx-check-circle',
+                                    'desc_class' => $stats['diff_siswa'] >= 0 ? 'text-success' : 'text-danger'
+                                ],
+                                [
+                                    'label' => 'Belum Bayar',
+                                    'value' => $stats['total_belum_bayar'],
+                                    'desc' => ($stats['diff_belum'] >= 0 ? '+' : '') . $stats['diff_belum'],
+                                    'color' => 'danger',
+                                    'icon' => 'bx-time',
+                                    'desc_class' => $stats['diff_belum'] <= 0 ? 'text-success' : 'text-danger'
+                                ],
+                                [
+                                    'label' => 'Pembayaran',
+                                    'value' => $stats['tingkat_pembayaran'] . '%',
+                                    'desc' => ($stats['diff_persen'] >= 0 ? '+' : '') . number_format($stats['diff_persen'], 1) . '%',
+                                    'color' => 'purple',
+                                    'icon' => 'bx-bar-chart-alt-2',
+                                    'desc_class' => $stats['diff_persen'] >= 0 ? 'text-success' : 'text-danger'
+                                ],
                             ];
                         @endphp
 
@@ -42,7 +70,7 @@
                                         </div>
                                         <h6 class="mb-1 fw-bold">{{ $item['value'] }}</h6>
                                         <p class="text-muted small mb-0">{{ $item['label'] }}</p>
-                                        <small class="{{ strpos($item['desc'], '+') !== false ? 'text-success' : 'text-danger' }} fst-italic">
+                                        <small class="{{ $item['desc_class'] }} fst-italic">
                                             {{ $item['desc'] }}
                                         </small>
                                     </div>

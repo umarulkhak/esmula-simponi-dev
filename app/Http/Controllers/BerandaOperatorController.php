@@ -14,11 +14,10 @@ class BerandaOperatorController extends Controller
 {
     public function index()
     {
-        $bulan = request('bulan', Carbon::now()->format('m'));
         $tahun = request('tahun', Carbon::now()->format('Y'));
 
-        $stats = $this->calculateStats($bulan, $tahun);
-        $kelasStats = $this->getKelasStatsOptimized($bulan, $tahun);
+        $stats = $this->calculateStats($tahun);
+        $kelasStats = $this->getKelasStatsOptimized($tahun);
         $recentPayments = $this->getRecentPaymentsOptimized();
 
         return view('operator.beranda_index', [
@@ -29,99 +28,89 @@ class BerandaOperatorController extends Controller
         ]);
     }
 
-    private function calculateStats($bulan, $tahun)
+    private function calculateStats($tahun)
     {
-        // Total siswa AKTIF saja
-        $totalSiswa = Siswa::where('status', 'aktif')->count();
+        // === TOTAL SISWA AKTIF (basis semua perhitungan) ===
+        $totalSiswaAktif = Siswa::where('status', 'aktif')->count();
 
-        // Total pembayaran bulan ini (lunas)
-        $pembayaranBulanIni = DB::table('tagihans as t')
-            ->join('tagihan_details as td', 't.id', '=', 'td.tagihan_id')
-            ->where('t.status', 'lunas')
-            ->whereMonth('t.tanggal_tagihan', $bulan)
-            ->whereYear('t.tanggal_tagihan', $tahun)
-            ->sum('td.jumlah_biaya');
-
-        // Total tagihan & status bulan ini
-        $tagihanBulanIni = DB::table('tagihans')
-            ->select(
-                DB::raw('SUM(CASE WHEN status = "lunas" THEN 1 ELSE 0 END) as total_lunas'),
-                DB::raw('SUM(CASE WHEN status = "baru" THEN 1 ELSE 0 END) as total_pending'),
-                DB::raw('SUM(CASE WHEN status != "lunas" THEN 1 ELSE 0 END) as total_belum_bayar'),
-                DB::raw('COUNT(*) as total_tagihan')
-            )
-            ->whereMonth('tanggal_tagihan', $bulan)
+        // === QUERY: Tagihan terbaru per siswa pada TAHUN SEKARANG ===
+        $latestPerSiswaSekarang = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
             ->whereYear('tanggal_tagihan', $tahun)
-            ->first();
+            ->groupBy('siswa_id');
 
-        $totalLunas = $tagihanBulanIni->total_lunas ?? 0;
-        $totalPending = $tagihanBulanIni->total_pending ?? 0;
-        $totalBelumBayar = $tagihanBulanIni->total_belum_bayar ?? 0;
-        $totalTagihan = $tagihanBulanIni->total_tagihan ?? 0;
+        // Hitung jumlah SISWA UNIK yang LUNAS (berdasarkan tagihan terbaru mereka)
+        $totalLunasSiswa = 0;
+        if ($latestPerSiswaSekarang->exists()) {
+            $totalLunasSiswa = Tagihan::whereIn('id', $latestPerSiswaSekarang->pluck('latest_id'))
+                ->where('status', 'lunas')
+                ->distinct('siswa_id')
+                ->count('siswa_id');
+        }
 
-        $tingkatPembayaran = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
+        $totalBelumBayar = $totalSiswaAktif - $totalLunasSiswa;
+        $persentase = $totalSiswaAktif > 0 ? round(($totalLunasSiswa / $totalSiswaAktif) * 100, 1) : 0;
 
-        // Data bulan lalu
-        $bulanLalu = Carbon::create($tahun, $bulan)->subMonth();
-        $bln = $bulanLalu->format('m');
-        $thn = $bulanLalu->format('Y');
+        // === PERIODE SEBELUMNYA: TAHUN LALU ===
+        $tahunSebelumnya = $tahun - 1;
 
-        $tagihanBulanLalu = DB::table('tagihans')
-            ->select(
-                DB::raw('SUM(CASE WHEN status = "lunas" THEN 1 ELSE 0 END) as total_lunas'),
-                DB::raw('COUNT(*) as total_tagihan')
-            )
-            ->whereMonth('tanggal_tagihan', $bln)
-            ->whereYear('tanggal_tagihan', $thn)
-            ->first();
+        $latestPerSiswaSebelumnya = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
+            ->whereYear('tanggal_tagihan', $tahunSebelumnya)
+            ->groupBy('siswa_id');
 
-        $lunasLalu = $tagihanBulanLalu->total_lunas ?? 0;
-        $tagihanLalu = $tagihanBulanLalu->total_tagihan ?? 0;
-        $persenLalu = $tagihanLalu > 0 ? round(($lunasLalu / $tagihanLalu) * 100, 1) : 0;
-        $peningkatanBulanLalu = $tingkatPembayaran - $persenLalu;
+        $lunasPrevSiswa = 0;
+        if ($latestPerSiswaSebelumnya->exists()) {
+            $lunasPrevSiswa = Tagihan::whereIn('id', $latestPerSiswaSebelumnya->pluck('latest_id'))
+                ->where('status', 'lunas')
+                ->distinct('siswa_id')
+                ->count('siswa_id');
+        }
 
-        // Pertumbuhan pembayaran
-        $pembayaranBulanLalu = DB::table('tagihans as t')
-            ->join('tagihan_details as td', 't.id', '=', 'td.tagihan_id')
-            ->where('t.status', 'lunas')
-            ->whereMonth('t.tanggal_tagihan', $bln)
-            ->whereYear('t.tanggal_tagihan', $thn)
-            ->sum('td.jumlah_biaya');
-
-        $pertumbuhan = $pembayaranBulanLalu == 0
-            ? ($pembayaranBulanIni > 0 ? 100 : 0)
-            : round((($pembayaranBulanIni - $pembayaranBulanLalu) / $pembayaranBulanLalu) * 100, 1);
+        $belumPrevBayar = $totalSiswaAktif - $lunasPrevSiswa;
+        $persentasePrev = $totalSiswaAktif > 0 ? round(($lunasPrevSiswa / $totalSiswaAktif) * 100, 1) : 0;
 
         return [
-            'total_siswa' => $totalSiswa,
-            'siswa_baru' => 0, // bisa dikembangkan jika ada logika "baru"
-            'pembayaran_bulan_ini' => (int) $pembayaranBulanIni,
-            'pertumbuhan_bulan_lalu' => $pertumbuhan,
-            'tingkat_pembayaran' => $tingkatPembayaran,
-            'peningkatan_bulan_lalu' => $peningkatanBulanLalu,
+            'total_siswa' => $totalSiswaAktif,
+            'siswa_baru' => 0,
+            'pembayaran_bulan_ini' => 0, // opsional, tidak dipakai di logika per-siswa
+            'pertumbuhan_bulan_lalu' => 0,
+            'tingkat_pembayaran' => $persentase,
+            'peningkatan_bulan_lalu' => $persentase - $persentasePrev,
             'tunggakan' => $totalBelumBayar,
             'tagihan_belum_bayar' => $totalBelumBayar,
-            'total_lunas' => $totalLunas,
-            'total_pending' => $totalPending,
+            'total_lunas' => $totalLunasSiswa,
+            'total_pending' => 0,
             'total_belum_bayar' => $totalBelumBayar,
+
+            // === DATA PERBANDINGAN (SESUAI TAGIHAN_CONTROLLER) ===
+            'diff_siswa' => 0,
+            'diff_belum' => $totalBelumBayar - $belumPrevBayar,
+            'diff_persen' => $persentase - $persentasePrev,
         ];
     }
 
-    private function getKelasStatsOptimized($bulan, $tahun)
+    private function getKelasStatsOptimized($tahun)
     {
-        // Ambil data per kelas dengan 1 query, hanya siswa aktif
+        // Ambil tagihan terbaru per siswa pada tahun ini
+        $latestTagihan = Tagihan::select('siswa_id', DB::raw('MAX(id) as latest_id'))
+            ->whereYear('tanggal_tagihan', $tahun)
+            ->groupBy('siswa_id')
+            ->pluck('latest_id');
+
+        // Jika tidak ada tagihan, buat array kosong
+        $latestTagihan = $latestTagihan->isNotEmpty() ? $latestTagihan : collect([0]);
+
+        // Ambil data per kelas dengan join ke tagihan terbaru
         $actual = DB::table('siswas')
             ->select('siswas.kelas')
             ->selectRaw('COUNT(*) as jumlah_siswa')
             ->selectRaw('SUM(CASE WHEN t.status = "lunas" THEN 1 ELSE 0 END) as lunas')
             ->selectRaw('SUM(CASE WHEN t.status = "baru" THEN 1 ELSE 0 END) as pending')
             ->selectRaw('SUM(CASE WHEN t.status NOT IN ("lunas", "baru") AND t.status IS NOT NULL THEN 1 ELSE 0 END) as belum_bayar')
-            ->leftJoin('tagihans as t', function ($join) use ($bulan, $tahun) {
+            ->leftJoin('tagihans as t', function ($join) use ($latestTagihan) {
                 $join->on('siswas.id', '=', 't.siswa_id')
-                    ->whereRaw('MONTH(t.tanggal_tagihan) = ?', [$bulan])
-                    ->whereRaw('YEAR(t.tanggal_tagihan) = ?', [$tahun]);
+                    ->whereIn('t.id', $latestTagihan);
             })
-            ->where('siswas.status', 'aktif') // ✅ hanya siswa aktif
+            ->where('siswas.status', 'aktif')
             ->groupBy('siswas.kelas')
             ->orderBy('siswas.kelas')
             ->get()
@@ -141,7 +130,6 @@ class BerandaOperatorController extends Controller
                     'belum_bayar' => (int) $data->belum_bayar,
                 ];
             } else {
-                // Hitung siswa aktif per kelas jika tidak ada tagihan
                 $jumlah = Siswa::where('kelas', $kelas)->where('status', 'aktif')->count();
                 $result[] = [
                     'nama' => $kelas,
@@ -158,7 +146,6 @@ class BerandaOperatorController extends Controller
 
     private function getRecentPaymentsOptimized()
     {
-        // Ambil 5 pembayaran terbaru + total biaya dalam 1 query
         $payments = DB::table('tagihans as t')
             ->select(
                 't.id',
@@ -175,11 +162,9 @@ class BerandaOperatorController extends Controller
             ->take(5)
             ->get();
 
-        // Ambil data siswa dalam 1 query
         $siswaIds = $payments->pluck('siswa_id')->unique()->toArray();
         $siswas = Siswa::whereIn('id', $siswaIds)->get()->keyBy('id');
 
-        // Gabungkan data siswa ke pembayaran
         foreach ($payments as $payment) {
             $payment->siswa = $siswas[$payment->siswa_id] ?? null;
         }
@@ -187,9 +172,6 @@ class BerandaOperatorController extends Controller
         return $payments;
     }
 
-    /**
-     * Export Laporan Tagihan Siswa ke Excel
-     */
     public function exportTagihanSiswa()
     {
         return Excel::download(new TagihanSiswaExport(), 'laporan_tagihan_siswa_' . now()->format('Y-m-d_H-i-s') . '.xlsx');
